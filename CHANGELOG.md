@@ -31,6 +31,15 @@ A tool's name, input schema, side effect and permission are part of the public c
   recipients, and attachments are offered only with an artifact loader. The transports
   (`SmtpEmailSender`, `GmailMailboxClient`) and message models (`algen_agent_tools.mail`) move
   from `algen_agent_runtime.communications` unchanged. `FakeMailbox` for tests.
+- MCP governance overlays (`algen_agent_tools.mcp`, extra `mcp`): `McpOverlay` declares, per
+  remote tool, its side effect, approval rule, timeout, permissions, result limit and the input
+  schema it was reviewed against. Each declared tool is an ordinary Runtime tool, so `describe`
+  and Studio list it before anything connects; undeclared tools are never exposed; arguments are
+  validated against the closed schema; a tool the server dropped or whose schema changed is
+  refused (`on_drift: allow` relaxes this); stdio environment values must be `env://`
+  references; HTTP transports reach only the server's host. `overlay_plugin` declares an
+  overlay file from a project's plugin, `python -m algen_agent_tools.mcp snapshot` drafts one
+  from a live server for review, and `FakeMcpServer` serves tests.
 - `docs/migrating-from-runtime.md` maps the Runtime's deprecated `communications` connectors
   and `database_tool` to this package.
 - `algen_agent_tools.testing`: `assert_toolkit_contract` and `toolkit_contract_problems` (the

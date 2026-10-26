@@ -1,0 +1,39 @@
+# The reviewed overlay for tests/fixtures/mcp/sample_server.py.
+# run_shell is deliberately not declared, so it is never exposed.
+name: desk
+server:
+  name: ticket-desk
+  transport: stdio
+  command: python
+  args: ["-m", "tests.fixtures.mcp.sample_server"]
+  env:
+    DESK_TOKEN: env://ALGEN_TOOLS_TEST_DESK_TOKEN
+tools:
+  get_ticket:
+    effect: read
+    description: Read one help-desk ticket by its id, for example T-1.
+    input_schema:
+      type: object
+      title: get_ticketArguments
+      required: [ticket_id]
+      properties:
+        ticket_id: {title: Ticket Id, type: string}
+  create_ticket:
+    effect: write
+    description: Open a help-desk ticket with a short title.
+    timeout_seconds: 20
+    input_schema:
+      type: object
+      title: create_ticketArguments
+      required: [title]
+      properties:
+        title: {title: Title, type: string}
+  delete_ticket:
+    effect: destructive
+    description: Delete one help-desk ticket. A person approves every call.
+    input_schema:
+      type: object
+      title: delete_ticketArguments
+      required: [ticket_id]
+      properties:
+        ticket_id: {title: Ticket Id, type: string}

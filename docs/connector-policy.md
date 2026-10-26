@@ -13,7 +13,7 @@ A new connector needs all of:
    listed in `.github/CODEOWNERS` and in the connector's docs page.
 4. **A security review.** The checklist below, recorded in the pull request that adds it.
 5. **MCP first.** If a well-maintained MCP server covers the need, propose a governance overlay
-   (`algen_agent_tools.mcp`) instead. A native connector is justified only when the overlay
+   ([`algen_agent_tools.mcp`](mcp-overlays.md)) instead. A native connector is justified only when the overlay
    cannot give a guarantee the agent needs, such as an idempotency key the server ignores or a
    typed action the server lacks.
 

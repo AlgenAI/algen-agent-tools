@@ -85,6 +85,19 @@ class AcmeTools:
 | Gmail | `algen_agent_tools.gmail` | `gmail` | `gmail.list_messages` (read), `gmail.send_email` (external) | [gmail](docs/connectors/gmail.md) |
 | Sample | `algen_agent_tools.sample` | none | `sample.echo` (read) | [sample](docs/connectors/sample.md) |
 
+### MCP servers
+
+For services with a well-maintained MCP server, `algen_agent_tools.mcp` adds a
+[governance overlay](docs/mcp-overlays.md) instead of a native client: a reviewed mapping that
+declares each remote tool's side effect, permission, approval rule and pinned input schema. The
+tools appear in `describe` and Studio before anything connects, undeclared tools are never
+exposed, and a tool whose schema changes is refused until it is reviewed again.
+
+```bash
+pip install "algen-agent-tools[mcp]"
+python -m algen_agent_tools.mcp snapshot server.yaml --name github --output github.overlay.yaml
+```
+
 Moving from the Runtime's built-in email and database connectors? See
 [migrating from the Runtime](docs/migrating-from-runtime.md).
 
