@@ -14,10 +14,11 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from algen_agent_runtime.config.settings import SecuritySettings
 from algen_agent_runtime.mcp.client import MCPClientManager
 
 from algen_agent_tools.mcp.overlay import ServerHolder
-from algen_agent_tools.mcp.session import _field, list_remote_tools
+from algen_agent_tools.mcp.session import _field, allowed_hosts, list_remote_tools
 
 _HEADER = """\
 # MCP governance overlay, drafted from the server's advertised tools.
@@ -45,7 +46,11 @@ def suggestion(annotations: Any) -> str:
 async def draft(name: str, server: dict[str, Any], *, session_factory: Any = None) -> str:
     """The YAML text of a draft overlay for ``server``."""
     config = ServerHolder.model_validate({"server": server}).server
-    manager = MCPClientManager([config], session_factory=session_factory)
+    manager = MCPClientManager(
+        [config],
+        security=SecuritySettings(allowed_http_hosts=allowed_hosts(config, None)),
+        session_factory=session_factory,
+    )
     try:
         connection = await manager.connect(config.name)
         advertised = await list_remote_tools(connection.session)

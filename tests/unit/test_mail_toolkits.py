@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from algen_agent_runtime.exceptions.errors import ConfigurationError, PolicyDeniedError
 from algen_agent_runtime.tools.authoring import Toolkit
-from algen_agent_runtime.tools.contracts import Idempotency, SideEffect, Tool
+from algen_agent_runtime.tools.contracts import Idempotency, SideEffect, Tool, ToolContext
 from algen_agent_runtime.tools.testing import fake_tool_context
 from pydantic import ValidationError
 
@@ -23,7 +23,7 @@ def named(toolkit: Toolkit, action: str) -> Tool:
     return next(tool for tool in toolkit.tools if tool.definition.name.endswith(f".{action}"))
 
 
-async def no_attachment(reference: EmailAttachmentReference) -> bytes:
+async def no_attachment(reference: EmailAttachmentReference, context: ToolContext) -> bytes:
     return b""
 
 

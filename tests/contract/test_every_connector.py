@@ -12,7 +12,7 @@ from algen_agent_runtime.tools.contracts import Tool
 from algen_agent_runtime.tools.testing import tool_contract_problems
 
 from algen_agent_tools import TRUSTED_PREFIX
-from algen_agent_tools.testing import RAW_PASSTHROUGH_PARAMETERS, plugin_tools
+from algen_agent_tools.testing import passthrough_parameters, plugin_tools
 
 PLUGINS = sorted(
     entry.name
@@ -69,7 +69,7 @@ def test_every_tool_meets_the_contract(name: str) -> None:
         assert tool_contract_problems(tool) == (), definition.name
         assert definition.name.startswith(f"{connector}."), definition.name
         assert all(p.startswith(f"{connector}.") for p in definition.required_permissions)
-        assert not RAW_PASSTHROUGH_PARAMETERS & set(definition.input_schema["properties"])
+        assert passthrough_parameters(definition.input_schema) == []
 
 
 @pytest.mark.parametrize("name", PLUGINS)

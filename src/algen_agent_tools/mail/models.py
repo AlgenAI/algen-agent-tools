@@ -143,7 +143,14 @@ def build_mime_message(
     idempotency_key: str,
     attachments: list[tuple[EmailAttachmentReference, bytes]],
     message_id_domain: str,
+    include_bcc: bool = False,
 ) -> tuple[MimeEmailMessage, str]:
+    """The MIME message and its deterministic Message-ID.
+
+    SMTP passes every recipient in the envelope, so Bcc stays out of the headers. An API that
+    takes recipients from the raw message (Gmail) needs ``include_bcc=True``; it removes the
+    header before delivery.
+    """
     mime = MimeEmailMessage()
     message_id = f"<{hashlib.sha256(idempotency_key.encode()).hexdigest()}@{message_id_domain}>"
     mime["Message-ID"] = message_id
@@ -151,6 +158,8 @@ def build_mime_message(
     mime["To"] = ", ".join(item.formatted() for item in message.to)
     if message.cc:
         mime["Cc"] = ", ".join(item.formatted() for item in message.cc)
+    if include_bcc and message.bcc:
+        mime["Bcc"] = ", ".join(item.formatted() for item in message.bcc)
     if message.reply_to is not None:
         mime["Reply-To"] = message.reply_to.formatted()
     mime["Subject"] = message.subject

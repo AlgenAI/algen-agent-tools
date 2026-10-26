@@ -150,7 +150,9 @@ class McpOverlay(BaseModel):
     )
     allowed_hosts: tuple[str, ...] | None = Field(
         default=None,
-        description="Hosts an HTTP transport may reach; default the server URL's host only.",
+        min_length=1,
+        description="Hosts an HTTP transport may reach; default the server URL's host only. "
+        "An empty list is refused: the Runtime reads an empty allowlist as any host.",
     )
 
     @model_validator(mode="after")

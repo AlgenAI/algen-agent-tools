@@ -1,12 +1,14 @@
 """The ``send_email`` action the SMTP and Gmail toolkits share.
 
 The deployment fixes the sender; the model chooses only recipients, subject and body. An
-optional domain allowlist bounds who can be written to.
+optional domain allowlist bounds who can be written to and who replies go to.
 """
 
 from __future__ import annotations
 
 import inspect
+from collections.abc import Awaitable, Callable
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
@@ -17,13 +19,33 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from algen_agent_tools.mail.models import (
     EmailAddress,
+    EmailArtifactLoader,
     EmailAttachmentReference,
+    EmailDeliveryError,
     EmailDeliveryReceipt,
     EmailMessage,
     EmailSender,
 )
 
 AUDIT_METADATA = {"content_capture": "disabled", "channel": "email"}
+
+ContextualArtifactLoader = Callable[[EmailAttachmentReference, ToolContext], Awaitable[bytes]]
+"""Loads an attachment's bytes for one tool call. It receives the call's context so it can
+check that the artifact belongs to the caller's tenant (and run) before returning anything."""
+
+_CALL: ContextVar[ToolContext | None] = ContextVar("algen_agent_tools_mail_call", default=None)
+
+
+def bind_artifact_loader(loader: ContextualArtifactLoader) -> EmailArtifactLoader:
+    """A transport-level loader that passes the current ``send_email`` call's context on."""
+
+    async def load(reference: EmailAttachmentReference) -> bytes:
+        context = _CALL.get()
+        if context is None:
+            raise EmailDeliveryError("attachments load only inside a send_email tool call")
+        return await loader(reference, context)
+
+    return load
 
 
 class OutgoingEmail(BaseModel):
@@ -62,11 +84,12 @@ class MailClient:
                 await result
 
 
-def _recipient_domains(message: EmailMessage) -> set[str]:
-    return {
-        address.address.rpartition("@")[2].casefold()
-        for address in (*message.to, *message.cc, *message.bcc)
-    }
+def _addressed_domains(message: EmailMessage) -> set[str]:
+    """Every domain the message reaches: recipients, and where replies go."""
+    addresses = (*message.to, *message.cc, *message.bcc)
+    if message.reply_to is not None:
+        addresses = (*addresses, message.reply_to)
+    return {address.address.rpartition("@")[2].casefold() for address in addresses}
 
 
 def add_send_tool(
@@ -80,7 +103,8 @@ def add_send_tool(
     """Add ``<toolkit>.send_email``: an external action, keyed and tried once.
 
     The idempotency key becomes the message's deterministic Message-ID. ``allowed_domains``
-    (when not empty) refuses any recipient outside those domains or their subdomains.
+    (when not empty) refuses any recipient or reply-to address outside those domains or their
+    subdomains.
     """
     allowed = tuple(domain.casefold().strip(".") for domain in allowed_domains)
     model = OutgoingEmailWithAttachments if attachments else OutgoingEmail
@@ -91,13 +115,17 @@ def add_send_tool(
         if allowed:
             outside = sorted(
                 domain
-                for domain in _recipient_domains(message)
+                for domain in _addressed_domains(message)
                 if not any(domain == item or domain.endswith(f".{item}") for item in allowed)
             )
             if outside:
                 raise PolicyDeniedError(f"recipients outside the allowed domains: {outside}")
         transport: EmailSender = client.transport
-        return await transport.send(message, idempotency_key=context.idempotency_key)
+        token = _CALL.set(context)
+        try:
+            return await transport.send(message, idempotency_key=context.idempotency_key)
+        finally:
+            _CALL.reset(token)
 
     send_email.__doc__ = (
         f"Send one email through {provider} from the deployment's own address. Give at least "

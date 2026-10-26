@@ -28,9 +28,11 @@ A tool's name, input schema, side effect and permission are part of the public c
 - SMTP (`algen_agent_tools.smtp`) and Gmail (`algen_agent_tools.gmail`): `smtp.send_email`,
   `gmail.send_email` (external, keyed, one attempt) and `gmail.list_messages` (read). The sender
   is fixed by the deployment, the model cannot add headers, an optional domain allowlist bounds
-  recipients, and attachments are offered only with an artifact loader. The transports
+  recipients and Reply-To, and attachments are offered only with an artifact loader that receives
+  the call's `ToolContext` to check the artifact's tenant. The transports
   (`SmtpEmailSender`, `GmailMailboxClient`) and message models (`algen_agent_tools.mail`) move
-  from `algen_agent_runtime.communications` unchanged. `FakeMailbox` for tests. An agent that
+  from `algen_agent_runtime.communications`, with one fix: the Gmail transport now delivers Bcc
+  recipients (it put no Bcc header in the raw message, so Gmail never sent to them). `FakeMailbox` for tests. An agent that
   sends email leaves the `pii` guardrail out of `guardrail_policy.tool_policies`; with it, the
   Runtime refuses the redacted arguments (documented on each connector page).
 - MCP governance overlays (`algen_agent_tools.mcp`, extra `mcp`): `McpOverlay` declares, per

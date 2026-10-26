@@ -152,7 +152,7 @@ class PostgresToolkit(Toolkit):
         Use it inside your own ``@toolkit.tool(read())`` functions when a tool's result is not
         a plain list of rows. More rows than the limit is an error, not a silent truncation.
         """
-        limit = max_rows or self.max_rows
+        limit = _row_limit(max_rows, self.max_rows)
         pool: PostgresPool = await self.client()
         async with pool.acquire() as connection, connection.transaction(readonly=True):
             await _set_timeout(connection, timeout_seconds)
@@ -201,7 +201,7 @@ class PostgresToolkit(Toolkit):
             raise ConfigurationError(f"read query {name!r} needs a row model")
         if reads and idempotency_key:
             raise ConfigurationError(f"read query {name!r} cannot take the idempotency key")
-        limit = max_rows or self.max_rows
+        limit = _row_limit(max_rows, self.max_rows)
 
         async def run(arguments: BaseModel, context: ToolContext) -> Any:
             values = [getattr(arguments, field) for field in fields]
@@ -240,9 +240,19 @@ class PostgresToolkit(Toolkit):
         return self.tool(preset, description=description)(run)
 
 
+def _row_limit(max_rows: int | None, default: int) -> int:
+    if max_rows is None:
+        return default
+    if max_rows < 1:
+        raise ConfigurationError("max_rows must be at least 1")
+    return max_rows
+
+
 async def _set_timeout(connection: PostgresConnection, timeout_seconds: float) -> None:
     # An int built here, never caller text, so formatting it into the statement is safe.
-    await connection.execute(f"SET LOCAL statement_timeout = {int(timeout_seconds * 1000)}")
+    # At least 1 ms: PostgreSQL reads statement_timeout = 0 as no timeout at all.
+    milliseconds = max(1, int(timeout_seconds * 1000))
+    await connection.execute(f"SET LOCAL statement_timeout = {milliseconds}")
 
 
 def _rows_affected(status: str) -> int:

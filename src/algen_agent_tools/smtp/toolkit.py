@@ -8,7 +8,12 @@ from pydantic import SecretStr
 
 from algen_agent_tools._env import SecretResolver, env_names, resolve_optional
 from algen_agent_tools.mail.models import EmailAddress, EmailArtifactLoader
-from algen_agent_tools.mail.tool import MailClient, add_send_tool
+from algen_agent_tools.mail.tool import (
+    ContextualArtifactLoader,
+    MailClient,
+    add_send_tool,
+    bind_artifact_loader,
+)
 from algen_agent_tools.smtp.sender import SmtpEmailSender, SmtpSettings
 
 HOST = "env://ALGEN_TOOLS_SMTP_HOST"
@@ -30,7 +35,7 @@ def smtp_toolkit(
     username: str | None = USERNAME,
     password: str | None = PASSWORD,
     allowed_domains: tuple[str, ...] = (),
-    artifact_loader: EmailArtifactLoader | None = None,
+    artifact_loader: ContextualArtifactLoader | None = None,
     client: Any = None,
 ) -> Toolkit:
     """A toolkit with ``<name>.send_email`` over SMTP.
@@ -60,7 +65,7 @@ def smtp_toolkit(
         )
         return MailClient(
             EmailAddress(address=await secrets(sender)),
-            SmtpEmailSender(settings, artifact_loader=artifact_loader),
+            SmtpEmailSender(settings, artifact_loader=_bound(artifact_loader)),
         )
 
     toolkit = Toolkit(name, env=env_names(*references), client=client or open_client)
@@ -71,3 +76,7 @@ def smtp_toolkit(
         allowed_domains=allowed_domains,
     )
     return toolkit
+
+
+def _bound(loader: ContextualArtifactLoader | None) -> EmailArtifactLoader | None:
+    return bind_artifact_loader(loader) if loader is not None else None

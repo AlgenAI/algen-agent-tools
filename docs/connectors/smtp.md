@@ -47,6 +47,8 @@ Keep the agent's approval policy on (the default asks before every external call
 - **One message per idempotency key.** The key becomes a deterministic Message-ID and the tool is
   tried once, so a replay does not send twice through the Runtime and a receiving server can
   recognise a duplicate.
+- **Bounded audience.** With `allowed_domains`, every recipient and the Reply-To address must be
+  in those domains or their subdomains.
 - **TLS by default.** `security` is `starttls` or `tls`; `plain` is allowed only to loopback.
 - **Content is not captured** in audit metadata, and errors name only the failure type.
 
@@ -59,10 +61,15 @@ notices = smtp_toolkit(
     "notices",
     host="env://NOTICES_SMTP_HOST",
     sender="env://NOTICES_FROM",
-    allowed_domains=("example.com",),     # refuse any other recipient domain
+    allowed_domains=("example.com",),     # refuse other recipient and reply-to domains
     artifact_loader=load_artifact,        # adds an `attachments` field (Runtime artifact refs)
 )
 ```
+
+The artifact loader is `async def load_artifact(reference, context) -> bytes`. It receives the
+call's `ToolContext`, so it must check that `reference.artifact_id` belongs to
+`context.tenant_id` (and, if you scope artifacts to runs, `context.run_id`) before returning
+bytes: the model chooses the artifact id.
 
 `SmtpEmailSender` and `SmtpSettings` are available for direct use outside a tool.
 

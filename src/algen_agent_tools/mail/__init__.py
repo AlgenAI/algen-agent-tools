@@ -13,13 +13,16 @@ from algen_agent_tools.mail.models import (
     build_mime_message,
 )
 from algen_agent_tools.mail.tool import (
+    ContextualArtifactLoader,
     MailClient,
     OutgoingEmail,
     OutgoingEmailWithAttachments,
     add_send_tool,
+    bind_artifact_loader,
 )
 
 __all__ = [
+    "ContextualArtifactLoader",
     "EmailAddress",
     "EmailArtifactLoader",
     "EmailAttachmentReference",
@@ -33,5 +36,6 @@ __all__ = [
     "OutgoingEmail",
     "OutgoingEmailWithAttachments",
     "add_send_tool",
+    "bind_artifact_loader",
     "build_mime_message",
 ]

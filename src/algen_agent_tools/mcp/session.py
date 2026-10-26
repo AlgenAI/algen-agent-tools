@@ -10,7 +10,11 @@ from urllib.parse import urlparse
 
 import jsonschema
 from algen_agent_runtime.config.settings import SecuritySettings
-from algen_agent_runtime.exceptions.errors import PolicyDeniedError, ToolExecutionError
+from algen_agent_runtime.exceptions.errors import (
+    ConfigurationError,
+    PolicyDeniedError,
+    ToolExecutionError,
+)
 from algen_agent_runtime.mcp.client import MCPClientManager
 from algen_agent_runtime.mcp.contracts import MCPStdioServerConfig
 from algen_agent_runtime.tools.contracts import ToolContext, ToolDefinition, ToolHandler
@@ -42,6 +46,22 @@ async def list_remote_tools(session: Any) -> dict[str, Any]:
             return tools
 
 
+def allowed_hosts(server: Any, configured: tuple[str, ...] | None) -> tuple[str, ...]:
+    """The hosts an HTTP transport may reach: the configured ones, else the URL's own host.
+
+    Never empty for an HTTP server, since the Runtime treats an empty allowlist as any host.
+    """
+    if configured:
+        return configured
+    url = getattr(server, "url", None)
+    if not url:
+        return ()
+    host = urlparse(url).hostname
+    if not host:
+        raise ConfigurationError(f"MCP server {server.name!r} has no host in its URL")
+    return (host,)
+
+
 class McpSession:
     """An open connection to the overlay's server and the tools it may not call."""
 
@@ -62,17 +82,18 @@ async def open_session(
     from algen_agent_tools.mcp.overlay import canonical
 
     server = overlay.server
+    # Every env:// reference resolves through the deployment's secret resolver, never ambient
+    # process state: stdio env values here, HTTP tokens and headers through the manager.
+    environment = {name: await secrets(f"env://{name}") for name in overlay.env()}
     if isinstance(server, MCPStdioServerConfig) and server.env:
-        # The overlay holds env:// references; the child process gets the values only.
-        resolved = {key: await secrets(value) for key, value in server.env.items()}
+        resolved = {
+            key: environment[value.removeprefix("env://")] for key, value in server.env.items()
+        }
         server = server.model_copy(update={"env": resolved})
-    hosts = overlay.allowed_hosts
-    url = getattr(server, "url", None)
-    if hosts is None and url:
-        hosts = (urlparse(url).hostname or "",)
     manager = MCPClientManager(
         [server],
-        security=SecuritySettings(allowed_http_hosts=hosts or ()),
+        environment=environment,
+        security=SecuritySettings(allowed_http_hosts=allowed_hosts(server, overlay.allowed_hosts)),
         session_factory=session_factory,
     )
     try:
@@ -111,8 +132,11 @@ def call_handler(toolkit: McpToolkit, remote: str, definition: ToolDefinition) -
     async def handler(arguments: dict[str, Any], context: ToolContext) -> dict[str, Any]:
         errors = sorted(validator.iter_errors(arguments), key=lambda error: list(error.path))
         if errors:
+            first = errors[0]
+            where = "/".join(str(part) for part in first.absolute_path) or "the arguments"
+            # Name the field and the rule; the jsonschema message would echo the value.
             raise ToolExecutionError(
-                f"invalid arguments for {definition.name}: {errors[0].message}"
+                f"invalid arguments for {definition.name}: {where} fails {first.validator!r}"
             )
         connection: McpSession = await toolkit.client()
         if remote in connection.refused:

@@ -9,6 +9,7 @@ for it, without calling any tool or opening any client.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Any
 
 from algen_agent_runtime.config.settings import AppSettings, SecuritySettings
 from algen_agent_runtime.orchestration.describe import (
@@ -21,8 +22,33 @@ from algen_agent_runtime.tools.testing import tool_contract_problems
 
 from algen_agent_tools import TRUSTED_PREFIX
 
-RAW_PASSTHROUGH_PARAMETERS = frozenset({"sql", "statement", "url", "endpoint", "command"})
-"""Parameter names that suggest a free-form passthrough rather than a narrow, typed action."""
+RAW_PASSTHROUGH_PARAMETERS = frozenset(
+    {"sql", "statement", "query_sql", "raw_sql", "url", "endpoint", "command", "shell"}
+)
+"""Field names that suggest a free-form passthrough rather than a narrow, typed action."""
+
+
+def passthrough_parameters(schema: Any, path: str = "") -> list[str]:
+    """Paths of fields anywhere in ``schema`` named like a raw passthrough (any case).
+
+    A heuristic, not a proof: it catches the usual names, so a reviewer still reads each
+    tool's schema.
+    """
+    found: list[str] = []
+    if isinstance(schema, dict):
+        for key, value in schema.items():
+            if key == "properties" and isinstance(value, dict):
+                for name, nested in value.items():
+                    where = f"{path}/{name}" if path else name
+                    if name.casefold() in RAW_PASSTHROUGH_PARAMETERS:
+                        found.append(where)
+                    found.extend(passthrough_parameters(nested, where))
+            else:
+                found.extend(passthrough_parameters(value, path))
+    elif isinstance(schema, list):
+        for item in schema:
+            found.extend(passthrough_parameters(item, path))
+    return found
 
 
 def toolkit_contract_problems(
@@ -32,7 +58,8 @@ def toolkit_contract_problems(
 
     On top of the Runtime's tool contract: the toolkit has at least one tool, every tool is
     named ``<toolkit>.<action>``, every permission sits under the toolkit's permission prefix,
-    and no tool takes a raw passthrough parameter such as ``sql`` or ``url``.
+    and no field, at any depth, is named like a raw passthrough (``sql``, ``url``, ``command``,
+    in any case). The last is a naming heuristic; review each schema too.
     """
     problems: list[str] = []
     if not toolkit.tools:
@@ -56,9 +83,7 @@ def toolkit_contract_problems(
                 f"{name}: permissions {foreign} are outside the prefix "
                 f"{toolkit.permission_prefix!r}"
             )
-        passthrough = sorted(
-            RAW_PASSTHROUGH_PARAMETERS & set(definition.input_schema.get("properties", {}))
-        )
+        passthrough = sorted(passthrough_parameters(definition.input_schema))
         if passthrough:
             problems.append(f"{name}: takes raw passthrough parameters {passthrough}")
     return tuple(problems)

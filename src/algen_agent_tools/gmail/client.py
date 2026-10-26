@@ -161,6 +161,8 @@ class GmailMailboxClient:
             idempotency_key=idempotency_key,
             attachments=attachments,
             message_id_domain=self._settings.message_id_domain,
+            # Gmail takes recipients from the headers and removes Bcc before delivery.
+            include_bcc=True,
         )
         raw = base64.urlsafe_b64encode(mime.as_bytes()).decode().rstrip("=")
         token = await self._token()

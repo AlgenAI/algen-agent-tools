@@ -8,7 +8,13 @@ from pydantic import Field, SecretStr
 from algen_agent_tools._env import SecretResolver, env_names
 from algen_agent_tools.gmail.client import GmailMailboxClient, GmailMailboxPage, GmailOAuthSettings
 from algen_agent_tools.mail.models import EmailAddress, EmailArtifactLoader
-from algen_agent_tools.mail.tool import AUDIT_METADATA, MailClient, add_send_tool
+from algen_agent_tools.mail.tool import (
+    AUDIT_METADATA,
+    ContextualArtifactLoader,
+    MailClient,
+    add_send_tool,
+    bind_artifact_loader,
+)
 
 CLIENT_ID = "env://ALGEN_TOOLS_GMAIL_CLIENT_ID"
 CLIENT_SECRET = "env://ALGEN_TOOLS_GMAIL_CLIENT_SECRET"
@@ -28,7 +34,7 @@ def gmail_toolkit(
     refresh_token: str = REFRESH_TOKEN,
     sender: str = SENDER,
     allowed_domains: tuple[str, ...] = (),
-    artifact_loader: EmailArtifactLoader | None = None,
+    artifact_loader: ContextualArtifactLoader | None = None,
     client: Any = None,
 ) -> Toolkit:
     """A toolkit for one Gmail or Google Workspace mailbox: ``<name>.list_messages`` (read)
@@ -46,7 +52,7 @@ def gmail_toolkit(
         )
         return MailClient(
             EmailAddress(address=await secrets(sender)),
-            GmailMailboxClient(settings, artifact_loader=artifact_loader),
+            GmailMailboxClient(settings, artifact_loader=_bound(artifact_loader)),
         )
 
     toolkit = Toolkit(
@@ -78,3 +84,7 @@ def gmail_toolkit(
         allowed_domains=allowed_domains,
     )
     return toolkit
+
+
+def _bound(loader: ContextualArtifactLoader | None) -> EmailArtifactLoader | None:
+    return bind_artifact_loader(loader) if loader is not None else None
