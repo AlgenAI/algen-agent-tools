@@ -51,6 +51,8 @@ A tool's name, input schema, side effect and permission are part of the public c
 - CI: lint, strict typing and tests on Python 3.12 and 3.13; the suite against the lowest and
   highest supported Runtime; coverage; package build and a clean-install check that describes
   every installed plugin; DCO, CodeQL, pip-audit, Bandit, Gitleaks and dependency review.
+- Brand assets (`docs/assets/brand`): the Tools logo and light and dark README banners in the
+  Algen palette, and `docs/releasing.md`.
 - Project policies: connector entry criteria, security review checklist, versioning and
   deprecation policy (`docs/connector-policy.md`), contributor and agent guides, security policy
   and governance.

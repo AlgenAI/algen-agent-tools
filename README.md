@@ -1,4 +1,16 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/AlgenAI/algen-agent-tools/refs/heads/main/docs/assets/brand/banner-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/AlgenAI/algen-agent-tools/refs/heads/main/docs/assets/brand/banner-light.svg">
+  <img alt="Algen Agent Tools — Typed tools for agents. Governed by default." src="https://raw.githubusercontent.com/AlgenAI/algen-agent-tools/refs/heads/main/docs/assets/brand/banner-light.svg">
+</picture>
+
 # Algen Agent Tools
+
+[![Quality](https://github.com/AlgenAI/algen-agent-tools/actions/workflows/quality.yml/badge.svg)](https://github.com/AlgenAI/algen-agent-tools/actions/workflows/quality.yml)
+[![Security](https://github.com/AlgenAI/algen-agent-tools/actions/workflows/security.yml/badge.svg)](https://github.com/AlgenAI/algen-agent-tools/actions/workflows/security.yml)
+[![PyPI](https://img.shields.io/pypi/v/algen-agent-tools.svg)](https://pypi.org/project/algen-agent-tools/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 Curated, governed connectors for agents built on
 [Algen Agent Runtime](https://github.com/AlgenAI/algen-agent-runtime).
@@ -8,8 +20,10 @@ plugin. An agent names the plugin in `agent.yaml`, the Runtime checks every tool
 Algen Agent Studio lists each tool with its side effect, permissions and environment variables
 from `algen-agent-runtime describe`, without running project code.
 
-> **Status:** pre-release (`0.1.0aN`). Public contracts may change between alpha releases; every
-> change is recorded in [CHANGELOG.md](CHANGELOG.md) with an upgrade note.
+> [!IMPORTANT]
+> `0.1.0a1` is a pre-release. Tool contracts may change between alpha releases; every change is
+> recorded in [CHANGELOG.md](CHANGELOG.md) with an upgrade note. Review the
+> [security policy](SECURITY.md) and each connector's guarantees before deployment.
 
 ## Why a separate package
 
@@ -126,7 +140,8 @@ python -m pip install -e '.[dev]'
 make check
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [writing a connector](docs/writing-a-connector.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md), [writing a connector](docs/writing-a-connector.md) and
+[the release process](docs/releasing.md).
 
 ## Security
 
