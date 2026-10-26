@@ -1,0 +1,55 @@
+name: Connector proposal
+description: Propose a new connector. Read docs/connector-policy.md first.
+title: "[Connector]: "
+labels: ["connector-proposal", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        A connector is accepted when at least two projects need it, it holds no domain logic,
+        it has an owner and it passes a security review. If a well-maintained MCP server exists,
+        propose a governance overlay instead of a native client.
+  - type: input
+    id: service
+    attributes:
+      label: Service or protocol
+    validations:
+      required: true
+  - type: textarea
+    id: projects
+    attributes:
+      label: Projects that need it
+      description: Name at least two projects and what each would use it for.
+    validations:
+      required: true
+  - type: textarea
+    id: actions
+    attributes:
+      label: Proposed actions
+      description: >-
+        One line per tool: a narrow, typed action with its side effect (read, write, external,
+        destructive) and whether it should require approval. No raw passthroughs.
+      placeholder: |
+        list_channels — read
+        post_message(channel, text) — external
+    validations:
+      required: true
+  - type: textarea
+    id: mcp
+    attributes:
+      label: MCP alternative
+      description: Is there a maintained MCP server? If so, why is an overlay not enough?
+    validations:
+      required: true
+  - type: textarea
+    id: credentials
+    attributes:
+      label: Credentials and dependencies
+      description: What credentials does it need (least privilege), and which Python package?
+  - type: input
+    id: owner
+    attributes:
+      label: Proposed owner
+      placeholder: "@github-handle"
+    validations:
+      required: true
