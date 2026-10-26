@@ -38,7 +38,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-all = []
+all = [
+  "algen-agent-tools[gmail,postgres,smtp]",
+]
+# Gmail uses httpx and SMTP the standard library, both already installed with the Runtime;
+# their extras exist so every connector installs the same way.
+gmail = []
+postgres = ["asyncpg>=0.29,<1"]
+smtp = []
 dev = [
   "mypy>=1.11,<2",
   "pytest>=9.0.3,<10",
@@ -48,7 +55,10 @@ dev = [
 ]
 
 [project.entry-points."algen_agent_runtime.plugins"]
+"algen_agent_tools.gmail" = "algen_agent_tools.gmail.plugin:GmailPlugin"
+"algen_agent_tools.postgres" = "algen_agent_tools.postgres.plugin:PostgresPlugin"
 "algen_agent_tools.sample" = "algen_agent_tools.sample.plugin:SamplePlugin"
+"algen_agent_tools.smtp" = "algen_agent_tools.smtp.plugin:SmtpPlugin"
 
 [project.urls]
 Homepage = "https://github.com/AlgenAI/algen-agent-tools"
@@ -97,3 +107,7 @@ ignore = ["E501"]
 python_version = "3.12"
 strict = true
 packages = ["algen_agent_tools"]
+
+[[tool.mypy.overrides]]
+module = ["asyncpg", "asyncpg.*"]
+ignore_missing_imports = true

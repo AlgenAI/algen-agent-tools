@@ -52,6 +52,36 @@ jobs:
           python -c "import algen_agent_runtime; print('algen-agent-runtime', algen_agent_runtime.__version__)"
       - run: pytest -q -p no:cacheprovider
 
+  postgres-integration:
+    name: PostgreSQL integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: algen_tools_test
+          POSTGRES_USER: algen
+          POSTGRES_PASSWORD: algen_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,postgres]'
+      - name: Run PostgreSQL integration tests
+        env:
+          ALGEN_TOOLS_TEST_POSTGRES_DSN: postgresql://algen:algen_password@localhost:5432/algen_tools_test
+        run: pytest -q -p no:cacheprovider -m integration -rs
+
   coverage:
     runs-on: ubuntu-latest
     steps:

@@ -28,7 +28,8 @@ from `algen-agent-runtime describe`, without running project code.
 Python 3.12 or 3.13. Install the package with the extra for each connector you use:
 
 ```bash
-pip install "algen-agent-tools"            # the sample toolkit only
+pip install "algen-agent-tools[postgres]"        # one connector
+pip install "algen-agent-tools[all]"             # every connector
 ```
 
 The package supports `algen-agent-runtime>=0.1.0a11,<0.2`; see
@@ -79,7 +80,13 @@ class AcmeTools:
 
 | Connector | Plugin | Extra | Tools | Docs |
 | --- | --- | --- | --- | --- |
+| PostgreSQL | `algen_agent_tools.postgres` | `postgres` | `postgres.list_tables`, `postgres.describe_table` (read), plus your own typed queries | [postgres](docs/connectors/postgres.md) |
+| SMTP | `algen_agent_tools.smtp` | `smtp` | `smtp.send_email` (external) | [smtp](docs/connectors/smtp.md) |
+| Gmail | `algen_agent_tools.gmail` | `gmail` | `gmail.list_messages` (read), `gmail.send_email` (external) | [gmail](docs/connectors/gmail.md) |
 | Sample | `algen_agent_tools.sample` | none | `sample.echo` (read) | [sample](docs/connectors/sample.md) |
+
+Moving from the Runtime's built-in email and database connectors? See
+[migrating from the Runtime](docs/migrating-from-runtime.md).
 
 Proposed connectors follow the [connector policy](docs/connector-policy.md): at least two
 projects need it, it holds no domain logic, it has an owner and it passed a security review.
