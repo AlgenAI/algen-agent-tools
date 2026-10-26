@@ -19,6 +19,26 @@ Send email over SMTP from the deployment's own address.
 and/or `html_body`. It returns the delivery receipt: provider, Message-ID, accepted and rejected
 recipients.
 
+## Agent configuration
+
+Recipient addresses are personal data by nature, and the Runtime's default `pii` guardrail
+redacts them from tool arguments. The Runtime never runs a tool on redacted arguments, so with
+the defaults every send is refused (`Payload transformed by policy`). An agent that sends email
+keeps `pii` on its conversation and leaves it out of its tool boundaries:
+
+```yaml
+agents:
+  - name: notifier
+    domain_plugins: [algen_agent_tools.smtp]
+    enabled_tools: [smtp.send_email]
+    tool_permissions: [smtp.write]
+    guardrail_policy:
+      tool_policies: [secrets, prompt_injection, output_validation]
+```
+
+Keep the agent's approval policy on (the default asks before every external call), and use
+`allowed_domains` to bound who it can write to.
+
 ## Guarantees
 
 - **The sender is the deployment's.** The model cannot choose the From address or add headers.

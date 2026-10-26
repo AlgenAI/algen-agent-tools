@@ -30,7 +30,9 @@ A tool's name, input schema, side effect and permission are part of the public c
   is fixed by the deployment, the model cannot add headers, an optional domain allowlist bounds
   recipients, and attachments are offered only with an artifact loader. The transports
   (`SmtpEmailSender`, `GmailMailboxClient`) and message models (`algen_agent_tools.mail`) move
-  from `algen_agent_runtime.communications` unchanged. `FakeMailbox` for tests.
+  from `algen_agent_runtime.communications` unchanged. `FakeMailbox` for tests. An agent that
+  sends email leaves the `pii` guardrail out of `guardrail_policy.tool_policies`; with it, the
+  Runtime refuses the redacted arguments (documented on each connector page).
 - MCP governance overlays (`algen_agent_tools.mcp`, extra `mcp`): `McpOverlay` declares, per
   remote tool, its side effect, approval rule, timeout, permissions, result limit and the input
   schema it was reviewed against. Each declared tool is an ordinary Runtime tool, so `describe`
@@ -46,6 +48,8 @@ A tool's name, input schema, side effect and permission are part of the public c
   Runtime's tool contract plus naming, permission-prefix and no-passthrough rules),
   `describe_plugin` and `plugin_tools` (the Runtime inventory for one plugin, without calling a
   tool).
+- An end-to-end test runs an agent through the Runtime's executor, guardrails and approval
+  flow: the email is sent once after approval and never after rejection.
 - CI: a PostgreSQL service-container job runs the integration tests; live email tests run only
   with `ALGEN_TOOLS_LIVE=1`.
 - CI: lint, strict typing and tests on Python 3.12 and 3.13; the suite against the lowest and

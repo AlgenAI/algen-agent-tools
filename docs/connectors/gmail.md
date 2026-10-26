@@ -24,11 +24,34 @@ OAuth refresh token.
 - `gmail.send_email` takes the same input as [`smtp.send_email`](smtp.md) and sends from
   `ALGEN_TOOLS_GMAIL_SENDER`.
 
+With `pii` at the tool boundary, `list_messages` results reach the model with addresses
+redacted; leaving it out (below) shows them.
+
 ## Credentials
 
 Create an OAuth client in Google Cloud, authorise the mailbox once to obtain a refresh token, and
 grant only the scopes the agent needs: `gmail.readonly` for `list_messages`, `gmail.send` for
 `send_email`. The access token is refreshed in memory and never leaves the client.
+
+## Agent configuration
+
+Recipient addresses are personal data by nature, and the Runtime's default `pii` guardrail
+redacts them from tool arguments. The Runtime never runs a tool on redacted arguments, so with
+the defaults every send is refused (`Payload transformed by policy`). An agent that sends email
+keeps `pii` on its conversation and leaves it out of its tool boundaries:
+
+```yaml
+agents:
+  - name: notifier
+    domain_plugins: [algen_agent_tools.gmail]
+    enabled_tools: [gmail.list_messages, gmail.send_email]
+    tool_permissions: [gmail.read, gmail.write]
+    guardrail_policy:
+      tool_policies: [secrets, prompt_injection, output_validation]
+```
+
+Keep the agent's approval policy on (the default asks before every external call), and use
+`allowed_domains` to bound who it can write to.
 
 ## Guarantees
 

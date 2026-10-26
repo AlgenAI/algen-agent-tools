@@ -50,11 +50,15 @@ agents:
     domain_plugins: [algen_agent_tools.smtp]
     enabled_tools: [smtp.send_email]
     tool_permissions: [smtp.write]
+    guardrail_policy:
+      tool_policies: [secrets, prompt_injection, output_validation]
 security:
   trusted_plugin_prefixes: [algen_agent_tools]
 ```
 
 and `ALGEN_TOOLS_SMTP_HOST`, `ALGEN_TOOLS_SMTP_SENDER` (plus credentials) in the environment.
+As before, an agent that sends email needs `guardrail_policy.tool_policies` without `pii`; see
+[SMTP agent configuration](connectors/smtp.md#agent-configuration).
 
 ## Database
 
