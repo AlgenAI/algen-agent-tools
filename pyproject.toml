@@ -110,5 +110,5 @@ strict = true
 packages = ["algen_agent_tools"]
 
 [[tool.mypy.overrides]]
-module = ["asyncpg", "asyncpg.*", "jsonschema", "yaml"]
+module = ["asyncpg", "asyncpg.*", "jsonschema", "mcp", "mcp.*", "yaml"]
 ignore_missing_imports = true
