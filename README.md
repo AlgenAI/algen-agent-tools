@@ -96,7 +96,8 @@ class AcmeTools:
 | --- | --- | --- | --- | --- |
 | PostgreSQL | `algen_agent_tools.postgres` | `postgres` | `postgres.list_tables`, `postgres.describe_table` (read), plus your own typed queries | [postgres](docs/connectors/postgres.md) |
 | SMTP | `algen_agent_tools.smtp` | `smtp` | `smtp.send_email` (external) | [smtp](docs/connectors/smtp.md) |
-| Gmail | `algen_agent_tools.gmail` | `gmail` | `gmail.list_messages` (read), `gmail.send_email` (external) | [gmail](docs/connectors/gmail.md) |
+| Gmail | `algen_agent_tools.gmail` | `gmail` | `gmail.list_messages`, `gmail.get_message` (read), `gmail.send_email` (external) | [gmail](docs/connectors/gmail.md) |
+| Outlook | `algen_agent_tools.outlook` | `outlook` | `outlook.list_messages`, `outlook.get_message` (read), `outlook.send_email` (external) | [outlook](docs/connectors/outlook.md) |
 | Documents | none: built in code with an artifact loader | `documents` | `documents.extract_text` (read) | [documents](docs/connectors/documents.md) |
 | Sample | `algen_agent_tools.sample` | none | `sample.echo` (read) | [sample](docs/connectors/sample.md) |
 

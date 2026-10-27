@@ -10,6 +10,18 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ### Added
 
+- Outlook (`algen_agent_tools.outlook`, extra `outlook`): one Microsoft 365 mailbox through
+  Microsoft Graph, with delegated (refresh token) or application access.
+  `outlook.list_messages` (read; a folder, Outlook search or unread only, opaque page tokens
+  that always rebuild the request for the configured mailbox), `outlook.get_message` (read),
+  `outlook.send_email` (external, one attempt; attachments inline up to 3 MB) and, with an
+  `artifact_sink`, `outlook.get_attachment` (read; file attachments only).
+- `algen_agent_tools.mail.add_mailbox_read_tools`: the `get_message` and `get_attachment` tools
+  Gmail and Outlook share. `attachments.id_field` and `add_get_attachment_tool(id_pattern=...)`
+  let a provider accept its own id characters.
+- `_core.auth.OAuthClientCredentials` (internal): app-only tokens, sharing the refresh-token
+  flow's cache.
+
 - `gmail.get_message` (read): one message with its headers, `cc`, and its body as plain text
   (the text part, or the HTML part without markup, scripts or styles), cut to `max_chars` with
   `body_truncated` set when cut.

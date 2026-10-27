@@ -35,6 +35,7 @@ PUBLIC_NAMES = {
         "gmail_toolkit",
     ),
     "algen_agent_tools.postgres": ("PostgresToolkit", "postgres_toolkit"),
+    "algen_agent_tools.outlook": ("OutlookMailboxClient", "OutlookSettings", "outlook_toolkit"),
     "algen_agent_tools.mcp": ("McpOverlay", "overlay_plugin"),
     "algen_agent_tools.testing": (
         "assert_toolkit_contract",

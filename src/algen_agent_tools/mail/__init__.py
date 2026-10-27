@@ -24,6 +24,7 @@ from algen_agent_tools.mail.tool import (
     MailClient,
     OutgoingEmail,
     OutgoingEmailWithAttachments,
+    add_mailbox_read_tools,
     add_send_tool,
     bind_artifact_loader,
 )
@@ -45,6 +46,7 @@ __all__ = [
     "MailClient",
     "OutgoingEmail",
     "OutgoingEmailWithAttachments",
+    "add_mailbox_read_tools",
     "add_send_tool",
     "bind_artifact_loader",
     "build_mime_message",
