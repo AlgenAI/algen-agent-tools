@@ -50,6 +50,7 @@ PUBLIC_NAMES = {
     "algen_agent_tools.mysql": ("FakeMysql", "MysqlToolkit", "mysql_toolkit"),
     "algen_agent_tools.sql": ("Dialect", "SqlToolkit", "TooManyRows"),
     "algen_agent_tools.sqlite": ("SqliteToolkit", "sqlite_toolkit"),
+    "algen_agent_tools.webhook": ("WebhookTarget", "verify", "webhook_toolkit"),
     "algen_agent_tools.telegram": ("TelegramBotClient", "TelegramSettings", "telegram_toolkit"),
     "algen_agent_tools.testing": (
         "assert_toolkit_contract",

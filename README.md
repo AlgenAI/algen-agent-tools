@@ -104,6 +104,7 @@ class AcmeTools:
 | GitHub | `algen_agent_tools.github` | `github` | 37 reviewed tools from GitHub's MCP server: 22 read, 15 write (5 need approval) | [github](docs/connectors/github.md) |
 | Discord | `algen_agent_tools.discord` | `discord` | `discord.list_conversations`, `discord.list_messages` (read), `discord.send_message` (external) | [discord](docs/connectors/discord.md) |
 | Documents | none: built in code with an artifact loader | `documents` | `documents.extract_text` (read) | [documents](docs/connectors/documents.md) |
+| Webhook | none: built in code with typed targets | `webhook` | one `webhook.<action>` (external) per target | [webhook](docs/connectors/webhook.md) |
 | Sample | `algen_agent_tools.sample` | none | `sample.echo` (read) | [sample](docs/connectors/sample.md) |
 
 ### MCP servers
