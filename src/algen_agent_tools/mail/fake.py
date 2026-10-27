@@ -6,8 +6,11 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from algen_agent_tools._env import SecretResolver
+from algen_agent_tools.attachments.models import AttachmentUpload
+from algen_agent_tools.mail.inbound import InboundEmailDetail, bounded_body
 from algen_agent_tools.mail.models import (
     EmailAddress,
+    EmailDeliveryError,
     EmailDeliveryReceipt,
     EmailDeliveryStatus,
     EmailMessage,
@@ -24,7 +27,10 @@ class FakeMailbox:
     """
 
     inbox: list[Any] = field(default_factory=list)
-    """``InboundEmailSummary`` rows that ``list_messages`` pages through."""
+    """``InboundEmailSummary`` rows that ``list_messages`` pages through; ``get_message`` reads
+    them by id, with the body of any ``InboundEmailDetail`` among them."""
+    files: dict[tuple[str, str], AttachmentUpload] = field(default_factory=dict)
+    """Attachment content by ``(message id, part id or attachment id)``."""
     sent: list[EmailMessage] = field(default_factory=list)
     receipts: dict[str, EmailDeliveryReceipt] = field(default_factory=dict)
     queries: list[str] = field(default_factory=list)
@@ -70,6 +76,23 @@ class FakeMailbox:
             next_page_token=str(following) if following < len(self.inbox) else None,
             result_size_estimate=len(self.inbox),
         )
+
+    async def get_message(
+        self, provider_message_id: str, *, max_chars: int = 20_000
+    ) -> InboundEmailDetail:
+        for row in self.inbox:
+            if row.provider_message_id == provider_message_id:
+                fields = row.model_dump()
+                text, truncated = bounded_body(fields.pop("text_body", ""), max_chars)
+                fields.pop("body_truncated", None)
+                return InboundEmailDetail(**fields, text_body=text, body_truncated=truncated)
+        raise EmailDeliveryError("Gmail message read failed (HTTPStatusError)")
+
+    async def get_attachment(self, provider_message_id: str, attachment: str) -> AttachmentUpload:
+        try:
+            return self.files[(provider_message_id, attachment)]
+        except KeyError:
+            raise EmailDeliveryError("Gmail message has no such attachment") from None
 
     async def aclose(self) -> None:
         self.closed = True
