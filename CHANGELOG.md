@@ -8,6 +8,8 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a1] - 2026-10-27
+
 ### Added
 
 - The connector catalog: `algen_agent_tools/connectors.json`, generated from the code and
@@ -48,6 +50,20 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 - Tested against `algen-agent-runtime` 0.1.0a13; the supported range is unchanged
   (`>=0.1.0a12,<0.2`).
+
+### Upgrade notes
+
+- No tool's name, input schema, side effect or permissions changed; agent configurations keep
+  working as they are.
+- The SMTP and Gmail plugins declare one more environment variable,
+  `ALGEN_TOOLS_<SMTP|GMAIL>_ALLOWED_DOMAINS`, so `describe` lists it. It is optional: leave it
+  unset to keep today's behaviour (any recipient domain).
+- Gmail now refuses requests to any host other than its configured API and token URLs, and
+  responses larger than twice `max_attachment_bytes` plus 1 MB. Deployments using the default
+  settings are unaffected.
+- Connector authors: `toolkit_plugin` (internal) now takes a `ConnectorInfo` instead of a name
+  and `env`; regenerate `connectors.json` with `python -m algen_agent_tools catalog --write`
+  when a connector changes. See docs/writing-a-connector.md.
 
 ## [0.1.0a2] - 2026-10-27
 
