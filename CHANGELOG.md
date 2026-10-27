@@ -10,6 +10,15 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ### Added
 
+- Webhook (`algen_agent_tools.webhook`, extra `webhook`, no packages): `webhook_toolkit` builds
+  one external tool, `webhook.<action>`, for each `WebhookTarget`. The deployment fixes the
+  target's URL (an `env://` setting, https unless `allow_http`) and its payload model. The
+  model fills in only the typed payload, and unknown fields are refused. Each delivery is a
+  JSON `POST` with an `Idempotency-Key` and, given a signing secret, an
+  `X-Algen-Signature: t=<ts>,v1=<HMAC-SHA256>` header; `verify()` checks it on the receiving
+  side. Redirects aren't followed, the receiver's body is never returned, and the URL (often a
+  token) stays out of errors and `httpx` logs. Built in code; no plugin.
+
 - SQLite (`algen_agent_tools.sqlite`, extra `sqlite`, no packages): `sqlite.list_tables` and
   `sqlite.describe_table` (read), plus code-declared typed queries with `?` placeholders. The
   file opens read-only unless the toolkit is built with `read_only=False`. Reads run with

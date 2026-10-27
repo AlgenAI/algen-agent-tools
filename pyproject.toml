@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-  "algen-agent-tools[discord,documents,github,gmail,mcp,mysql,outlook,postgres,smtp,sqlite,telegram]",
+  "algen-agent-tools[discord,documents,github,gmail,mcp,mysql,outlook,postgres,smtp,sqlite,telegram,webhook]",
 ]
 # Discord uses httpx, already installed with the Runtime.
 discord = []
@@ -62,6 +62,8 @@ smtp = []
 sqlite = []
 # Telegram uses httpx, already installed with the Runtime.
 telegram = []
+# Webhooks use httpx, already installed with the Runtime.
+webhook = []
 dev = [
   "mypy>=1.11,<3",
   "pytest>=9.0.3,<10",
