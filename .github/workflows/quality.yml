@@ -141,7 +141,12 @@ jobs:
           sdist = next(Path("dist").glob("*.tar.gz"))
           with zipfile.ZipFile(wheel) as archive:
               names = set(archive.namelist())
-              required = {"algen_agent_tools/py.typed", "algen_agent_tools/testing.py"}
+              required = {
+                  "algen_agent_tools/py.typed",
+                  "algen_agent_tools/testing.py",
+                  "algen_agent_tools/connectors.json",
+                  "algen_agent_tools/github/github.overlay.yaml",
+              }
               missing = required - names
               if missing:
                   raise SystemExit(f"wheel missing required files: {sorted(missing)}")

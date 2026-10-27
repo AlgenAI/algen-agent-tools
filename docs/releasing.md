@@ -41,6 +41,10 @@ artifacts from a workstation.
 - After setting the version, regenerate the connector catalog with
   `python -m algen_agent_tools catalog --write`: it records the version, the pinned
   requirement and versioned docs links, and the tests fail until it matches.
+- Every shipped MCP overlay still matches its live server: run the `live` tests for it
+  (for GitHub, `ALGEN_TOOLS_LIVE=1 ALGEN_TOOLS_GITHUB_TOKEN=... pytest
+  tests/integration/test_github_live.py`). A declared tool that is missing or changed blocks
+  the release until the overlay is reviewed again.
 - `main` is green on every required check, and dependency, CodeQL, Bandit and Gitleaks findings
   are reviewed.
 

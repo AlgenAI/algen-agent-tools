@@ -40,6 +40,15 @@ One limit to know: an MCP server receives no idempotency key. Write tools are si
 the Runtime's ledger stops a replay from calling twice, but a timeout leaves the outcome unknown.
 If an action must be exactly-once, that is the case for a native connector.
 
+## Shipped overlays
+
+| Overlay | Plugin | Docs |
+| --- | --- | --- |
+| GitHub (hosted MCP server) | `algen_agent_tools.github` | [github](connectors/github.md) |
+
+A shipped overlay is a plugin like any connector, listed in the connector catalog. It is checked
+against its live server before each release.
+
 ## Writing an overlay
 
 Draft one from the live server, then review it:

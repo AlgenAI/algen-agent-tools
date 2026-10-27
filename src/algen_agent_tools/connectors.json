@@ -482,6 +482,2889 @@
       ]
     },
     {
+      "category": "development",
+      "code_only_options": [],
+      "connector": "github",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a3/docs/connectors/github.md",
+      "egress": [
+        {
+          "host": "api.githubcopilot.com",
+          "host_setting": null,
+          "port": 443,
+          "protocol": "https"
+        }
+      ],
+      "manifest": {
+        "domain_plugins": [
+          "algen_agent_tools.github"
+        ],
+        "enabled_tools": [
+          "github.add_comment_to_pending_review",
+          "github.add_issue_comment",
+          "github.add_reply_to_pull_request_comment",
+          "github.create_branch",
+          "github.create_or_update_file",
+          "github.create_pull_request",
+          "github.delete_file",
+          "github.get_commit",
+          "github.get_file_contents",
+          "github.get_label",
+          "github.get_latest_release",
+          "github.get_me",
+          "github.get_release_by_tag",
+          "github.get_tag",
+          "github.issue_read",
+          "github.issue_write",
+          "github.list_branches",
+          "github.list_commits",
+          "github.list_issue_fields",
+          "github.list_issue_types",
+          "github.list_issues",
+          "github.list_pull_requests",
+          "github.list_releases",
+          "github.list_tags",
+          "github.merge_pull_request",
+          "github.pull_request_read",
+          "github.pull_request_review_write",
+          "github.push_files",
+          "github.search_code",
+          "github.search_commits",
+          "github.search_issues",
+          "github.search_pull_requests",
+          "github.search_repositories",
+          "github.sub_issue_write",
+          "github.update_issue_comment",
+          "github.update_pull_request",
+          "github.update_pull_request_branch"
+        ],
+        "security": {
+          "trusted_plugin_prefixes": [
+            "algen_agent_tools"
+          ]
+        },
+        "tool_permissions": [
+          "github.read",
+          "github.write"
+        ]
+      },
+      "maturity": "alpha",
+      "plugin": "algen_agent_tools.github",
+      "requirement": "algen-agent-tools[github]==0.2.0a3",
+      "settings": [
+        {
+          "default": null,
+          "description": "A GitHub personal access token (fine-grained, limited to the repositories and permissions the agent needs).",
+          "env": "ALGEN_TOOLS_GITHUB_TOKEN",
+          "example": null,
+          "required": true,
+          "secret": true
+        }
+      ],
+      "summary": "Read repositories, commits, issues and pull requests, and work on issues and pull requests, through GitHub's MCP server under a reviewed overlay.",
+      "title": "GitHub",
+      "tools": [
+        {
+          "description": "Add review comment to the requester's latest pending pull request review. A pending review needs to already exist to call this (check with the user if not sure).",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "description": "The text of the review comment",
+                "type": "string"
+              },
+              "line": {
+                "description": "The line of the blob in the pull request diff that the comment applies to. For multi-line comments, the last line of the range",
+                "type": "number"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "path": {
+                "description": "The relative path to the file that necessitates a comment",
+                "type": "string"
+              },
+              "pullNumber": {
+                "description": "Pull request number",
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "side": {
+                "description": "The side of the diff to comment on. LEFT indicates the previous state, RIGHT indicates the new state",
+                "enum": [
+                  "LEFT",
+                  "RIGHT"
+                ],
+                "type": "string"
+              },
+              "startLine": {
+                "description": "For multi-line comments, the first line of the range that the comment applies to",
+                "type": "number"
+              },
+              "startSide": {
+                "description": "For multi-line comments, the starting side of the diff that the comment applies to. LEFT indicates the previous state, RIGHT indicates the new state",
+                "enum": [
+                  "LEFT",
+                  "RIGHT"
+                ],
+                "type": "string"
+              },
+              "subjectType": {
+                "description": "The level at which the comment is targeted",
+                "enum": [
+                  "FILE",
+                  "LINE"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "pullNumber",
+              "path",
+              "body",
+              "subjectType"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.add_comment_to_pending_review",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Add a comment and/or reaction to a specific issue or issue comment in a GitHub repository. Use this tool with pull requests as well (in this case pass pull request number as issue_number), but only if user is not asking specifically to add or react to review comments. At least one of body or reaction is required.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "description": "Comment content. Required unless reaction is provided.",
+                "minLength": 1,
+                "type": "string"
+              },
+              "comment_id": {
+                "description": "The numeric ID of the issue or pull request comment to react to. Use this for reactions to comments; omit it to react to the issue or pull request itself. Cannot be combined with body.",
+                "minimum": 1,
+                "type": "integer"
+              },
+              "issue_number": {
+                "description": "Issue or pull request number to comment on or react to.",
+                "type": "number"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "reaction": {
+                "description": "Emoji reaction to add. Required unless body is provided.",
+                "enum": [
+                  "+1",
+                  "-1",
+                  "laugh",
+                  "confused",
+                  "heart",
+                  "hooray",
+                  "rocket",
+                  "eyes"
+                ],
+                "type": "string"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "issue_number"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.add_issue_comment",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Add a reply and/or reaction to an existing pull request comment. This can create a new comment linked as a reply to the specified comment, add an emoji reaction to the specified comment, or do both. At least one of body or reaction is required.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "description": "The text of the reply. Required unless reaction is provided.",
+                "type": "string"
+              },
+              "commentId": {
+                "description": "The numeric ID of the pull request review comment to reply or react to. Use the number from a #discussion_r... anchor, not the GraphQL thread node ID (PRRT_...).",
+                "minimum": 1,
+                "type": "number"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "pullNumber": {
+                "description": "Pull request number. Required when body is provided.",
+                "type": "number"
+              },
+              "reaction": {
+                "description": "Emoji reaction to add. Required unless body is provided.",
+                "enum": [
+                  "+1",
+                  "-1",
+                  "laugh",
+                  "confused",
+                  "heart",
+                  "hooray",
+                  "rocket",
+                  "eyes"
+                ],
+                "type": "string"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "commentId"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.add_reply_to_pull_request_comment",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Create a new branch in a GitHub repository",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "branch": {
+                "description": "Name for new branch",
+                "type": "string"
+              },
+              "from_branch": {
+                "description": "Source branch (defaults to repo default)",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "branch"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.create_branch",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Create or update a single file in a GitHub repository. \nIf updating, you should provide the SHA of the file you want to update. Use this tool to create or update a file in a GitHub repository remotely; do not use it for local file operations.\n\nTo obtain the current blob SHA before updating, call the get_file_contents tool with the same owner, repo, and path, and set its ref parameter to this tool's branch value. The first text result reports the blob SHA for the requested path.\n\nSHA MUST be provided for existing file updates.\n",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "allow_symlink_write": {
+                "default": false,
+                "description": "Set true to update a symbolic link itself; content must be its new target path.",
+                "type": "boolean"
+              },
+              "branch": {
+                "description": "Branch to create/update the file in",
+                "type": "string"
+              },
+              "content": {
+                "description": "Content of the file, exactly as it should appear once written. Do not base64-encode it; this server does that before calling the REST API.",
+                "type": "string"
+              },
+              "message": {
+                "description": "Commit message",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner (username or organization)",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "path": {
+                "description": "Path where to create/update the file",
+                "type": "string"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "sha": {
+                "description": "The blob SHA of the file being replaced. Required if the file already exists. Retrieve it with get_file_contents using the same owner, repo, and path, with ref set to this tool's branch value.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "path",
+              "content",
+              "message",
+              "branch"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.create_or_update_file",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": true,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Create a new pull request in a GitHub repository.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "base": {
+                "description": "Branch to merge into",
+                "type": "string"
+              },
+              "body": {
+                "description": "PR description",
+                "type": "string"
+              },
+              "draft": {
+                "description": "Create as draft PR",
+                "type": "boolean"
+              },
+              "head": {
+                "description": "Branch containing changes",
+                "type": "string"
+              },
+              "maintainer_can_modify": {
+                "description": "Allow maintainer edits",
+                "type": "boolean"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "reviewers": {
+                "description": "GitHub usernames or ORG/team-slug team reviewers to request reviews from",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "title": {
+                "description": "PR title",
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "title",
+              "head",
+              "base"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.create_pull_request",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Delete a file from a GitHub repository",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "branch": {
+                "description": "Branch to delete the file from",
+                "type": "string"
+              },
+              "message": {
+                "description": "Commit message",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner (username or organization)",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "path": {
+                "description": "Path to the file to delete",
+                "type": "string"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "path",
+              "message",
+              "branch"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.delete_file",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": true,
+          "side_effect": "destructive",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Get details for a commit from a GitHub repository",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "detail": {
+                "default": "stats",
+                "description": "Level of detail to include for changed files. \"none\" omits stats and files entirely. \"stats\" (default) includes per-file metadata: filename, status, and lines-of-code counts (additions, deletions, changes), with no patch content. \"full_patch\" additionally includes the unified diff content for each file and can be very large.",
+                "enum": [
+                  "none",
+                  "stats",
+                  "full_patch"
+                ],
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "sha": {
+                "description": "Commit SHA, branch name, or tag name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "sha"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.get_commit",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Get the contents of a file or directory from a GitHub repository",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "fields": {
+                "description": "Subset of fields to return for each entry when the path is a directory. If omitted, all fields are returned. Ignored when the path is a single file. Use this to reduce response size when listing directories and you only need specific fields, e.g. just 'name' and 'type'.",
+                "items": {
+                  "enum": [
+                    "type",
+                    "name",
+                    "path",
+                    "size",
+                    "sha",
+                    "url",
+                    "git_url",
+                    "html_url",
+                    "download_url"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "owner": {
+                "description": "Repository owner (username or organization)",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "path": {
+                "default": "/",
+                "description": "Path to file/directory",
+                "type": "string"
+              },
+              "ref": {
+                "description": "Accepts optional git refs such as `refs/tags/{tag}`, `refs/heads/{branch}` or `refs/pull/{pr_number}/head`",
+                "type": "string"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "sha": {
+                "description": "Accepts optional commit SHA. If specified, it will be used instead of ref",
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.get_file_contents",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Get a specific label from a repository.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "description": "Label name.",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner (username or organization name)",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "name"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.get_label",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Get the latest release in a GitHub repository",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.get_latest_release",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Get details of the authenticated GitHub user. Use this when a request is about the user's own profile for GitHub. Or when information is missing to build other tool calls.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {},
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.get_me",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Get a specific release by its tag name in a GitHub repository",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "tag": {
+                "description": "Tag name (e.g., 'v1.0.0')",
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "tag"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.get_release_by_tag",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Get details about a specific git tag in a GitHub repository",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "tag": {
+                "description": "Tag name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "tag"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.get_tag",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Get information about a specific issue in a GitHub repository.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "issue_number": {
+                "description": "The number of the issue",
+                "type": "number"
+              },
+              "method": {
+                "description": "The read operation to perform on a single issue.\nOptions are:\n1. get - Get issue details. Also returns best-effort hierarchy flags (`has_parent`, `has_children`); `parent` and `sub_issues_summary` are optional relationship summaries, and `closed_by_pull_requests` summarizes the pull requests configured to close the issue as `total_count` plus up to 5 `references`.\n2. get_comments - Get issue comments.\n3. get_sub_issues - Get sub-issues (children) of the issue.\n4. get_parent - Get the parent issue, if this issue is a sub-issue of another.\n5. get_labels - Get labels assigned to the issue.\n",
+                "enum": [
+                  "get",
+                  "get_comments",
+                  "get_sub_issues",
+                  "get_parent",
+                  "get_labels"
+                ],
+                "type": "string"
+              },
+              "owner": {
+                "description": "The owner of the repository",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "repo": {
+                "description": "The name of the repository",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "method",
+              "owner",
+              "repo",
+              "issue_number"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.issue_read",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Create a new or update an existing issue in a GitHub repository.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "assignees": {
+                "description": "Usernames to assign to this issue",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "body": {
+                "description": "Issue body content",
+                "type": "string"
+              },
+              "duplicate_of": {
+                "description": "Issue number that this issue is a duplicate of. Required when state_reason is 'duplicate'.",
+                "type": "number"
+              },
+              "issue_fields": {
+                "description": "Issue field values to set or clear. Each item requires 'field_name' and exactly one of 'value', 'field_option_name', or 'delete: true'.",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "delete": {
+                      "description": "Set to true to clear this field's current value on the issue. When false or omitted, this property is ignored. Cannot be true when 'value' or 'field_option_name' is provided.",
+                      "type": "boolean"
+                    },
+                    "field_name": {
+                      "description": "Issue field name (case-insensitive). Must match a field returned by list_issue_fields for this repository or its organization.",
+                      "type": "string"
+                    },
+                    "field_option_name": {
+                      "description": "Option name for single-select fields. Validated against the field's options before the API call. Cannot be combined with 'value' or 'delete: true'.",
+                      "type": "string"
+                    },
+                    "value": {
+                      "description": "Value to set. Use for text, number, and date fields (date as YYYY-MM-DD). For single-select fields, prefer 'field_option_name' so the option is validated before the API call. Cannot be combined with 'field_option_name' or 'delete: true'.",
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "field_name"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "issue_number": {
+                "description": "Issue number to update",
+                "type": "number"
+              },
+              "labels": {
+                "description": "Labels to apply to this issue",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "method": {
+                "description": "Write operation to perform on a single issue.\nOptions are:\n- 'create' - creates a new issue.\n- 'update' - updates an existing issue.\n",
+                "enum": [
+                  "create",
+                  "update"
+                ],
+                "type": "string"
+              },
+              "milestone": {
+                "description": "Milestone number",
+                "type": "number"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "parent_issue_number": {
+                "description": "Issue number of the parent issue. Only used when method is 'create' and cannot be combined with issue_fields. The new issue is created and attached to this parent in the same operation.",
+                "minimum": 1,
+                "type": "number"
+              },
+              "parent_owner": {
+                "description": "Repository owner of the parent issue. Must be provided with parent_repo. Omit both to use owner and repo. Only used when method is 'create' and parent_issue_number is provided.",
+                "type": "string"
+              },
+              "parent_repo": {
+                "description": "Repository name of the parent issue. Must be provided with parent_owner. Omit both to use owner and repo. Only used when method is 'create' and parent_issue_number is provided.",
+                "type": "string"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "state": {
+                "description": "New state",
+                "enum": [
+                  "open",
+                  "closed"
+                ],
+                "type": "string"
+              },
+              "state_reason": {
+                "description": "Reason for the state change. Ignored unless state is changed.",
+                "enum": [
+                  "completed",
+                  "not_planned",
+                  "duplicate"
+                ],
+                "type": "string"
+              },
+              "title": {
+                "description": "Issue title",
+                "type": "string"
+              },
+              "type": {
+                "anyOf": [
+                  {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Type of this issue. For updates, pass null to remove the current type. Only use if issue types are enabled for this repository. Use list_issue_types to get valid type values for this repository or its owner organization. If the repository doesn't support issue types, omit this parameter."
+              }
+            },
+            "required": [
+              "method",
+              "owner",
+              "repo"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.issue_write",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List branches in a GitHub repository",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.list_branches",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Get list of commits of a branch in a GitHub repository. Returns at least 30 results per page by default, but can return more if specified using the perPage parameter (up to 100).",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "author": {
+                "description": "Author username or email address to filter commits by",
+                "type": "string"
+              },
+              "fields": {
+                "description": "Subset of fields to return for each commit. If omitted, all fields are returned. Use this to reduce response size when you only need specific fields, e.g. just 'sha' and 'html_url'.",
+                "items": {
+                  "enum": [
+                    "sha",
+                    "html_url",
+                    "commit",
+                    "author",
+                    "committer"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "path": {
+                "description": "Only commits containing this file path will be returned",
+                "type": "string"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "sha": {
+                "description": "Commit SHA, branch or tag name to list commits of. If not provided, uses the default branch of the repository. If a commit SHA is provided, will list commits up to that SHA.",
+                "type": "string"
+              },
+              "since": {
+                "description": "Only commits after this date will be returned (ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ or YYYY-MM-DD)",
+                "type": "string"
+              },
+              "until": {
+                "description": "Only commits before this date will be returned (ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ or YYYY-MM-DD)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.list_commits",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List issue fields for a repository or organization. Returns field definitions including name, type (text, number, date, single_select), and for single_select fields the list of valid option names. When repo is omitted, returns org-level fields directly.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "owner": {
+                "description": "The account owner of the repository or organization. The name is not case sensitive.",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "repo": {
+                "description": "The name of the repository. When provided, returns fields for this specific repository (inherited from its organization). When omitted, returns org-level fields directly.",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.list_issue_fields",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List supported issue types for a repository or its owner organization. When repo is omitted, returns org-level issue types directly.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "owner": {
+                "description": "The account owner of the repository or organization.",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "repo": {
+                "description": "The name of the repository. When provided, returns issue types for this specific repository. When omitted, returns org-level issue types directly.",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.list_issue_types",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List issues in a GitHub repository. For pagination, use the 'endCursor' from the previous response's 'pageInfo' in the 'after' parameter.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "description": "Cursor for pagination. Use the cursor from the previous response.",
+                "type": "string"
+              },
+              "direction": {
+                "description": "Order direction. If provided, the 'orderBy' also needs to be provided.",
+                "enum": [
+                  "ASC",
+                  "DESC"
+                ],
+                "type": "string"
+              },
+              "field_filters": {
+                "description": "Filter by custom issue field values. Each entry takes a field_name and a value; the server looks up the field and coerces the value to its type (single-select option name, text, number, or YYYY-MM-DD date).",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "field_name": {
+                      "description": "Name of the custom field (e.g. \"Priority\"). Case-insensitive.",
+                      "type": "string"
+                    },
+                    "value": {
+                      "description": "Value to filter on. For single-select fields, the option name (e.g. \"P1\"). For dates, YYYY-MM-DD. For numbers, the numeric value as a string. For text, the text value.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "field_name",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "fields": {
+                "description": "Subset of fields to return for each issue. If omitted, all fields are returned. Use this to reduce response size when you only need specific fields; omitting 'body' and 'field_values' in particular drops the largest per-result data.",
+                "items": {
+                  "enum": [
+                    "number",
+                    "title",
+                    "body",
+                    "state",
+                    "user",
+                    "labels",
+                    "assignees",
+                    "comments",
+                    "created_at",
+                    "updated_at",
+                    "field_values"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "labels": {
+                "description": "Filter by labels",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "orderBy": {
+                "description": "Order issues by field. If provided, the 'direction' also needs to be provided.",
+                "enum": [
+                  "CREATED_AT",
+                  "UPDATED_AT",
+                  "COMMENTS"
+                ],
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "since": {
+                "description": "Filter by date (ISO 8601 timestamp)",
+                "type": "string"
+              },
+              "state": {
+                "description": "Filter by state, by default both open and closed issues are returned when not provided",
+                "enum": [
+                  "OPEN",
+                  "CLOSED"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.list_issues",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List pull requests in a GitHub repository. If the user specifies an author, then DO NOT use this tool and use the search_pull_requests tool instead.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "base": {
+                "description": "Filter by base branch",
+                "type": "string"
+              },
+              "direction": {
+                "description": "Sort direction",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "type": "string"
+              },
+              "fields": {
+                "description": "Subset of fields to return for each pull request. If omitted, all fields are returned. Use this to reduce response size when you only need specific fields; omitting 'body' in particular drops the largest per-result data.",
+                "items": {
+                  "enum": [
+                    "number",
+                    "title",
+                    "body",
+                    "state",
+                    "draft",
+                    "merged",
+                    "mergeable_state",
+                    "html_url",
+                    "user",
+                    "labels",
+                    "assignees",
+                    "requested_reviewers",
+                    "merged_by",
+                    "head",
+                    "base",
+                    "additions",
+                    "deletions",
+                    "changed_files",
+                    "commits",
+                    "comments",
+                    "created_at",
+                    "updated_at",
+                    "closed_at",
+                    "merged_at",
+                    "milestone"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "head": {
+                "description": "Filter by head user/org and branch",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "sort": {
+                "description": "Sort by",
+                "enum": [
+                  "created",
+                  "updated",
+                  "popularity",
+                  "long-running"
+                ],
+                "type": "string"
+              },
+              "state": {
+                "description": "Filter by state",
+                "enum": [
+                  "open",
+                  "closed",
+                  "all"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.list_pull_requests",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List releases in a GitHub repository",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "fields": {
+                "description": "Subset of fields to return for each release. If omitted, all fields are returned. Use this to reduce response size when you only need specific fields; omitting 'body' in particular drops the largest per-release data.",
+                "items": {
+                  "enum": [
+                    "id",
+                    "tag_name",
+                    "name",
+                    "body",
+                    "html_url",
+                    "published_at",
+                    "prerelease",
+                    "draft",
+                    "author"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.list_releases",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List git tags in a GitHub repository",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.list_tags",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Merge a pull request in a GitHub repository.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "commit_message": {
+                "description": "Extra detail for merge commit",
+                "type": "string"
+              },
+              "commit_title": {
+                "description": "Title for merge commit",
+                "type": "string"
+              },
+              "expectedHeadSha": {
+                "description": "The expected SHA of the pull request's HEAD ref",
+                "type": "string"
+              },
+              "merge_method": {
+                "description": "Merge method",
+                "enum": [
+                  "merge",
+                  "squash",
+                  "rebase"
+                ],
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "pullNumber": {
+                "description": "Pull request number",
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "pullNumber"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.merge_pull_request",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": true,
+          "side_effect": "destructive",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Get information on a specific pull request in GitHub repository.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "after": {
+                "description": "Cursor for pagination, used only by the get_review_comments method. Pass the endCursor from the previous page's PageInfo to fetch the next page.",
+                "type": "string"
+              },
+              "method": {
+                "description": "Action to specify what pull request data needs to be retrieved from GitHub. \nPossible options: \n 1. get - Get details of a specific pull request.\n 2. get_diff - Get the diff of a pull request.\n 3. get_status - Get combined commit status of a head commit in a pull request.\n 4. get_files - Get the list of files changed in a pull request. Use with pagination parameters to control the number of results returned.\n 5. get_commits - Get the list of commits on a pull request. Use with pagination parameters to control the number of results returned.\n 6. get_review_comments - Get review threads on a pull request. Each thread contains logically grouped review comments made on the same code location during pull request reviews. Returns thread metadata and comments with nullable current and original line-range coordinates (line, start_line, original_line, original_start_line). Current coordinates are omitted when unavailable, such as for outdated comments. Use cursor-based pagination (perPage, after) to control results.\n 7. get_reviews - Get the reviews on a pull request. When asked for review comments, use get_review_comments method. Use with pagination parameters to control the number of results returned.\n 8. get_comments - Get comments on a pull request. Use this if user doesn't specifically want review comments. Use with pagination parameters to control the number of results returned.\n 9. get_check_runs - Get check runs for the head commit of a pull request. Check runs are the individual CI/CD jobs and checks that run on the PR.\n",
+                "enum": [
+                  "get",
+                  "get_diff",
+                  "get_status",
+                  "get_files",
+                  "get_commits",
+                  "get_review_comments",
+                  "get_reviews",
+                  "get_comments",
+                  "get_check_runs"
+                ],
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "pullNumber": {
+                "description": "Pull request number",
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "method",
+              "owner",
+              "repo",
+              "pullNumber"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.pull_request_read",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Create and/or submit, delete review of a pull request.\n\nAvailable methods:\n- create: Create a new review of a pull request. If \"event\" parameter is provided, the review is submitted. If \"event\" is omitted, a pending review is created.\n- submit_pending: Submit an existing pending review of a pull request. This requires that a pending review exists for the current user on the specified pull request. The \"body\" and \"event\" parameters are used when submitting the review.\n- delete_pending: Delete an existing pending review of a pull request. This requires that a pending review exists for the current user on the specified pull request.\n- resolve_thread: Resolve a review thread. Requires only \"threadId\" parameter with the thread's node ID (e.g., PRRT_kwDOxxx). The owner, repo, and pullNumber parameters are not used for this method. Resolving an already-resolved thread is a no-op.\n- unresolve_thread: Unresolve a previously resolved review thread. Requires only \"threadId\" parameter. The owner, repo, and pullNumber parameters are not used for this method. Unresolving an already-unresolved thread is a no-op.\n",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "description": "Review comment text",
+                "type": "string"
+              },
+              "commitID": {
+                "description": "SHA of commit to review",
+                "type": "string"
+              },
+              "event": {
+                "description": "Review action to perform.",
+                "enum": [
+                  "APPROVE",
+                  "REQUEST_CHANGES",
+                  "COMMENT"
+                ],
+                "type": "string"
+              },
+              "method": {
+                "description": "The write operation to perform on pull request review.",
+                "enum": [
+                  "create",
+                  "submit_pending",
+                  "delete_pending",
+                  "resolve_thread",
+                  "unresolve_thread"
+                ],
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "pullNumber": {
+                "description": "Pull request number",
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "threadId": {
+                "description": "The node ID of the review thread (e.g., PRRT_kwDOxxx). Required for resolve_thread and unresolve_thread methods. Get thread IDs from pull_request_read with method get_review_comments.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "method",
+              "owner",
+              "repo",
+              "pullNumber"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.pull_request_review_write",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": true,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Push multiple files to a GitHub repository in a single commit",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "branch": {
+                "description": "Branch to push to",
+                "type": "string"
+              },
+              "files": {
+                "description": "Array of file objects to push, each object with path (string) and content (string)",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "content": {
+                      "description": "file content",
+                      "type": "string"
+                    },
+                    "path": {
+                      "description": "path to the file",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "content"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "Commit message",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "branch",
+              "files",
+              "message"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.push_files",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": true,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Fast and precise code search across ALL GitHub repositories using GitHub's native search engine. Best for finding exact symbols, functions, classes, or specific code patterns.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "fields": {
+                "description": "Subset of fields to return for each code search result. If omitted, all fields are returned. Use this to reduce response size when you only need specific fields; omitting 'repository' and 'text_matches' in particular drops the largest per-result data.",
+                "items": {
+                  "enum": [
+                    "name",
+                    "path",
+                    "sha",
+                    "repository",
+                    "text_matches"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "order": {
+                "description": "Sort order for results",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "type": "string"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "query": {
+                "description": "Search query (GitHub code search REST). Implicit AND between terms; supports `OR`, `NOT`, and `\"quoted phrase\"` for exact match. Qualifiers: `repo:owner/repo`, `org:`, `user:`, `language:`, `path:dir` (prefix match), `filename:exact.ext`, `extension:`, `in:file`, `in:path`, `size:`, `is:archived`, `is:fork`. Max 256 chars. Examples: `WithContext language:go org:github`; `\"package main\" repo:o/r`; `func extension:go path:cmd repo:o/r`; `NOT TODO language:go repo:o/r`.",
+                "type": "string"
+              },
+              "sort": {
+                "description": "Sort field ('indexed' only)",
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.search_code",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Search for commits across GitHub repositories using GitHub's commit search syntax. Useful for finding specific changes, authors, or messages across one or many repositories. Searches the default branch only.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "order": {
+                "description": "Sort order",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "type": "string"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "query": {
+                "description": "Commit search query (GitHub commit search REST). Searches commit messages on the default branch only. Scope the search with `repo:owner/repo`, `org:`, or `user:` (queries without a scope qualifier match across all of GitHub and are usually not what you want). Other qualifiers: `author:`, `committer:`, `author-name:`, `committer-name:`, `author-email:`, `committer-email:`, `author-date:`, `committer-date:` (supports `>`, `<`, `>=`, `<=`, and `YYYY-MM-DD..YYYY-MM-DD` ranges), `merge:true|false`, `hash:`, `tree:`, `parent:`, `is:public`. Examples: `repo:owner/repo fix panic`; `org:github author:defunkt committer-date:>=2024-01-01`; `\"refactor cache\" repo:o/r`; `hash:abc1234 repo:o/r`.",
+                "type": "string"
+              },
+              "sort": {
+                "description": "Sort by author or committer date (defaults to best match)",
+                "enum": [
+                  "author-date",
+                  "committer-date"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.search_commits",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Search issues using natural-language semantic matching. Best for conceptual or paraphrased queries (e.g. \"login fails after password reset\"). Already scoped to is:issue.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "fields": {
+                "description": "Subset of fields to return for each issue result. If omitted, all fields are returned. Use this to reduce response size when you only need specific fields; omitting 'body', 'reactions', and 'labels' in particular drops the largest per-result data.",
+                "items": {
+                  "enum": [
+                    "number",
+                    "title",
+                    "body",
+                    "state",
+                    "state_reason",
+                    "draft",
+                    "locked",
+                    "html_url",
+                    "user",
+                    "author_association",
+                    "labels",
+                    "assignee",
+                    "assignees",
+                    "milestone",
+                    "comments",
+                    "reactions",
+                    "created_at",
+                    "updated_at",
+                    "closed_at",
+                    "closed_by",
+                    "type",
+                    "repository_url",
+                    "pull_request",
+                    "field_values"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "order": {
+                "description": "Sort order",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "type": "string"
+              },
+              "owner": {
+                "description": "Optional repository owner. If provided with repo, only issues for this repository are listed.",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "query": {
+                "description": "The search query, as natural language. When the user gives alternative wordings, include them as plain words rather than joining them with OR.",
+                "type": "string"
+              },
+              "repo": {
+                "description": "Optional repository name. If provided with owner, only issues for this repository are listed.",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "sort": {
+                "description": "Sort field by number of matches of categories, defaults to best match",
+                "enum": [
+                  "comments",
+                  "reactions",
+                  "reactions-+1",
+                  "reactions--1",
+                  "reactions-smile",
+                  "reactions-thinking_face",
+                  "reactions-heart",
+                  "reactions-tada",
+                  "interactions",
+                  "created",
+                  "updated"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.search_issues",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Search for pull requests in GitHub repositories using issues search syntax already scoped to is:pr",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "fields": {
+                "description": "Subset of fields to return for each pull request result. If omitted, all fields are returned. Use this to reduce response size when you only need specific fields; omitting 'body', 'reactions', and 'labels' in particular drops the largest per-result data.",
+                "items": {
+                  "enum": [
+                    "number",
+                    "title",
+                    "body",
+                    "state",
+                    "state_reason",
+                    "draft",
+                    "locked",
+                    "html_url",
+                    "user",
+                    "author_association",
+                    "labels",
+                    "assignee",
+                    "assignees",
+                    "milestone",
+                    "comments",
+                    "reactions",
+                    "created_at",
+                    "updated_at",
+                    "closed_at",
+                    "closed_by",
+                    "pull_request",
+                    "repository_url"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "order": {
+                "description": "Sort order",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "type": "string"
+              },
+              "owner": {
+                "description": "Optional repository owner. If provided with repo, only pull requests for this repository are listed.",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "query": {
+                "description": "Search query using GitHub pull request search syntax",
+                "type": "string"
+              },
+              "repo": {
+                "description": "Optional repository name. If provided with owner, only pull requests for this repository are listed.",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "sort": {
+                "description": "Sort field by number of matches of categories, defaults to best match",
+                "enum": [
+                  "comments",
+                  "reactions",
+                  "reactions-+1",
+                  "reactions--1",
+                  "reactions-smile",
+                  "reactions-thinking_face",
+                  "reactions-heart",
+                  "reactions-tada",
+                  "interactions",
+                  "created",
+                  "updated"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.search_pull_requests",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Find GitHub repositories by name, description, readme, topics, or other metadata. Perfect for discovering projects, finding examples, or locating specific repositories across GitHub.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "minimal_output": {
+                "default": true,
+                "description": "Return minimal repository information (default: true). When false, modern clients receive additional curated repository details, not the complete GitHub API object. Legacy clients retain full GitHub API repository objects.",
+                "type": "boolean"
+              },
+              "order": {
+                "description": "Sort order",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "type": "string"
+              },
+              "page": {
+                "description": "Page number for pagination (min 1)",
+                "minimum": 1,
+                "type": "number"
+              },
+              "perPage": {
+                "description": "Results per page for pagination (min 1, max 100)",
+                "maximum": 100,
+                "minimum": 1,
+                "type": "number"
+              },
+              "query": {
+                "description": "Repository search query. Examples: 'machine learning in:name stars:>1000 language:python', 'topic:react', 'user:facebook'. Supports advanced search syntax for precise filtering.",
+                "type": "string"
+              },
+              "sort": {
+                "description": "Sort repositories by field, defaults to best match",
+                "enum": [
+                  "stars",
+                  "forks",
+                  "help-wanted-issues",
+                  "updated"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "github.search_repositories",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Add a sub-issue to a parent issue in a GitHub repository.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "after_id": {
+                "description": "The ID of the sub-issue to be prioritized after (either after_id OR before_id should be specified)",
+                "type": "number"
+              },
+              "before_id": {
+                "description": "The ID of the sub-issue to be prioritized before (either after_id OR before_id should be specified)",
+                "type": "number"
+              },
+              "issue_number": {
+                "description": "The number of the parent issue",
+                "type": "number"
+              },
+              "method": {
+                "description": "The action to perform on a single sub-issue\nOptions are:\n- 'add' - add a sub-issue to a parent issue in a GitHub repository.\n- 'remove' - remove a sub-issue from a parent issue in a GitHub repository.\n- 'reprioritize' - change the order of sub-issues within a parent issue in a GitHub repository. Use either 'after_id' or 'before_id' to specify the new position.\nWrites issue hierarchy. To move a sub-issue to a new parent, use `add` with `replace_parent=true`; there is no writable parent field.\n",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "replace_parent": {
+                "description": "When true, replaces the sub-issue's current parent issue. Use with 'add' method only.",
+                "type": "boolean"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "sub_issue_id": {
+                "description": "The ID of the sub-issue to add. ID is not the same as issue number",
+                "type": "number"
+              }
+            },
+            "required": [
+              "method",
+              "owner",
+              "repo",
+              "issue_number",
+              "sub_issue_id"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.sub_issue_write",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Update the body of an existing issue or pull request conversation comment. This tool cannot update pull request review comments.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "description": "New comment content",
+                "minLength": 1,
+                "type": "string"
+              },
+              "comment_id": {
+                "description": "The numeric ID of the issue or pull request conversation comment to update. Do not use a pull request review comment ID.",
+                "minimum": 1,
+                "type": "integer"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "comment_id",
+              "body"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.update_issue_comment",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Update an existing pull request in a GitHub repository.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "base": {
+                "description": "New base branch name",
+                "type": "string"
+              },
+              "body": {
+                "description": "New description",
+                "type": "string"
+              },
+              "draft": {
+                "description": "Mark pull request as draft (true) or ready for review (false)",
+                "type": "boolean"
+              },
+              "maintainer_can_modify": {
+                "description": "Allow maintainer edits",
+                "type": "boolean"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "pullNumber": {
+                "description": "Pull request number to update",
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              },
+              "reviewers": {
+                "description": "GitHub usernames or ORG/team-slug team reviewers to request reviews from",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "state": {
+                "description": "New state",
+                "enum": [
+                  "open",
+                  "closed"
+                ],
+                "type": "string"
+              },
+              "title": {
+                "description": "New title",
+                "type": "string"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "pullNumber"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.update_pull_request",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Update the branch of a pull request with the latest changes from the base branch.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "expectedHeadSha": {
+                "description": "The expected SHA of the pull request's HEAD ref",
+                "type": "string"
+              },
+              "owner": {
+                "description": "Repository owner",
+                "type": "string",
+                "x-mcp-header": "owner"
+              },
+              "pullNumber": {
+                "description": "Pull request number",
+                "type": "number"
+              },
+              "repo": {
+                "description": "Repository name",
+                "type": "string",
+                "x-mcp-header": "repo"
+              }
+            },
+            "required": [
+              "owner",
+              "repo",
+              "pullNumber"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "github.update_pull_request_branch",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {},
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "github.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "write",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
       "category": "email",
       "code_only_options": [
         "artifact_loader",

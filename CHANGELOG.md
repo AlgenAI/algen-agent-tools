@@ -8,6 +8,17 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Added
+
+- GitHub (`algen_agent_tools.github`, extra `github`): the first shipped MCP overlay, for GitHub's
+  hosted MCP server. It declares 37 of the server's 46 tools: 22 read and 10 write; 3 write
+  tools that need approval on every call (`pull_request_review_write`, `push_files`,
+  `create_or_update_file`); and 2 destructive (`merge_pull_request`, `delete_file`). Repository
+  creation, `run_secret_scanning`, the MCP-Apps UI tool, Copilot review requests and the people
+  directory are not exposed. The schemas were pinned from the live server on 2026-10-27. Settings:
+  `ALGEN_TOOLS_GITHUB_TOKEN`. Part of `all`.
+- Catalog category `development`.
+
 ## [0.2.0a3] - 2026-10-27
 
 ### Added

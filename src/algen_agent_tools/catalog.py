@@ -35,7 +35,9 @@ REPOSITORY = "https://github.com/AlgenAI/algen-agent-tools"
 _ENV = re.compile(r"^[A-Z][A-Z0-9_]*$")
 _NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 
-Category = Literal["database", "documents", "email", "messaging", "utility", "webhook"]
+Category = Literal[
+    "database", "development", "documents", "email", "messaging", "utility", "webhook"
+]
 Maturity = Literal["alpha", "beta", "stable", "deprecated"]
 
 
