@@ -15,7 +15,8 @@ INFO = ConnectorInfo(
     title="Gmail",
     summary=(
         "Read and send mail for one Gmail or Google Workspace mailbox with an OAuth refresh "
-        "token: list messages with a Gmail search query, and send from the mailbox's address."
+        "token: list messages with a Gmail search query, read one message's text, save an "
+        "attachment as an artifact, and send from the mailbox's address."
     ),
     category="email",
     extra="gmail",
@@ -50,7 +51,7 @@ INFO = ConnectorInfo(
         Egress(protocol="https", host="oauth2.googleapis.com", port=443),
         Egress(protocol="https", host="gmail.googleapis.com", port=443),
     ),
-    code_only_options=("artifact_loader",),
+    code_only_options=("artifact_loader", "artifact_sink", "attachment_policy"),
 )
 
 GmailPlugin = toolkit_plugin(INFO, gmail_toolkit)
