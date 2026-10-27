@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import copy
+import json
 import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
 import yaml
-from algen_agent_runtime.exceptions.errors import PolicyDeniedError, ToolExecutionError
+from algen_agent_runtime.exceptions.errors import (
+    ConfigurationError,
+    PolicyDeniedError,
+    ToolExecutionError,
+)
 from algen_agent_runtime.tools.contracts import Idempotency, SideEffect
 from algen_agent_runtime.tools.testing import fake_tool_context
 from pydantic import ValidationError
@@ -17,6 +22,7 @@ from algen_agent_tools.testing import assert_toolkit_contract, describe_plugin
 
 pytest.importorskip("mcp")
 
+from algen_agent_tools.mcp.check import check, report
 from algen_agent_tools.mcp.fake import FakeMcpServer
 from algen_agent_tools.mcp.snapshot import draft, main
 
@@ -303,4 +309,67 @@ def test_snapshot_cli_writes_a_draft(tmp_path: Path, capsys: pytest.CaptureFixtu
         "delete_ticket",
         "get_ticket",
         "run_shell",
+    }
+
+
+async def test_check_reports_missing_changed_and_undeclared_tools(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ALGEN_TOOLS_TEST_DESK_TOKEN", "token")
+    overlay = McpOverlay.from_file(OVERLAY_FILE)
+    server = fake_desk()
+    drift = await check(overlay, session_factory=server.session_factory)
+    assert (drift.missing, drift.changed, drift.undeclared) == ((), (), ("run_shell",))
+    assert not drift.breaking
+
+    changed = copy.deepcopy(server.tools["create_ticket"][0])
+    changed["properties"]["assignee"] = {"type": "string"}
+    server.add("create_ticket", changed, lambda args: "T-9")
+    del server.tools["get_ticket"]
+    drift = await check(overlay, session_factory=server.session_factory)
+    assert (drift.missing, drift.changed) == (("get_ticket",), ("create_ticket",))
+    assert drift.breaking
+    text = report(overlay, drift)
+    assert "desk: 1 of 3 declared tools match the server" in text
+    assert "no longer offered (refused): get_ticket" in text
+    assert "input schema changed (refused): create_ticket" in text
+
+
+async def test_check_names_an_unset_variable_without_a_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("ALGEN_TOOLS_TEST_DESK_TOKEN", raising=False)
+    with pytest.raises(ConfigurationError, match="ALGEN_TOOLS_TEST_DESK_TOKEN is not set"):
+        await check(McpOverlay.from_file(OVERLAY_FILE), session_factory=fake_desk().session_factory)
+
+
+def _local_overlay(tmp_path: Path, **changes: Any) -> Path:
+    data = mapping()
+    data["server"].update(command=sys.executable, cwd=str(FIXTURES.parents[2]))
+    for remote, schema in changes.items():
+        data["tools"][remote]["input_schema"] = schema
+    path = tmp_path / "desk.overlay.yaml"
+    path.write_text(yaml.safe_dump(data))
+    return path
+
+
+def test_check_cli_against_the_real_sample_server(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("ALGEN_TOOLS_TEST_DESK_TOKEN", "token")
+    reviewed = _local_overlay(tmp_path)
+    assert main(["check", str(reviewed)]) == 0
+    assert "offered but not declared (not exposed): run_shell" in capsys.readouterr().out
+    assert main(["check", str(reviewed), "--strict"]) == 1
+    capsys.readouterr()
+
+    stale = _local_overlay(tmp_path, get_ticket={"type": "object", "properties": {}})
+    assert main(["check", str(stale), "--json"]) == 1
+    assert json.loads(capsys.readouterr().out) == {
+        "overlay": "desk",
+        "declared": 3,
+        "missing": [],
+        "changed": ["get_ticket"],
+        "undeclared": ["run_shell"],
+        "breaking": True,
     }

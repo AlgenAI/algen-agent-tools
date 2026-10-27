@@ -87,6 +87,34 @@ tools:
 | `description` | the server's | what the model reads |
 | `input_schema` | required | the reviewed schema |
 
+## Checking an overlay against its server
+
+A server can change a tool at any time. The overlay refuses a changed tool at run time; `check`
+tells you sooner:
+
+```bash
+export GITHUB_MCP_TOKEN=...          # the overlay's env:// references, from the environment
+python -m algen_agent_tools.mcp check github.overlay.yaml
+```
+
+```text
+github: 11 of 12 declared tools match the server
+  input schema changed (refused): create_issue
+  offered but not declared (not exposed): delete_repository
+Review the overlay: re-run snapshot, compare, and update the pinned schemas.
+```
+
+| Exit | Meaning |
+| --- | --- |
+| 0 | every declared tool is offered with its reviewed schema |
+| 1 | a declared tool is missing or its schema changed (with `--strict`, also: the server offers tools the overlay does not declare) |
+| 2 | bad arguments or an unreadable overlay |
+
+`--json` prints the same report as JSON. Run it on a schedule in the project's CI, with the
+token from the CI's secret store, so a schema change becomes a review, not a failed agent run.
+Undeclared tools are never exposed; they are listed so a reviewer can decide whether to add
+them.
+
 ## Using it
 
 Declare the overlay from your project's plugin:

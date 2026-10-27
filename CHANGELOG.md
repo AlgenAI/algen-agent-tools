@@ -30,6 +30,12 @@ A tool's name, input schema, side effect and permission are part of the public c
   channel is checked to be a text channel or thread of `ALGEN_TOOLS_DISCORD_GUILD_ID`, so direct
   messages and other servers are refused. Sends never ping anyone, suppress link embeds, and
   carry an enforced nonce made from the idempotency key. Part of `all`.
+- `python -m algen_agent_tools.mcp check <overlay>`: connects to an overlay's server and reports
+  declared tools that are no longer offered or whose input schema changed, and tools the server
+  offers that the overlay does not declare. It exits 1 on drift (with `--strict`, also on new
+  tools), so projects can run it on a schedule. `--json` prints a JSON report.
+  `algen_agent_tools.mcp.check.check()` returns the same result as a `Drift`. The overlay
+  toolkit and `check` share one comparison.
 - `HostLockedClient(url_secrets=...)` (internal): redacts secrets that an API requires in the
   URL from `httpx` request log lines.
 
