@@ -37,6 +37,15 @@ PUBLIC_NAMES = {
     "algen_agent_tools.postgres": ("PostgresToolkit", "postgres_toolkit"),
     "algen_agent_tools.outlook": ("OutlookMailboxClient", "OutlookSettings", "outlook_toolkit"),
     "algen_agent_tools.mcp": ("McpOverlay", "overlay_plugin"),
+    "algen_agent_tools.messaging": (
+        "Capability",
+        "FakeMessaging",
+        "InboundMessage",
+        "MessagingClient",
+        "MessagingPlatform",
+        "messaging_toolkit",
+    ),
+    "algen_agent_tools.telegram": ("TelegramBotClient", "TelegramSettings", "telegram_toolkit"),
     "algen_agent_tools.testing": (
         "assert_toolkit_contract",
         "describe_plugin",

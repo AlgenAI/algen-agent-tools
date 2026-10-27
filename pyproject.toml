@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-  "algen-agent-tools[documents,gmail,mcp,outlook,postgres,smtp]",
+  "algen-agent-tools[documents,gmail,mcp,outlook,postgres,smtp,telegram]",
 ]
 # Gmail uses httpx and SMTP the standard library, both already installed with the Runtime;
 # their extras exist so every connector installs the same way.
@@ -52,6 +52,8 @@ outlook = []
 mcp = ["algen-agent-runtime[mcp]>=0.1.0a12,<0.2"]
 postgres = ["asyncpg>=0.29,<1"]
 smtp = []
+# Telegram uses httpx, already installed with the Runtime.
+telegram = []
 dev = [
   "mypy>=1.11,<3",
   "pytest>=9.0.3,<10",
@@ -66,6 +68,7 @@ dev = [
 "algen_agent_tools.postgres" = "algen_agent_tools.postgres.plugin:PostgresPlugin"
 "algen_agent_tools.sample" = "algen_agent_tools.sample.plugin:SamplePlugin"
 "algen_agent_tools.smtp" = "algen_agent_tools.smtp.plugin:SmtpPlugin"
+"algen_agent_tools.telegram" = "algen_agent_tools.telegram.plugin:TelegramPlugin"
 
 [project.urls]
 Homepage = "https://github.com/AlgenAI/algen-agent-tools"

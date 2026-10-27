@@ -15,3 +15,5 @@
 /src/algen_agent_tools/mcp/ @saurav-samantray
 /src/algen_agent_tools/attachments/ @saurav-samantray
 /src/algen_agent_tools/documents/ @saurav-samantray
+/src/algen_agent_tools/messaging/ @saurav-samantray
+/src/algen_agent_tools/telegram/ @saurav-samantray

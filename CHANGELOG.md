@@ -8,6 +8,24 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Added
+
+- Messaging (`algen_agent_tools.messaging`): the shared base for chat platforms. It provides
+  models (`InboundMessage`, `Conversation`, `Participant`, `MessageAttachment`,
+  `DeliveryReceipt`), a `MessagingPlatform` that declares `Capability` flags and id patterns, the
+  `MessagingProvider` protocol, and `messaging_toolkit`. That toolkit adds
+  `<name>.list_conversations`, `<name>.list_messages` and `<name>.get_attachment` (read) and
+  `<name>.send_message` (external) as a platform supports them, and limits every tool to an
+  allowlist of conversations. `FakeMessaging` serves offline tests.
+- Telegram (`algen_agent_tools.telegram`, extra `telegram`): one bot through the Bot API.
+  `telegram.list_messages` (read) returns the bot's pending updates without confirming them.
+  `telegram.send_message` (external) sends plain text with link previews off.
+  `telegram.get_attachment` (read) is available when the toolkit is built with an
+  `artifact_sink`. Settings: `ALGEN_TOOLS_TELEGRAM_BOT_TOKEN` and the optional
+  `ALGEN_TOOLS_TELEGRAM_ALLOWED_CHATS`. Part of `all`.
+- `HostLockedClient(url_secrets=...)` (internal): redacts secrets that an API requires in the
+  URL from `httpx` request log lines.
+
 ## [0.2.0a2] - 2026-10-27
 
 ### Added

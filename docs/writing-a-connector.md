@@ -54,6 +54,15 @@ def crm_toolkit(
   first use, and resolves its secrets then.
 - The docstring is what the model reads: say what the action does and when to use it.
 
+When a connector belongs to a family, build on the family's shared tools instead of writing
+them again, so every platform offers the same names and inputs:
+
+- Mail: `algen_agent_tools.mail` (`add_send_tool`, `add_mailbox_read_tools`).
+- Chat: `algen_agent_tools.messaging`. Declare a `MessagingPlatform` with its `Capability`
+  flags, implement a `MessagingProvider`, and call `messaging_toolkit`. The Telegram connector
+  is the example to copy.
+- Files: `algen_agent_tools.attachments` (`add_get_attachment_tool`, `AttachmentPolicy`).
+
 ## The plugin and its catalog entry
 
 The plugin declares what the connector is and needs, as data. Hosts such as Studio read it from
