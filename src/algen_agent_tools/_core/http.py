@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+from collections import Counter
 from collections.abc import Iterable
 from typing import Any
 from urllib.parse import urlsplit
@@ -9,6 +11,28 @@ from urllib.parse import urlsplit
 import httpx
 
 from algen_agent_tools._core.errors import EgressRefused, ResponseTooLarge
+
+
+class _RedactUrlSecrets(logging.Filter):
+    """Replaces registered secrets in ``httpx`` log records, which include each request's URL."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.secrets: Counter[str] = Counter()
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if self.secrets:
+            message = record.getMessage()
+            redacted = message
+            for secret in self.secrets:
+                redacted = redacted.replace(secret, "[redacted]")
+            if redacted != message:
+                record.msg, record.args = redacted, None
+        return True
+
+
+_REDACT = _RedactUrlSecrets()
+logging.getLogger("httpx").addFilter(_REDACT)
 
 
 def _origin(url: str) -> tuple[str, str, int | None]:
@@ -25,6 +49,9 @@ class HostLockedClient:
     another configured URL) and a path, and any request to another origin is refused before it
     is sent. Responses are read up to ``max_response_bytes``. Nothing is retried here; retries
     are the Runtime's decision.
+
+    ``url_secrets`` are secrets an API requires in the URL itself (such as a Telegram bot
+    token). They are redacted from ``httpx``'s request log lines while this client is open.
     """
 
     def __init__(
@@ -35,7 +62,10 @@ class HostLockedClient:
         timeout_seconds: float,
         max_response_bytes: int,
         client: httpx.AsyncClient | None = None,
+        url_secrets: Iterable[str] = (),
     ) -> None:
+        self._url_secrets = tuple(secret for secret in url_secrets if secret)
+        _REDACT.secrets.update(self._url_secrets)
         self.base_url = base_url.rstrip("/")
         self._origins = frozenset(_origin(url) for url in (base_url, *also))
         self._max_response_bytes = max_response_bytes
@@ -70,5 +100,8 @@ class HostLockedClient:
         return await self.request("POST", url, **options)
 
     async def aclose(self) -> None:
+        _REDACT.secrets.subtract(self._url_secrets)
+        _REDACT.secrets += Counter()  # drop secrets no open client uses
+        self._url_secrets = ()
         if self._owns_client:
             await self._client.aclose()
