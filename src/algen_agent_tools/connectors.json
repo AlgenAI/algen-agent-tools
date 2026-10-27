@@ -8,7 +8,7 @@
         "attachment_policy"
       ],
       "connector": "discord",
-      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a2/docs/connectors/discord.md",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a3/docs/connectors/discord.md",
       "egress": [
         {
           "host": "discord.com",
@@ -44,7 +44,7 @@
       },
       "maturity": "alpha",
       "plugin": "algen_agent_tools.discord",
-      "requirement": "algen-agent-tools[discord]==0.2.0a2",
+      "requirement": "algen-agent-tools[discord]==0.2.0a3",
       "settings": [
         {
           "default": null,
@@ -489,7 +489,7 @@
         "attachment_policy"
       ],
       "connector": "gmail",
-      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a2/docs/connectors/gmail.md",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a3/docs/connectors/gmail.md",
       "egress": [
         {
           "host": "oauth2.googleapis.com",
@@ -525,7 +525,7 @@
       },
       "maturity": "alpha",
       "plugin": "algen_agent_tools.gmail",
-      "requirement": "algen-agent-tools[gmail]==0.2.0a2",
+      "requirement": "algen-agent-tools[gmail]==0.2.0a3",
       "settings": [
         {
           "default": null,
@@ -1124,7 +1124,7 @@
         "attachment_policy"
       ],
       "connector": "outlook",
-      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a2/docs/connectors/outlook.md",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a3/docs/connectors/outlook.md",
       "egress": [
         {
           "host": "login.microsoftonline.com",
@@ -1160,7 +1160,7 @@
       },
       "maturity": "alpha",
       "plugin": "algen_agent_tools.outlook",
-      "requirement": "algen-agent-tools[outlook]==0.2.0a2",
+      "requirement": "algen-agent-tools[outlook]==0.2.0a3",
       "settings": [
         {
           "default": null,
@@ -1784,7 +1784,7 @@
         "schemas"
       ],
       "connector": "postgres",
-      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a2/docs/connectors/postgres.md",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a3/docs/connectors/postgres.md",
       "egress": [
         {
           "host": null,
@@ -1812,7 +1812,7 @@
       },
       "maturity": "alpha",
       "plugin": "algen_agent_tools.postgres",
-      "requirement": "algen-agent-tools[postgres]==0.2.0a2",
+      "requirement": "algen-agent-tools[postgres]==0.2.0a3",
       "settings": [
         {
           "default": null,
@@ -1985,7 +1985,7 @@
       "category": "utility",
       "code_only_options": [],
       "connector": "sample",
-      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a2/docs/connectors/sample.md",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a3/docs/connectors/sample.md",
       "egress": [],
       "manifest": {
         "domain_plugins": [
@@ -2005,7 +2005,7 @@
       },
       "maturity": "alpha",
       "plugin": "algen_agent_tools.sample",
-      "requirement": "algen-agent-tools==0.2.0a2",
+      "requirement": "algen-agent-tools==0.2.0a3",
       "settings": [],
       "summary": "Echoes text back. Use it to check that a deployment loads connectors end to end.",
       "title": "Sample",
@@ -2061,7 +2061,7 @@
         "artifact_loader"
       ],
       "connector": "smtp",
-      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a2/docs/connectors/smtp.md",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a3/docs/connectors/smtp.md",
       "egress": [
         {
           "host": null,
@@ -2088,7 +2088,7 @@
       },
       "maturity": "alpha",
       "plugin": "algen_agent_tools.smtp",
-      "requirement": "algen-agent-tools[smtp]==0.2.0a2",
+      "requirement": "algen-agent-tools[smtp]==0.2.0a3",
       "settings": [
         {
           "default": null,
@@ -2386,7 +2386,7 @@
         "attachment_policy"
       ],
       "connector": "telegram",
-      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a2/docs/connectors/telegram.md",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a3/docs/connectors/telegram.md",
       "egress": [
         {
           "host": "api.telegram.org",
@@ -2415,7 +2415,7 @@
       },
       "maturity": "alpha",
       "plugin": "algen_agent_tools.telegram",
-      "requirement": "algen-agent-tools[telegram]==0.2.0a2",
+      "requirement": "algen-agent-tools[telegram]==0.2.0a3",
       "settings": [
         {
           "default": null,
@@ -2761,5 +2761,5 @@
   "publisher": "AlgenAI",
   "runtime_requirement": "algen-agent-runtime<0.2,>=0.1.0a12",
   "trusted_prefix": "algen_agent_tools",
-  "version": "0.2.0a2"
+  "version": "0.2.0a3"
 }

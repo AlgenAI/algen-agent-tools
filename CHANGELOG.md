@@ -8,6 +8,8 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a3] - 2026-10-27
+
 ### Added
 
 - Messaging (`algen_agent_tools.messaging`): the shared base for chat platforms. It provides
@@ -38,6 +40,15 @@ A tool's name, input schema, side effect and permission are part of the public c
   toolkit and `check` share one comparison.
 - `HostLockedClient(url_secrets=...)` (internal): redacts secrets that an API requires in the
   URL from `httpx` request log lines.
+
+### Upgrade notes
+
+- No existing tool's name, input schema, side effect or permissions changed.
+- Two new connectors, Telegram and Discord, are opt-in: nothing loads them until an agent
+  lists `algen_agent_tools.telegram` or `algen_agent_tools.discord` in `domain_plugins`. Both are
+  part of the `all` extra and add no packages.
+- The MCP overlay toolkit now uses the shared `connect()` and `compare()` steps; refusals of
+  missing or changed tools are unchanged.
 
 ## [0.2.0a2] - 2026-10-27
 
