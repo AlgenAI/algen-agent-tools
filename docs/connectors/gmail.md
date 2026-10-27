@@ -21,8 +21,13 @@ OAuth refresh token.
 
 - `gmail.list_messages(query="is:unread", max_results=25, page_token=None)` takes a Gmail search
   query and returns message metadata (sender, recipients, subject, a snippet of up to 2,000
-  characters, labels, attachments with their `part_id`), at most 100 per page. Message bodies
-  and attachment bytes are not returned.
+  characters, labels, attachments with their `part_id`, and `sender_auth`), at most 100 per
+  page. Message bodies and attachment bytes are not returned.
+- `sender_auth` is Gmail's own verdict on the sender: `pass`, `fail` or `unknown`, read from the
+  topmost `Authentication-Results` header only when Gmail (`mx.google.com`) stamped it. DMARC
+  decides when present; without it only an SPF failure with no DKIM pass is `fail`. Text the
+  sender controls (comments, quoted addresses, lower headers) is ignored. Use it to keep a
+  spoofed "From" out of trusted workflows; `unknown` is not a failure.
 - `gmail.get_message(message_id, max_chars=20000)` reads one message: the same fields plus `cc`
   and the body as plain text (the text part, or the HTML part with markup, scripts and styles
   removed), cut to `max_chars` (at most 100,000) with `body_truncated` set when cut. Message

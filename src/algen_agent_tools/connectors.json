@@ -3563,6 +3563,15 @@
                 "default": "",
                 "type": "string"
               },
+              "sender_auth": {
+                "default": "unknown",
+                "enum": [
+                  "pass",
+                  "fail",
+                  "unknown"
+                ],
+                "type": "string"
+              },
               "snippet": {
                 "default": "",
                 "maxLength": 2000,
@@ -3713,6 +3722,15 @@
                     },
                     "sender": {
                       "default": "",
+                      "type": "string"
+                    },
+                    "sender_auth": {
+                      "default": "unknown",
+                      "enum": [
+                        "pass",
+                        "fail",
+                        "unknown"
+                      ],
                       "type": "string"
                     },
                     "snippet": {
@@ -4397,6 +4415,15 @@
                 "default": "",
                 "type": "string"
               },
+              "sender_auth": {
+                "default": "unknown",
+                "enum": [
+                  "pass",
+                  "fail",
+                  "unknown"
+                ],
+                "type": "string"
+              },
               "snippet": {
                 "default": "",
                 "maxLength": 2000,
@@ -4569,6 +4596,15 @@
                     },
                     "sender": {
                       "default": "",
+                      "type": "string"
+                    },
+                    "sender_auth": {
+                      "default": "unknown",
+                      "enum": [
+                        "pass",
+                        "fail",
+                        "unknown"
+                      ],
                       "type": "string"
                     },
                     "snippet": {

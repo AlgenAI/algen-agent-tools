@@ -19,7 +19,13 @@ from algen_agent_tools.attachments import (
     AttachmentUpload,
 )
 from algen_agent_tools.gmail import GmailMailboxClient, GmailOAuthSettings, gmail_toolkit
-from algen_agent_tools.mail import EmailAddress, EmailDeliveryError, MailClient, html_to_text
+from algen_agent_tools.mail import (
+    GMAIL_AUTHSERV_ID,
+    EmailAddress,
+    EmailDeliveryError,
+    MailClient,
+    html_to_text,
+)
 from algen_agent_tools.testing import assert_toolkit_contract
 
 PDF = b"%PDF-1.7 report"
@@ -259,3 +265,26 @@ async def test_the_fake_mailbox_serves_messages_and_attachments() -> None:
     save = named(toolkit, "get_attachment")
     await save.execute({"message_id": "m1", "attachment_id": "1"}, fake_tool_context(save))
     assert stored[0][0].filename == "a.pdf"
+
+
+def with_auth(*values: str) -> Any:
+    payload = message()
+    payload["payload"]["headers"] = [
+        *({"name": "Authentication-Results", "value": value} for value in values),
+        *payload["payload"]["headers"],
+    ]
+    return payload
+
+
+async def test_gmail_reports_its_own_verdict_on_the_sender() -> None:
+    api = GmailApi(with_auth(f"{GMAIL_AUTHSERV_ID}; dmarc=fail (p=REJECT) header.from=bank.com"))
+    tool = named(gmail_toolkit(client=api.factory()), "get_message")
+    detail = await tool.execute({"message_id": "msg-1"}, fake_tool_context(tool))
+    assert detail["sender_auth"] == "fail"
+
+
+async def test_gmail_without_the_header_is_unknown() -> None:
+    api = GmailApi(message())
+    tool = named(gmail_toolkit(client=api.factory()), "get_message")
+    detail = await tool.execute({"message_id": "msg-1"}, fake_tool_context(tool))
+    assert detail["sender_auth"] == "unknown"
