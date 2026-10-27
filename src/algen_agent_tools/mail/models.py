@@ -28,7 +28,9 @@ def reject_header_injection(value: str, field: str) -> str:
 
 class EmailAddress(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
-    address: str = Field(min_length=3, max_length=320)
+    # format: email tells the Runtime's pii guardrail (0.1.0a12+) that this field is meant to hold
+    # an address, so it leaves a single address here unredacted and still screens the rest.
+    address: str = Field(min_length=3, max_length=320, json_schema_extra={"format": "email"})
     display_name: str | None = Field(default=None, max_length=256)
 
     @model_validator(mode="after")

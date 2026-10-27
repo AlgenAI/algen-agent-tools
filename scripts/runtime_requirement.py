@@ -2,8 +2,8 @@
 
 CI installs the result so the suite runs against both ends of the range in pyproject.toml:
 
-    python scripts/runtime_requirement.py lowest    # algen-agent-runtime==0.1.0a11
-    python scripts/runtime_requirement.py highest   # algen-agent-runtime>=0.1.0a11,<0.2
+    python scripts/runtime_requirement.py lowest    # algen-agent-runtime==0.1.0a12
+    python scripts/runtime_requirement.py highest   # algen-agent-runtime>=0.1.0a12,<0.2
 """
 
 from __future__ import annotations

@@ -24,8 +24,8 @@ OAuth refresh token.
 - `gmail.send_email` takes the same input as [`smtp.send_email`](smtp.md) and sends from
   `ALGEN_TOOLS_GMAIL_SENDER`.
 
-With `pii` at the tool boundary, `list_messages` results reach the model with addresses
-redacted; leaving it out (below) shows them.
+With `pii` at the tool boundary (the default), `list_messages` results reach the model with
+addresses redacted; leaving it out (below) shows them.
 
 ## Credentials
 
@@ -35,10 +35,9 @@ grant only the scopes the agent needs: `gmail.readonly` for `list_messages`, `gm
 
 ## Agent configuration
 
-Recipient addresses are personal data by nature, and the Runtime's default `pii` guardrail
-redacts them from tool arguments. The Runtime never runs a tool on redacted arguments, so with
-the defaults every send is refused (`Payload transformed by policy`). An agent that sends email
-keeps `pii` on its conversation and leaves it out of its tool boundaries:
+Sending works under the default guardrails, as for [SMTP](smtp.md#agent-configuration):
+address fields declare `"format": "email"`, so `pii` leaves the recipients alone and still
+screens the rest of the message.
 
 ```yaml
 agents:
@@ -46,6 +45,13 @@ agents:
     domain_plugins: [algen_agent_tools.gmail]
     enabled_tools: [gmail.list_messages, gmail.send_email]
     tool_permissions: [gmail.read, gmail.write]
+```
+
+`pii` also redacts tool results, so with the defaults `list_messages` shows the model
+`[REDACTED_EMAIL]` in place of each sender and recipient. An agent that must read or reply to
+those addresses leaves `pii` out of its tool boundaries:
+
+```yaml
     guardrail_policy:
       tool_policies: [secrets, prompt_injection, output_validation]
 ```

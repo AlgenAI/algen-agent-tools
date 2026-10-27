@@ -1,10 +1,13 @@
 # Runtime compatibility
 
 `algen-agent-tools` is built on the Runtime's tool authoring API (`@tool`, presets, `Toolkit`),
-declared plugins and `describe`, all introduced in `algen-agent-runtime` 0.1.0a11.
+declared plugins and `describe`, all introduced in `algen-agent-runtime` 0.1.0a11. From 0.1.0a2 it
+needs 0.1.0a12, whose `pii` guardrail leaves fields declared `format: email` alone, so email tools
+run under the default guardrails.
 
 | algen-agent-tools | Supported algen-agent-runtime |
 | --- | --- |
+| 0.1.0a2 | `>=0.1.0a12,<0.2` |
 | 0.1.0a1 | `>=0.1.0a11,<0.2` |
 
 ## How the range is kept honest
