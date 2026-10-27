@@ -8,55 +8,43 @@ matches the tool's timeout, and reads stop at a row limit instead of loading eve
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from functools import partial
-from typing import Any, Literal
+from typing import Any
 
-from algen_agent_runtime.exceptions.errors import ConfigurationError, ToolExecutionError
-from algen_agent_runtime.tools.authoring import (
-    DEFAULT_TIMEOUT_SECONDS,
-    Toolkit,
-    ToolPreset,
-    read,
-)
-from algen_agent_runtime.tools.contracts import SideEffect, Tool, ToolContext
-from pydantic import BaseModel, ConfigDict, Field, create_model
+from algen_agent_runtime.tools.authoring import read
 
 from algen_agent_tools._env import env_names
 from algen_agent_tools.postgres.client import PostgresConnection, PostgresPool, open_pool
+from algen_agent_tools.sql.core import (
+    DEFAULT_MAX_ROWS,
+    ColumnDescription,
+    Dialect,
+    RowsAffected,
+    SqlToolkit,
+    TableDescription,
+    TableSummary,
+    schema_argument,
+    strict_model,
+    table_argument,
+    too_many_rows,
+)
+
+__all__ = [
+    "DEFAULT_DSN",
+    "DEFAULT_MAX_ROWS",
+    "ColumnDescription",
+    "PostgresDialect",
+    "PostgresToolkit",
+    "RowsAffected",
+    "TableDescription",
+    "TableSummary",
+    "postgres_toolkit",
+]
 
 DEFAULT_DSN = "env://ALGEN_TOOLS_POSTGRES_DSN"
-DEFAULT_MAX_ROWS = 500
 
 _PLACEHOLDER = re.compile(r"\$(\d+)")
-
-
-class RowsAffected(BaseModel):
-    """What a write query without ``RETURNING`` reports."""
-
-    rows_affected: int
-
-
-class TableSummary(BaseModel):
-    schema_name: str
-    name: str
-    kind: Literal["table", "view", "materialized_view"]
-    estimated_rows: int | None = None
-
-
-class ColumnDescription(BaseModel):
-    name: str
-    data_type: str
-    nullable: bool
-    default: str | None = None
-    primary_key: bool = False
-
-
-class TableDescription(BaseModel):
-    schema_name: str
-    name: str
-    columns: list[ColumnDescription]
-
 
 _LIST_TABLES = """
 SELECT n.nspname AS schema_name,
@@ -92,27 +80,75 @@ ORDER BY a.attnum
 """
 
 
-def _strict_model(name: str, **fields: Any) -> type[BaseModel]:
-    model: type[BaseModel] = create_model(name, __config__=ConfigDict(extra="forbid"), **fields)
-    return model
+async def _set_timeout(connection: PostgresConnection, timeout_seconds: float) -> None:
+    # An int built here, never caller text, so formatting it into the statement is safe.
+    # At least 1 ms: PostgreSQL reads statement_timeout = 0 as no timeout at all.
+    milliseconds = max(1, int(timeout_seconds * 1000))
+    await connection.execute(f"SET LOCAL statement_timeout = {milliseconds}")
 
 
-def _forbid_extra(model: type[BaseModel], name: str) -> type[BaseModel]:
-    """``model``, refusing unknown fields at validation as its schema already says it does."""
-    if model.model_config.get("extra") == "forbid":
-        return model
-    strict: type[BaseModel] = type(
-        f"{name}_arguments", (model,), {"model_config": ConfigDict(extra="forbid")}
-    )
-    return strict
+def _rows_affected(status: str) -> int:
+    """The count at the end of a command tag such as ``UPDATE 3`` or ``INSERT 0 1``."""
+    last = status.rsplit(" ", 1)[-1]
+    return int(last) if last.isdigit() else 0
 
 
-class PostgresToolkit(Toolkit):
+class PostgresDialect(Dialect):
+    """``$1``-style placeholders on an asyncpg pool: reads in a read-only transaction, every
+    statement under ``SET LOCAL statement_timeout``."""
+
+    def placeholder_problem(self, sql: str, expected: int) -> str | None:
+        found = {int(index) for index in _PLACEHOLDER.findall(sql)}
+        if found != set(range(1, expected + 1)):
+            return f"uses placeholders {sorted(found)}"
+        return None
+
+    async def read(
+        self,
+        client: PostgresPool,
+        sql: str,
+        values: Sequence[Any],
+        *,
+        timeout_seconds: float,
+        limit: int,
+        label: str,
+    ) -> list[Mapping[str, Any]]:
+        async with client.acquire() as connection, connection.transaction(readonly=True):
+            await _set_timeout(connection, timeout_seconds)
+            rows: list[Mapping[str, Any]] = []
+            async for record in connection.cursor(sql, *values):
+                if len(rows) == limit:
+                    raise too_many_rows(label, limit)
+                rows.append(record)
+            return rows
+
+    async def write(
+        self,
+        client: PostgresPool,
+        sql: str,
+        values: Sequence[Any],
+        *,
+        timeout_seconds: float,
+        returning: bool,
+        limit: int,
+        label: str,
+    ) -> list[Mapping[str, Any]] | int:
+        async with client.acquire() as connection, connection.transaction():
+            await _set_timeout(connection, timeout_seconds)
+            if not returning:
+                return _rows_affected(await connection.execute(sql, *values))
+            records = await connection.fetch(sql, *values)
+            if len(records) > limit:
+                raise too_many_rows(label, limit, rolled_back=True)
+            return list(records)
+
+
+class PostgresToolkit(SqlToolkit):
     """A toolkit of named, typed queries against one PostgreSQL database.
 
     ``dsn`` is an ``env://`` reference resolved when the pool opens. ``client`` replaces the
     pool opener, for example with :meth:`FakePostgres.factory
-    <algen_agent_tools.postgres.FakePostgres.factory>`.
+    <algen_agent_tools.postgres.FakePostgres.factory>`. Queries use ``$1``, ``$2``, ...
     """
 
     def __init__(
@@ -126,139 +162,15 @@ class PostgresToolkit(Toolkit):
         permission_prefix: str | None = None,
         client: Any = None,
     ) -> None:
-        if max_rows < 1:
-            raise ConfigurationError("max_rows must be at least 1")
         super().__init__(
             name,
+            dialect=PostgresDialect(),
+            max_rows=max_rows,
             permission_prefix=permission_prefix,
             env=env_names(dsn),
             client=client
             or partial(open_pool, dsn=dsn, min_size=pool_min_size, max_size=pool_max_size),
         )
-        self.max_rows = max_rows
-
-    async def fetch_rows[RowT: BaseModel](
-        self,
-        sql: str,
-        values: Sequence[Any],
-        row: type[RowT],
-        *,
-        label: str,
-        timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
-        max_rows: int | None = None,
-    ) -> list[RowT]:
-        """Run one read in a read-only transaction and return at most ``max_rows`` rows.
-
-        Use it inside your own ``@toolkit.tool(read())`` functions when a tool's result is not
-        a plain list of rows. More rows than the limit is an error, not a silent truncation.
-        """
-        limit = _row_limit(max_rows, self.max_rows)
-        pool: PostgresPool = await self.client()
-        async with pool.acquire() as connection, connection.transaction(readonly=True):
-            await _set_timeout(connection, timeout_seconds)
-            rows: list[RowT] = []
-            async for record in connection.cursor(sql, *values):
-                if len(rows) == limit:
-                    raise ToolExecutionError(
-                        f"query {label!r} matched more than {limit} rows; narrow its parameters"
-                    )
-                rows.append(row.model_validate(dict(record)))
-            return rows
-
-    def query(
-        self,
-        name: str,
-        sql: str,
-        *,
-        description: str,
-        params: type[BaseModel] | None = None,
-        row: type[BaseModel] | None = None,
-        preset: ToolPreset | None = None,
-        idempotency_key: bool = False,
-        max_rows: int | None = None,
-    ) -> Tool:
-        """Declare one query as the tool ``<toolkit>.<name>``.
-
-        ``params`` fields fill ``$1``, ``$2``, ... in field order; with ``idempotency_key`` the
-        call's idempotency key fills the next placeholder, so a write can be made exactly-once
-        (for example ``ON CONFLICT (request_key) DO NOTHING``). ``row`` is the model of each
-        returned row: a read returns ``list[row]``; a write returns ``list[row]`` when it has
-        ``RETURNING``, else :class:`RowsAffected`. ``preset`` defaults to ``read()``.
-        """
-        preset = preset or read()
-        reads = preset.side_effect in (SideEffect.NONE, SideEffect.READ)
-        params = _forbid_extra(params, name) if params else _strict_model(f"{name}_arguments")
-        fields = tuple(params.model_fields)
-        expected = len(fields) + (1 if idempotency_key else 0)
-        found = {int(index) for index in _PLACEHOLDER.findall(sql)}
-        if found != set(range(1, expected + 1)):
-            raise ConfigurationError(
-                f"query {name!r} uses placeholders {sorted(found)} but declares {expected} "
-                f"value(s): {', '.join(fields) or 'no params'}"
-                f"{' and the idempotency key' if idempotency_key else ''}"
-            )
-        if reads and row is None:
-            raise ConfigurationError(f"read query {name!r} needs a row model")
-        if reads and idempotency_key:
-            raise ConfigurationError(f"read query {name!r} cannot take the idempotency key")
-        limit = _row_limit(max_rows, self.max_rows)
-
-        async def run(arguments: BaseModel, context: ToolContext) -> Any:
-            values = [getattr(arguments, field) for field in fields]
-            if idempotency_key:
-                values.append(context.idempotency_key)
-            if reads:
-                assert row is not None
-                return await self.fetch_rows(
-                    sql,
-                    values,
-                    row,
-                    label=name,
-                    timeout_seconds=preset.timeout_seconds,
-                    max_rows=limit,
-                )
-            pool: PostgresPool = await self.client()
-            async with pool.acquire() as connection, connection.transaction():
-                await _set_timeout(connection, preset.timeout_seconds)
-                if row is None:
-                    status = await connection.execute(sql, *values)
-                    return RowsAffected(rows_affected=_rows_affected(status))
-                records = await connection.fetch(sql, *values)
-                if len(records) > limit:
-                    raise ToolExecutionError(
-                        f"query {name!r} returned more than {limit} rows; the change was "
-                        "rolled back"
-                    )
-                return [row.model_validate(dict(record)) for record in records]
-
-        run.__name__ = run.__qualname__ = name
-        run.__annotations__ = {
-            "arguments": params,
-            "context": ToolContext,
-            "return": list[row] if row is not None else RowsAffected,  # type: ignore[valid-type]
-        }
-        return self.tool(preset, description=description)(run)
-
-
-def _row_limit(max_rows: int | None, default: int) -> int:
-    if max_rows is None:
-        return default
-    if max_rows < 1:
-        raise ConfigurationError("max_rows must be at least 1")
-    return max_rows
-
-
-async def _set_timeout(connection: PostgresConnection, timeout_seconds: float) -> None:
-    # An int built here, never caller text, so formatting it into the statement is safe.
-    # At least 1 ms: PostgreSQL reads statement_timeout = 0 as no timeout at all.
-    milliseconds = max(1, int(timeout_seconds * 1000))
-    await connection.execute(f"SET LOCAL statement_timeout = {milliseconds}")
-
-
-def _rows_affected(status: str) -> int:
-    """The count at the end of a command tag such as ``UPDATE 3`` or ``INSERT 0 1``."""
-    last = status.rsplit(" ", 1)[-1]
-    return int(last) if last.isdigit() else 0
 
 
 def postgres_toolkit(
@@ -274,21 +186,8 @@ def postgres_toolkit(
 
     Add the database's own typed queries with :meth:`PostgresToolkit.query`.
     """
-    if not schemas:
-        raise ConfigurationError("schemas must name at least one schema")
+    schema_field = schema_argument(schemas)
     toolkit = PostgresToolkit(name, dsn=dsn, max_rows=max_rows, client=client)
-    schema_field = (
-        Literal[schemas],
-        Field(default=schemas[0], description=f"One of: {', '.join(schemas)}."),
-    )
-    list_arguments = _strict_model("list_tables_arguments", schema_name=schema_field)
-    describe_arguments = _strict_model(
-        "describe_table_arguments",
-        schema_name=schema_field,
-        table=(str, Field(min_length=1, max_length=63, description="The table or view name.")),
-    )
-    preset = read()
-
     toolkit.query(
         "list_tables",
         _LIST_TABLES,
@@ -296,30 +195,18 @@ def postgres_toolkit(
             "List the tables and views you can read in one database schema, with their "
             "approximate row counts."
         ),
-        params=list_arguments,
+        params=strict_model("list_tables_arguments", schema_name=schema_field),
         row=TableSummary,
-        preset=preset,
+        preset=read(),
     )
-
-    async def describe_table(arguments: BaseModel) -> TableDescription:
-        """Describe one table or view: each column's name, type, whether it may be null, its
-        default and whether it is part of the primary key."""
-        schema: str = getattr(arguments, "schema_name")  # noqa: B009 - a dynamic model's field
-        table: str = getattr(arguments, "table")  # noqa: B009
-        columns = await toolkit.fetch_rows(
-            _DESCRIBE_TABLE,
-            [schema, table],
-            ColumnDescription,
-            label="describe_table",
-            timeout_seconds=preset.timeout_seconds,
-        )
-        if not columns:
-            raise ToolExecutionError(f"no readable table {table!r} in schema {schema!r}")
-        return TableDescription(schema_name=schema, name=table, columns=columns)
-
-    describe_table.__annotations__ = {
-        "arguments": describe_arguments,
-        "return": TableDescription,
-    }
-    toolkit.tool(preset)(describe_table)
+    toolkit.add_describe_table(
+        _DESCRIBE_TABLE,
+        arguments=strict_model(
+            "describe_table_arguments", schema_name=schema_field, table=table_argument(63)
+        ),
+        values=lambda arguments: [
+            getattr(arguments, "schema_name"),  # noqa: B009 - a dynamic model's field
+            getattr(arguments, "table"),  # noqa: B009
+        ],
+    )
     return toolkit

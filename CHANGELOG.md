@@ -10,6 +10,16 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ### Added
 
+- SQLite (`algen_agent_tools.sqlite`, extra `sqlite`, no packages): `sqlite.list_tables` and
+  `sqlite.describe_table` (read), plus code-declared typed queries with `?` placeholders. The
+  file opens read-only unless the toolkit is built with `read_only=False`. Reads run with
+  `PRAGMA query_only`. A progress handler interrupts a statement that runs past the tool's
+  timeout. Setting: `ALGEN_TOOLS_SQLITE_PATH`. Part of `all`.
+- `algen_agent_tools.sql`: the shared database core, with `SqlToolkit`, `Dialect`,
+  `TooManyRows` and the catalog models. `PostgresToolkit` is now a `SqlToolkit` with a
+  `PostgresDialect`. Its API, tools and errors are unchanged, and too many rows now raises
+  `TooManyRows`, a `ToolExecutionError`.
+
 - GitHub (`algen_agent_tools.github`, extra `github`): the first shipped MCP overlay, for GitHub's
   hosted MCP server. It declares 37 of the server's 46 tools: 22 read and 10 write; 3 write
   tools that need approval on every call (`pull_request_review_write`, `push_files`,

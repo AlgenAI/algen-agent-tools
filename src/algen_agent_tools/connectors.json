@@ -5263,6 +5263,197 @@
       ]
     },
     {
+      "category": "database",
+      "code_only_options": [
+        "max_rows",
+        "query",
+        "read_only"
+      ],
+      "connector": "sqlite",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a3/docs/connectors/sqlite.md",
+      "egress": [],
+      "manifest": {
+        "domain_plugins": [
+          "algen_agent_tools.sqlite"
+        ],
+        "enabled_tools": [
+          "sqlite.describe_table",
+          "sqlite.list_tables"
+        ],
+        "security": {
+          "trusted_plugin_prefixes": [
+            "algen_agent_tools"
+          ]
+        },
+        "tool_permissions": [
+          "sqlite.read"
+        ]
+      },
+      "maturity": "alpha",
+      "plugin": "algen_agent_tools.sqlite",
+      "requirement": "algen-agent-tools[sqlite]==0.2.0a3",
+      "settings": [
+        {
+          "default": null,
+          "description": "The path of an existing SQLite database file; it opens read-only.",
+          "env": "ALGEN_TOOLS_SQLITE_PATH",
+          "example": "/var/lib/app/data.db",
+          "required": true,
+          "secret": false
+        }
+      ],
+      "summary": "Read a SQLite database file through typed tools: list and describe its tables. Named, parameterised queries are declared in code; the model never writes SQL.",
+      "title": "SQLite",
+      "tools": [
+        {
+          "description": "Describe one table or view: each column's name, type, whether it may be null, its\ndefault and whether it is part of the primary key.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "schema_name": {
+                "const": "main",
+                "default": "main",
+                "description": "One of: main.",
+                "type": "string"
+              },
+              "table": {
+                "description": "The table or view name.",
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "table"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "sqlite.describe_table",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "columns": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data_type": {
+                      "type": "string"
+                    },
+                    "default": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "nullable": {
+                      "type": "boolean"
+                    },
+                    "primary_key": {
+                      "default": false,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "data_type",
+                    "nullable"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "name": {
+                "type": "string"
+              },
+              "schema_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schema_name",
+              "name",
+              "columns"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "sqlite.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List the tables and views in the database.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {},
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "sqlite.list_tables",
+          "output_schema": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "estimated_rows": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "kind": {
+                  "enum": [
+                    "table",
+                    "view",
+                    "materialized_view"
+                  ],
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "schema_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schema_name",
+                "name",
+                "kind"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "permissions": [
+            "sqlite.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
       "category": "messaging",
       "code_only_options": [
         "artifact_sink",
