@@ -17,11 +17,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # On workflow_dispatch use the provided tag; on release event use the release ref.
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -82,7 +82,7 @@ jobs:
           /tmp/algen-tools-release-smoke/bin/pip install --upgrade pip
           /tmp/algen-tools-release-smoke/bin/pip install --pre dist/*.whl
           /tmp/algen-tools-release-smoke/bin/python scripts/smoke_describe.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: python-distributions
           path: dist/
@@ -97,7 +97,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: python-distributions
           path: dist/
