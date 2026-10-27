@@ -23,6 +23,13 @@ A tool's name, input schema, side effect and permission are part of the public c
   `telegram.get_attachment` (read) is available when the toolkit is built with an
   `artifact_sink`. Settings: `ALGEN_TOOLS_TELEGRAM_BOT_TOKEN` and the optional
   `ALGEN_TOOLS_TELEGRAM_ALLOWED_CHATS`. Part of `all`.
+- Discord (`algen_agent_tools.discord`, extra `discord`): one bot in one server through the
+  REST API, on the shared messaging tools. It offers `discord.list_conversations` and
+  `discord.list_messages` (read; newest first, with backward paging), `discord.send_message`
+  (external) and, when built with an `artifact_sink`, `discord.get_attachment` (read). Every
+  channel is checked to be a text channel or thread of `ALGEN_TOOLS_DISCORD_GUILD_ID`, so direct
+  messages and other servers are refused. Sends never ping anyone, suppress link embeds, and
+  carry an enforced nonce made from the idempotency key. Part of `all`.
 - `HostLockedClient(url_secrets=...)` (internal): redacts secrets that an API requires in the
   URL from `httpx` request log lines.
 
