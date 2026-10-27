@@ -8,7 +8,7 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
-## [0.1.0a1] - Unreleased
+## [0.1.0a1] - 2026-10-27
 
 ### Added
 
