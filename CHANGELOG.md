@@ -8,6 +8,8 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a4] - 2026-10-27
+
 ### Added
 
 - Webhook (`algen_agent_tools.webhook`, extra `webhook`, no packages): `webhook_toolkit` builds
@@ -46,6 +48,20 @@ A tool's name, input schema, side effect and permission are part of the public c
   directory are not exposed. The schemas were pinned from the live server on 2026-10-27. Settings:
   `ALGEN_TOOLS_GITHUB_TOKEN`. Part of `all`.
 - Catalog category `development`.
+
+### Upgrade notes
+
+- No existing tool's name, input schema, side effect or permissions changed. `connectors.json`
+  entries for the existing connectors are unchanged apart from the version.
+- `PostgresToolkit` now runs on the shared `algen_agent_tools.sql` core. Its constructor,
+  `query()`, `fetch_rows()`, tools and messages are the same. One difference: more rows than the
+  limit now raises `TooManyRows`, a subclass of `ToolExecutionError`, so existing `except`
+  clauses still catch it.
+- The new connectors are opt-in: GitHub, MySQL and SQLite load only when an agent lists their
+  plugin, and the webhook sender exists only when built in code. The `all` extra now also
+  installs `aiomysql[rsa]` (MySQL, with `cryptography`) and the Runtime's MCP client (GitHub).
+- The connector catalog adds the `development` category and the `mysql` egress protocol. Hosts
+  that validate the catalog against a fixed list of values should accept these.
 
 ## [0.2.0a3] - 2026-10-27
 
