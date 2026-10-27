@@ -54,7 +54,8 @@ gmail = []
 # Outlook uses httpx, already installed with the Runtime.
 outlook = []
 mcp = ["algen-agent-runtime[mcp]>=0.1.0a12,<0.2"]
-mysql = ["aiomysql>=0.2,<1"]
+# rsa: MySQL 8 authenticates with caching_sha2_password, which needs cryptography.
+mysql = ["aiomysql[rsa]>=0.2,<1"]
 postgres = ["asyncpg>=0.29,<1"]
 smtp = []
 # SQLite uses the standard library's sqlite3.

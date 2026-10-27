@@ -6,7 +6,7 @@ declared in code, exactly as for [PostgreSQL](postgres.md); the model never writ
 | | |
 | --- | --- |
 | Plugin | `algen_agent_tools.mysql` |
-| Extra | `pip install "algen-agent-tools[mysql]"` (`aiomysql`) |
+| Extra | `pip install "algen-agent-tools[mysql]"` (`aiomysql` with `cryptography`, which MySQL 8's default authentication needs) |
 | Environment | `ALGEN_TOOLS_MYSQL_DSN` (secret) |
 | Owner | @saurav-samantray |
 
