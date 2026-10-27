@@ -1,0 +1,193 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: ruff format --check src tests scripts
+      - run: ruff check src tests scripts
+      - run: mypy src/algen_agent_tools
+      - run: pytest -q -p no:cacheprovider
+
+  runtime-range:
+    name: Runtime ${{ matrix.bound }} supported (all extras)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        bound: [lowest, highest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,all]'
+      - name: Install the ${{ matrix.bound }} supported Runtime
+        run: |
+          requirement="$(python scripts/runtime_requirement.py ${{ matrix.bound }})"
+          echo "Installing ${requirement}"
+          python -m pip install --pre --upgrade "${requirement}"
+          python -c "import algen_agent_runtime; print('algen-agent-runtime', algen_agent_runtime.__version__)"
+      - run: pytest -q -p no:cacheprovider
+
+  postgres-integration:
+    name: PostgreSQL integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: algen_tools_test
+          POSTGRES_USER: algen
+          POSTGRES_PASSWORD: algen_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,postgres]'
+      - name: Run PostgreSQL integration tests
+        env:
+          ALGEN_TOOLS_TEST_POSTGRES_DSN: postgresql://algen:algen_password@localhost:5432/algen_tools_test
+        run: pytest -q -p no:cacheprovider -m integration -rs
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,all]'
+      - run: >-
+          pytest -q -p no:cacheprovider
+          --cov=algen_agent_tools
+          --cov-report=term
+          --cov-report=xml
+          --cov-fail-under=85
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: error
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip build twine
+      - run: python -m build
+      - run: python -m twine check dist/*
+      - name: Generate and verify artifact checksums
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          dist = Path("dist")
+          sums = []
+          for p in sorted(dist.iterdir()):
+              if p.suffix in (".whl", ".gz"):
+                  digest = hashlib.sha256(p.read_bytes()).hexdigest()
+                  sums.append(f"{digest}  {p.name}\n")
+          Path("dist/SHA256SUMS").write_text("".join(sums))
+          PY
+          cd dist
+          sha256sum -c SHA256SUMS
+      - name: Inspect artifact contents
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import tarfile
+          import zipfile
+
+          wheel = next(Path("dist").glob("*.whl"))
+          sdist = next(Path("dist").glob("*.tar.gz"))
+          with zipfile.ZipFile(wheel) as archive:
+              names = set(archive.namelist())
+              required = {"algen_agent_tools/py.typed", "algen_agent_tools/testing.py"}
+              missing = required - names
+              if missing:
+                  raise SystemExit(f"wheel missing required files: {sorted(missing)}")
+              if any("__pycache__" in name or name.endswith(".pyc") for name in names):
+                  raise SystemExit("wheel contains Python cache files")
+              if any(name.startswith("tests/") for name in names):
+                  raise SystemExit("wheel contains tests")
+          with tarfile.open(sdist) as archive:
+              names = archive.getnames()
+              for required in ("LICENSE", "NOTICE", "README.md"):
+                  if not any(name.endswith(f"/{required}") for name in names):
+                      raise SystemExit(f"sdist missing {required}")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-distributions
+          path: dist/
+          if-no-files-found: error
+
+  clean-install:
+    name: Clean install (Python ${{ matrix.python-version }})
+    needs: package
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-distributions
+          path: dist/
+      - name: Verify checksums
+        run: |
+          cd dist
+          sha256sum -c SHA256SUMS
+      - name: Install the wheel and describe its plugins outside the checkout
+        run: |
+          venv="/tmp/algen-tools-smoke-${{ matrix.python-version }}"
+          python -m venv "$venv"
+          "$venv/bin/pip" install --upgrade pip
+          "$venv/bin/pip" install --pre dist/*.whl
+          "$venv/bin/python" scripts/smoke_describe.py

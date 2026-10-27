@@ -1,0 +1,14 @@
+* @saurav-samantray
+
+/.github/ @saurav-samantray
+/SECURITY.md @saurav-samantray
+/GOVERNANCE.md @saurav-samantray
+/docs/connector-policy.md @saurav-samantray
+
+# Connector owners (see docs/connectors/<connector>.md)
+/src/algen_agent_tools/sample/ @saurav-samantray
+/src/algen_agent_tools/postgres/ @saurav-samantray
+/src/algen_agent_tools/mail/ @saurav-samantray
+/src/algen_agent_tools/smtp/ @saurav-samantray
+/src/algen_agent_tools/gmail/ @saurav-samantray
+/src/algen_agent_tools/mcp/ @saurav-samantray
