@@ -2,6 +2,7 @@ from algen_agent_tools._env import env_name
 from algen_agent_tools._plugin import toolkit_plugin
 from algen_agent_tools.catalog import ConnectorInfo, Egress, Setting
 from algen_agent_tools.gmail.toolkit import (
+    ALLOWED_DOMAINS,
     CLIENT_ID,
     CLIENT_SECRET,
     REFRESH_TOKEN,
@@ -35,12 +36,21 @@ INFO = ConnectorInfo(
             description="The mailbox's address, or a verified alias, that email is sent from.",
             example="agent@example.com",
         ),
+        Setting(
+            env=env_name(ALLOWED_DOMAINS),
+            description=(
+                "Comma-separated domains recipients and Reply-To must belong to (subdomains "
+                "included). Unset: any domain."
+            ),
+            required=False,
+            example="example.com,partner.example",
+        ),
     ),
     egress=(
         Egress(protocol="https", host="oauth2.googleapis.com", port=443),
         Egress(protocol="https", host="gmail.googleapis.com", port=443),
     ),
-    code_only_options=("allowed_domains", "artifact_loader"),
+    code_only_options=("artifact_loader",),
 )
 
 GmailPlugin = toolkit_plugin(INFO, gmail_toolkit)

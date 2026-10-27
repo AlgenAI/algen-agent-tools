@@ -4,7 +4,6 @@
     {
       "category": "email",
       "code_only_options": [
-        "allowed_domains",
         "artifact_loader"
       ],
       "connector": "gmail",
@@ -75,6 +74,14 @@
           "env": "ALGEN_TOOLS_GMAIL_SENDER",
           "example": "agent@example.com",
           "required": true,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "Comma-separated domains recipients and Reply-To must belong to (subdomains included). Unset: any domain.",
+          "env": "ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS",
+          "example": "example.com,partner.example",
+          "required": false,
           "secret": false
         }
       ],
@@ -748,7 +755,6 @@
     {
       "category": "email",
       "code_only_options": [
-        "allowed_domains",
         "artifact_loader"
       ],
       "connector": "smtp",
@@ -828,6 +834,14 @@
           "example": null,
           "required": false,
           "secret": true
+        },
+        {
+          "default": null,
+          "description": "Comma-separated domains recipients and Reply-To must belong to (subdomains included). Unset: any domain.",
+          "env": "ALGEN_TOOLS_SMTP_ALLOWED_DOMAINS",
+          "example": "example.com,partner.example",
+          "required": false,
+          "secret": false
         }
       ],
       "summary": "Send email through any SMTP server from one fixed sender address. The model chooses recipients, subject and body; every send is an external action.",

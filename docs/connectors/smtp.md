@@ -6,7 +6,7 @@ Send email over SMTP from the deployment's own address.
 | --- | --- |
 | Plugin | `algen_agent_tools.smtp` |
 | Extra | `pip install "algen-agent-tools[smtp]"` (no extra packages) |
-| Environment | `ALGEN_TOOLS_SMTP_HOST`, `ALGEN_TOOLS_SMTP_SENDER` (required); `ALGEN_TOOLS_SMTP_PORT` (587), `ALGEN_TOOLS_SMTP_SECURITY` (`starttls`), `ALGEN_TOOLS_SMTP_USERNAME`, `ALGEN_TOOLS_SMTP_PASSWORD` |
+| Environment | `ALGEN_TOOLS_SMTP_HOST`, `ALGEN_TOOLS_SMTP_SENDER` (required); `ALGEN_TOOLS_SMTP_PORT` (587), `ALGEN_TOOLS_SMTP_SECURITY` (`starttls`), `ALGEN_TOOLS_SMTP_USERNAME`, `ALGEN_TOOLS_SMTP_PASSWORD`, `ALGEN_TOOLS_SMTP_ALLOWED_DOMAINS` |
 | Owner | @saurav-samantray |
 
 ## Tools
@@ -43,7 +43,8 @@ number in its body needs `pii` left out of `guardrail_policy.tool_policies`:
 ```
 
 Keep the agent's approval policy on (the default asks before every external call), and use
-`allowed_domains` to bound who it can write to.
+`allowed_domains` (or the `ALGEN_TOOLS_SMTP_ALLOWED_DOMAINS` setting, comma-separated) to bound
+who it can write to.
 
 ## Guarantees
 
@@ -53,7 +54,8 @@ Keep the agent's approval policy on (the default asks before every external call
 - **One message per idempotency key.** The key becomes a deterministic Message-ID and the tool is
   tried once, so a replay does not send twice through the Runtime and a receiving server can
   recognise a duplicate.
-- **Bounded audience.** With `allowed_domains`, every recipient and the Reply-To address must be
+- **Bounded audience.** With `allowed_domains`, or without it the
+  `ALGEN_TOOLS_SMTP_ALLOWED_DOMAINS` setting, every recipient and the Reply-To address must be
   in those domains or their subdomains.
 - **TLS by default.** `security` is `starttls` or `tls`; `plain` is allowed only to loopback.
 - **Content is not captured** in audit metadata, and errors name only the failure type.

@@ -31,6 +31,11 @@ A tool's name, input schema, side effect and permission are part of the public c
   `AttachmentPolicy` (size limit, allowed types, and a check that a file's leading bytes match
   its declared type) and `add_get_attachment_tool`, which stores a fetched file as an artifact
   and returns only its reference. No connector offers `get_attachment` yet.
+- `ALGEN_TOOLS_SMTP_ALLOWED_DOMAINS` and `ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS`: the recipient
+  domain allowlist as an optional, comma-separated setting, so a deployment configured without
+  code (such as from Studio) can bound who an agent writes to. `allowed_domains=` in code still
+  takes precedence; a malformed domain fails when the client opens. `FakeMailbox.factory` takes
+  `allowed_domains` to test it.
 - `InboundEmailSummary` and `InboundEmailAttachment` are also importable from
   `algen_agent_tools.mail`, for every mailbox connector; `algen_agent_tools.gmail` still exports
   them.

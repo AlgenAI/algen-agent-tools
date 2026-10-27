@@ -5,7 +5,7 @@ from typing import Annotated, Any
 from algen_agent_runtime.tools.authoring import Toolkit, read
 from pydantic import Field, SecretStr
 
-from algen_agent_tools._env import SecretResolver, env_names
+from algen_agent_tools._env import SecretResolver, env_names, resolve_optional
 from algen_agent_tools.gmail.client import GmailMailboxClient, GmailMailboxPage, GmailOAuthSettings
 from algen_agent_tools.mail.models import EmailAddress, EmailArtifactLoader
 from algen_agent_tools.mail.tool import (
@@ -14,13 +14,15 @@ from algen_agent_tools.mail.tool import (
     MailClient,
     add_send_tool,
     bind_artifact_loader,
+    parse_domains,
 )
 
 CLIENT_ID = "env://ALGEN_TOOLS_GMAIL_CLIENT_ID"
 CLIENT_SECRET = "env://ALGEN_TOOLS_GMAIL_CLIENT_SECRET"
 REFRESH_TOKEN = "env://ALGEN_TOOLS_GMAIL_REFRESH_TOKEN"
 SENDER = "env://ALGEN_TOOLS_GMAIL_SENDER"
-DEFAULT_ENV = env_names(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN, SENDER)
+ALLOWED_DOMAINS = "env://ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS"
+DEFAULT_ENV = env_names(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN, SENDER, ALLOWED_DOMAINS)
 
 # A Gmail list call fetches each message's metadata in turn, so allow for a full page.
 LIST_TIMEOUT_SECONDS = 120
@@ -34,6 +36,7 @@ def gmail_toolkit(
     refresh_token: str = REFRESH_TOKEN,
     sender: str = SENDER,
     allowed_domains: tuple[str, ...] = (),
+    allowed_domains_setting: str | None = ALLOWED_DOMAINS,
     artifact_loader: ContextualArtifactLoader | None = None,
     client: Any = None,
 ) -> Toolkit:
@@ -41,7 +44,9 @@ def gmail_toolkit(
     and ``<name>.send_email`` (external).
 
     The OAuth client and refresh token are ``env://`` references resolved when the client
-    opens. ``sender`` is the mailbox's address (or a verified alias).
+    opens. ``sender`` is the mailbox's address (or a verified alias). Recipients are limited to
+    ``allowed_domains`` or, when that is empty, to the comma-separated domains in
+    ``allowed_domains_setting`` (unset: any domain).
     """
 
     async def open_client(secrets: SecretResolver) -> MailClient:
@@ -53,11 +58,12 @@ def gmail_toolkit(
         return MailClient(
             EmailAddress(address=await secrets(sender)),
             GmailMailboxClient(settings, artifact_loader=_bound(artifact_loader)),
+            parse_domains(await resolve_optional(secrets, allowed_domains_setting)),
         )
 
     toolkit = Toolkit(
         name,
-        env=env_names(client_id, client_secret, refresh_token, sender),
+        env=env_names(client_id, client_secret, refresh_token, sender, allowed_domains_setting),
         client=client or open_client,
     )
 

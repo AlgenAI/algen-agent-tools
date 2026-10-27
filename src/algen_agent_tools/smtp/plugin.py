@@ -2,6 +2,7 @@ from algen_agent_tools._env import env_name
 from algen_agent_tools._plugin import toolkit_plugin
 from algen_agent_tools.catalog import ConnectorInfo, Egress, Setting
 from algen_agent_tools.smtp.toolkit import (
+    ALLOWED_DOMAINS,
     HOST,
     PASSWORD,
     PORT,
@@ -49,9 +50,18 @@ INFO = ConnectorInfo(
             secret=True,
             required=False,
         ),
+        Setting(
+            env=env_name(ALLOWED_DOMAINS),
+            description=(
+                "Comma-separated domains recipients and Reply-To must belong to (subdomains "
+                "included). Unset: any domain."
+            ),
+            required=False,
+            example="example.com,partner.example",
+        ),
     ),
     egress=(Egress(protocol="smtp", host_setting=env_name(HOST)),),
-    code_only_options=("allowed_domains", "artifact_loader"),
+    code_only_options=("artifact_loader",),
 )
 
 SmtpPlugin = toolkit_plugin(INFO, smtp_toolkit)

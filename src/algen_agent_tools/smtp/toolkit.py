@@ -13,6 +13,7 @@ from algen_agent_tools.mail.tool import (
     MailClient,
     add_send_tool,
     bind_artifact_loader,
+    parse_domains,
 )
 from algen_agent_tools.smtp.sender import SmtpEmailSender, SmtpSettings
 
@@ -22,7 +23,8 @@ SECURITY = "env://ALGEN_TOOLS_SMTP_SECURITY"
 USERNAME = "env://ALGEN_TOOLS_SMTP_USERNAME"
 PASSWORD = "env://ALGEN_TOOLS_SMTP_PASSWORD"
 SENDER = "env://ALGEN_TOOLS_SMTP_SENDER"
-DEFAULT_ENV = env_names(HOST, PORT, SECURITY, USERNAME, PASSWORD, SENDER)
+ALLOWED_DOMAINS = "env://ALGEN_TOOLS_SMTP_ALLOWED_DOMAINS"
+DEFAULT_ENV = env_names(HOST, PORT, SECURITY, USERNAME, PASSWORD, SENDER, ALLOWED_DOMAINS)
 
 
 def smtp_toolkit(
@@ -35,6 +37,7 @@ def smtp_toolkit(
     username: str | None = USERNAME,
     password: str | None = PASSWORD,
     allowed_domains: tuple[str, ...] = (),
+    allowed_domains_setting: str | None = ALLOWED_DOMAINS,
     artifact_loader: ContextualArtifactLoader | None = None,
     client: Any = None,
 ) -> Toolkit:
@@ -42,10 +45,12 @@ def smtp_toolkit(
 
     Every setting is an ``env://`` reference resolved when the client opens. ``host`` and
     ``sender`` are required; ``port`` (default 587), ``security`` (``starttls``, ``tls`` or
-    ``plain``; default ``starttls``), ``username`` and ``password`` may be unset. With an
-    ``artifact_loader`` the tool can attach Runtime artifacts by reference.
+    ``plain``; default ``starttls``), ``username`` and ``password`` may be unset. Recipients are
+    limited to ``allowed_domains`` or, when that is empty, to the comma-separated domains in
+    ``allowed_domains_setting`` (unset: any domain). With an ``artifact_loader`` the tool can
+    attach Runtime artifacts by reference.
     """
-    references = (host, sender, port, security, username, password)
+    references = (host, sender, port, security, username, password, allowed_domains_setting)
 
     async def open_client(secrets: SecretResolver) -> MailClient:
         login = await resolve_optional(secrets, username)
@@ -66,6 +71,7 @@ def smtp_toolkit(
         return MailClient(
             EmailAddress(address=await secrets(sender)),
             SmtpEmailSender(settings, artifact_loader=_bound(artifact_loader)),
+            parse_domains(await resolve_optional(secrets, allowed_domains_setting)),
         )
 
     toolkit = Toolkit(name, env=env_names(*references), client=client or open_client)

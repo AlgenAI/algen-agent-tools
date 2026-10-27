@@ -11,13 +11,15 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
-from algen_agent_runtime.exceptions.errors import PolicyDeniedError
+from algen_agent_runtime.exceptions.errors import ConfigurationError, PolicyDeniedError
 from algen_agent_runtime.tools.authoring import Toolkit, external
 from algen_agent_runtime.tools.contracts import Tool, ToolContext
 from pydantic import BaseModel, ConfigDict, Field
 
 from algen_agent_tools._core.context import current_call, tool_call
+from algen_agent_tools._env import split_list
 from algen_agent_tools.mail.models import (
+    DOMAIN,
     EmailAddress,
     EmailArtifactLoader,
     EmailAttachmentReference,
@@ -74,6 +76,9 @@ class MailClient:
     transport: Any
     """An :class:`~algen_agent_tools.mail.models.EmailSender`; the Gmail transport also
     lists messages."""
+    allowed_domains: tuple[str, ...] = ()
+    """Recipient domains from the deployment's settings; used when the toolkit was built
+    without ``allowed_domains``."""
 
     async def aclose(self) -> None:
         close = getattr(self.transport, "aclose", None) or getattr(self.transport, "close", None)
@@ -81,6 +86,16 @@ class MailClient:
             result = close()
             if inspect.isawaitable(result):
                 await result
+
+
+def parse_domains(value: str | None) -> tuple[str, ...]:
+    """A comma-separated domain allowlist setting, normalised; a malformed domain is a
+    configuration error."""
+    domains = tuple(domain.casefold().strip(".") for domain in split_list(value))
+    invalid = [domain for domain in domains if not DOMAIN.fullmatch(domain) or "." not in domain]
+    if invalid:
+        raise ConfigurationError(f"allowed email domains are invalid: {invalid}")
+    return domains
 
 
 def _addressed_domains(message: EmailMessage) -> set[str]:
@@ -103,14 +118,15 @@ def add_send_tool(
 
     The idempotency key becomes the message's deterministic Message-ID. ``allowed_domains``
     (when not empty) refuses any recipient or reply-to address outside those domains or their
-    subdomains.
+    subdomains; without it, the client's ``allowed_domains`` setting applies.
     """
-    allowed = tuple(domain.casefold().strip(".") for domain in allowed_domains)
+    configured = tuple(domain.casefold().strip(".") for domain in allowed_domains)
     model = OutgoingEmailWithAttachments if attachments else OutgoingEmail
 
     async def send_email(email: OutgoingEmail, context: ToolContext) -> EmailDeliveryReceipt:
         client: MailClient = await toolkit.client()
         message = EmailMessage(sender=client.sender, **dict(email))
+        allowed = configured or client.allowed_domains
         if allowed:
             outside = sorted(
                 domain
