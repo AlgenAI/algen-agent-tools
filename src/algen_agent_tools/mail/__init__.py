@@ -2,7 +2,12 @@
 bounded summaries of inbound mail."""
 
 from algen_agent_tools.mail.fake import FakeMailbox
-from algen_agent_tools.mail.inbound import InboundEmailAttachment, InboundEmailSummary
+from algen_agent_tools.mail.inbound import (
+    InboundEmailAttachment,
+    InboundEmailDetail,
+    InboundEmailSummary,
+    html_to_text,
+)
 from algen_agent_tools.mail.models import (
     EmailAddress,
     EmailArtifactLoader,
@@ -35,6 +40,7 @@ __all__ = [
     "EmailSender",
     "FakeMailbox",
     "InboundEmailAttachment",
+    "InboundEmailDetail",
     "InboundEmailSummary",
     "MailClient",
     "OutgoingEmail",
@@ -42,4 +48,5 @@ __all__ = [
     "add_send_tool",
     "bind_artifact_loader",
     "build_mime_message",
+    "html_to_text",
 ]

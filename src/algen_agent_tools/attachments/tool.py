@@ -16,7 +16,11 @@ Fetch = Callable[[Any, str, str], Awaitable[AttachmentUpload]]
 """Downloads one attachment: ``(client, message_id, attachment_id)``. The client is the
 toolkit's own, so the fetch reaches only the connector's configured hosts."""
 
-_Id = Annotated[str, Field(min_length=1, max_length=2_000)]
+ID_PATTERN = r"^[A-Za-z0-9_=-][A-Za-z0-9_.=-]*$"
+"""Provider ids as tools accept them: no slashes, and never ``.`` or ``..``, so an id cannot
+change which API path a connector calls."""
+
+_Id = Annotated[str, Field(min_length=1, max_length=2_000, pattern=ID_PATTERN)]
 
 
 def add_get_attachment_tool(
@@ -34,7 +38,17 @@ def add_get_attachment_tool(
     model."""
 
     async def get_attachment(
-        message_id: _Id, attachment_id: _Id, context: ToolContext
+        message_id: _Id,
+        attachment_id: Annotated[
+            _Id,
+            Field(
+                description=(
+                    "The attachment's id from the message: its part_id when the listing gives "
+                    "one, otherwise its provider_attachment_id."
+                )
+            ),
+        ],
+        context: ToolContext,
     ) -> AttachmentRef:
         client = await toolkit.client()
         upload = await fetch(client, message_id, attachment_id)

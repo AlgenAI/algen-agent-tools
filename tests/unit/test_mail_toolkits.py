@@ -192,7 +192,8 @@ def test_plugins_describe_their_tools_and_env() -> None:
     gmail = plugin_tools("algen_agent_tools.gmail")
 
     assert set(smtp) == {"smtp.send_email"}
-    assert set(gmail) == {"gmail.list_messages", "gmail.send_email"}
+    assert set(gmail) == {"gmail.get_message", "gmail.list_messages", "gmail.send_email"}
+    assert gmail["gmail.get_message"].side_effect == SideEffect.READ
     assert gmail["gmail.list_messages"].side_effect == SideEffect.READ
     assert "ALGEN_TOOLS_SMTP_PASSWORD" in smtp["smtp.send_email"].env
     assert "ALGEN_TOOLS_GMAIL_REFRESH_TOKEN" in gmail["gmail.send_email"].env

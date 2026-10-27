@@ -8,6 +8,32 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Added
+
+- `gmail.get_message` (read): one message with its headers, `cc`, and its body as plain text
+  (the text part, or the HTML part without markup, scripts or styles), cut to `max_chars` with
+  `body_truncated` set when cut.
+- `gmail.get_attachment` (read), offered when `gmail_toolkit` gets an `artifact_sink`: saves one
+  attachment as an artifact within `attachment_policy` and returns only its reference. The file
+  name and type come from the message; the attachment is named by its stable `part_id` (or its
+  attachment id).
+- `InboundEmailDetail` and `html_to_text` in `algen_agent_tools.mail`. `FakeMailbox` serves
+  `get_message` and, from `files=`, `get_attachment`.
+- `algen_agent_tools.attachments.ID_PATTERN`: provider ids in tool inputs cannot contain a slash
+  or be `.` or `..`.
+
+### Changed
+
+- `gmail.list_messages` results give each attachment a `part_id` (additive output field).
+- Gmail URL-encodes message and attachment ids into a single path segment.
+- The Gmail toolkit declares `artifact_sink` and `attachment_policy` among its code-only options
+  in the connector catalog.
+
+### Upgrade notes
+
+- Agents that enable every Gmail tool by listing them should add `gmail.get_message` to
+  `enabled_tools` to use it; it needs only `gmail.read` and the `gmail.readonly` scope.
+
 ## [0.2.0a1] - 2026-10-27
 
 ### Added
