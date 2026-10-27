@@ -68,6 +68,7 @@ jobs:
                   "algen_agent_tools/py.typed",
                   "algen_agent_tools/testing.py",
                   "algen_agent_tools/connectors.json",
+                  "algen_agent_tools/github/github.overlay.yaml",
               }
               missing = required - names
               if missing:

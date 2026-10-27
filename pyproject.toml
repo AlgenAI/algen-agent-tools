@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-  "algen-agent-tools[discord,documents,gmail,mcp,outlook,postgres,smtp,telegram]",
+  "algen-agent-tools[discord,documents,github,gmail,mcp,outlook,postgres,smtp,telegram]",
 ]
 # Discord uses httpx, already installed with the Runtime.
 discord = []
@@ -48,6 +48,8 @@ discord = []
 # PDFs are read by the Runtime's document inspection, which needs PyMuPDF (AGPL-3.0). DOCX, text
 # and Markdown need nothing beyond the Runtime.
 documents = ["algen-agent-runtime[documents]>=0.1.0a12,<0.2"]
+# GitHub is an MCP overlay, so it needs the Runtime's MCP client.
+github = ["algen-agent-runtime[mcp]>=0.1.0a12,<0.2"]
 gmail = []
 # Outlook uses httpx, already installed with the Runtime.
 outlook = []
@@ -66,6 +68,7 @@ dev = [
 
 [project.entry-points."algen_agent_runtime.plugins"]
 "algen_agent_tools.discord" = "algen_agent_tools.discord.plugin:DiscordPlugin"
+"algen_agent_tools.github" = "algen_agent_tools.github.plugin:GithubPlugin"
 "algen_agent_tools.gmail" = "algen_agent_tools.gmail.plugin:GmailPlugin"
 "algen_agent_tools.outlook" = "algen_agent_tools.outlook.plugin:OutlookPlugin"
 "algen_agent_tools.postgres" = "algen_agent_tools.postgres.plugin:PostgresPlugin"
