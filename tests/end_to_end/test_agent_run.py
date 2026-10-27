@@ -15,12 +15,7 @@ from tests.fixtures import agent_plugin
 TENANT = "tenant-1"
 
 
-# Email addresses are personal data by nature, so an agent that sends email leaves the pii
-# guardrail out of its tool boundaries (it still screens messages to and from the model).
-EMAIL_TOOL_POLICIES = ["secrets", "prompt_injection", "output_validation"]
-
-
-def settings(tool_policies: list[str] | None = EMAIL_TOOL_POLICIES) -> AppSettings:
+def settings() -> AppSettings:
     return AppSettings.model_validate(
         {
             "providers": {"demo": {"type": "mock", "default_model": "deterministic"}},
@@ -39,7 +34,6 @@ def settings(tool_policies: list[str] | None = EMAIL_TOOL_POLICIES) -> AppSettin
                     "domain_plugins": ["tests.fixtures.agent_plugin:AgentPlugin"],
                     "enabled_tools": ["sample.echo", "smtp.send_email"],
                     "tool_permissions": ["sample.read", "smtp.write"],
-                    "guardrail_policy": {"tool_policies": tool_policies},
                 }
             ],
             "security": {"trusted_plugin_prefixes": ["tests.fixtures"]},
@@ -48,19 +42,17 @@ def settings(tool_policies: list[str] | None = EMAIL_TOOL_POLICIES) -> AppSettin
     )
 
 
-async def run(
-    decision: str, tool_policies: list[str] | None = EMAIL_TOOL_POLICIES
-) -> dict[str, Any]:
+async def run(decision: str, body: str = "Hello.") -> dict[str, Any]:
     agent_plugin.MAILBOX.sent.clear()
     agent_plugin.MAILBOX.receipts.clear()
-    container = build_container(settings(tool_policies))
+    container = build_container(settings())
     model = container.runtime.router.provider("demo")
     assert isinstance(model, MockModelProvider)
     model.queue(
         tool_call_response("sample.echo", {"text": "ping"}),
         tool_call_response(
             "smtp.send_email",
-            {"to": [{"address": "person@example.com"}], "subject": "Hi", "text_body": "Hello."},
+            {"to": [{"address": "person@example.com"}], "subject": "Hi", "text_body": body},
         ),
         "Done.",
     )
@@ -100,10 +92,10 @@ async def test_a_rejected_email_is_never_sent() -> None:
     assert agent_plugin.MAILBOX.sent == []
 
 
-async def test_the_default_pii_guardrail_stops_the_send() -> None:
-    # With pii at the tool boundary the addresses are redacted, and the Runtime refuses to run
-    # a tool on redacted arguments. docs/connectors/smtp.md tells agents to set tool_policies.
-    outcome = await run("approved", tool_policies=None)
+async def test_the_default_pii_guardrail_still_screens_the_message() -> None:
+    # Recipients declare format: email, so pii leaves them alone; an address in the body is
+    # redacted, and the Runtime refuses to run a tool on redacted arguments.
+    outcome = await run("approved", body="Write to ops@example.com or call 9876543210.")
 
     assert outcome["status"] == RunStatus.FAILED
     assert "transformed by policy" in str(outcome["error"])

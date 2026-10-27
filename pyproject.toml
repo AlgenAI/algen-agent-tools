@@ -34,7 +34,7 @@ classifiers = [
 ]
 # The supported Runtime range. CI tests the lowest and the highest release in it.
 dependencies = [
-  "algen-agent-runtime>=0.1.0a11,<0.2",
+  "algen-agent-runtime>=0.1.0a12,<0.2",
 ]
 
 [project.optional-dependencies]
@@ -44,7 +44,7 @@ all = [
 # Gmail uses httpx and SMTP the standard library, both already installed with the Runtime;
 # their extras exist so every connector installs the same way.
 gmail = []
-mcp = ["algen-agent-runtime[mcp]>=0.1.0a11,<0.2"]
+mcp = ["algen-agent-runtime[mcp]>=0.1.0a12,<0.2"]
 postgres = ["asyncpg>=0.29,<1"]
 smtp = []
 dev = [

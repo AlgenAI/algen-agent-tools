@@ -21,7 +21,7 @@ Algen Agent Studio lists each tool with its side effect, permissions and environ
 from `algen-agent-runtime describe`, without running project code.
 
 > [!IMPORTANT]
-> `0.1.0a1` is a pre-release. Tool contracts may change between alpha releases; every change is
+> `0.1.0a2` is a pre-release. Tool contracts may change between alpha releases; every change is
 > recorded in [CHANGELOG.md](CHANGELOG.md) with an upgrade note. Review the
 > [security policy](SECURITY.md) and each connector's guarantees before deployment.
 
@@ -46,7 +46,7 @@ pip install "algen-agent-tools[postgres]"        # one connector
 pip install "algen-agent-tools[all]"             # every connector
 ```
 
-The package supports `algen-agent-runtime>=0.1.0a11,<0.2`; see
+The package supports `algen-agent-runtime>=0.1.0a12,<0.2`; see
 [compatibility](docs/compatibility.md).
 
 ## Use a connector

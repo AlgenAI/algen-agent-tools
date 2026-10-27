@@ -48,6 +48,22 @@ def test_send_email_is_external_keyed_and_the_sender_is_not_an_input(factory: Fa
 
 
 @pytest.mark.parametrize("factory", [smtp_toolkit, gmail_toolkit])
+def test_every_address_field_declares_the_email_format(factory: Factory) -> None:
+    # The Runtime's pii guardrail leaves a single address in a format: email field alone.
+    properties = named(
+        factory(client=FakeMailbox().factory()), "send_email"
+    ).definition.input_schema["properties"]
+    lists = [properties[name]["items"] for name in ("to", "cc", "bcc")]
+    reply_to = next(
+        item for item in properties["reply_to"]["anyOf"] if item.get("type") == "object"
+    )
+
+    for address in (*lists, reply_to):
+        assert address["properties"]["address"]["format"] == "email"
+    assert "format" not in address["properties"]["display_name"]
+
+
+@pytest.mark.parametrize("factory", [smtp_toolkit, gmail_toolkit])
 async def test_send_email_sends_from_the_deployment_address_once_per_key(
     factory: Factory,
 ) -> None:

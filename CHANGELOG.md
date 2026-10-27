@@ -8,6 +8,26 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.1.0a2] - 2026-10-27
+
+### Changed
+
+- Email tools run under the Runtime's default guardrails. Every address field in
+  `smtp.send_email` and `gmail.send_email` (`to`, `cc`, `bcc`, `reply_to`) declares
+  `"format": "email"` in its input schema, and the Runtime 0.1.0a12 `pii` guardrail leaves a
+  single address in such a field unredacted. Names, the subject and the bodies are still
+  screened, and the Runtime still refuses a call in which it redacts anything.
+- Requires `algen-agent-runtime>=0.1.0a12,<0.2`.
+
+### Upgrade notes
+
+- Agents that left `pii` out of `guardrail_policy.tool_policies` only so email could be sent can
+  remove that setting and keep the default guardrails. A body or subject that contains an email
+  address or phone number is now refused by `pii`; keep such details out of messages, or keep
+  the old setting for that agent.
+- The input schema of each `send_email` tool gains `"format": "email"` on address fields; the
+  accepted values are unchanged.
+
 ## [0.1.0a1] - 2026-10-27
 
 ### Added

@@ -21,10 +21,7 @@ recipients.
 
 ## Agent configuration
 
-Recipient addresses are personal data by nature, and the Runtime's default `pii` guardrail
-redacts them from tool arguments. The Runtime never runs a tool on redacted arguments, so with
-the defaults every send is refused (`Payload transformed by policy`). An agent that sends email
-keeps `pii` on its conversation and leaves it out of its tool boundaries:
+The default guardrails work: no guardrail setting is needed.
 
 ```yaml
 agents:
@@ -32,6 +29,15 @@ agents:
     domain_plugins: [algen_agent_tools.smtp]
     enabled_tools: [smtp.send_email]
     tool_permissions: [smtp.write]
+```
+
+Every address field (`to`, `cc`, `bcc`, `reply_to`) declares `"format": "email"`, so the
+Runtime's `pii` guardrail (0.1.0a12 and later) leaves a single address there alone. It still
+screens the names, subject and bodies, and the Runtime refuses a call in which it redacts
+anything (`Payload transformed by policy`). A message that must quote an email address or phone
+number in its body needs `pii` left out of `guardrail_policy.tool_policies`:
+
+```yaml
     guardrail_policy:
       tool_policies: [secrets, prompt_injection, output_validation]
 ```
@@ -61,8 +67,8 @@ notices = smtp_toolkit(
     "notices",
     host="env://NOTICES_SMTP_HOST",
     sender="env://NOTICES_FROM",
-    allowed_domains=("example.com",),     # refuse other recipient and reply-to domains
-    artifact_loader=load_artifact,        # adds an `attachments` field (Runtime artifact refs)
+    allowed_domains=("example.com",),  # refuse other recipient and reply-to domains
+    artifact_loader=load_artifact,  # adds an `attachments` field (Runtime artifact refs)
 )
 ```
 
