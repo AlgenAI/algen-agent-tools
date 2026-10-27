@@ -30,11 +30,14 @@ class FakeMailbox:
     queries: list[str] = field(default_factory=list)
     closed: bool = False
 
-    def factory(self, sender: str = "agent@example.com") -> Any:
-        """A toolkit ``client`` that sends as ``sender`` through this mailbox."""
+    def factory(
+        self, sender: str = "agent@example.com", *, allowed_domains: tuple[str, ...] = ()
+    ) -> Any:
+        """A toolkit ``client`` that sends as ``sender`` through this mailbox, with
+        ``allowed_domains`` as if it came from the deployment's settings."""
 
         async def open_client(secrets: SecretResolver) -> MailClient:
-            return MailClient(EmailAddress(address=sender), self)
+            return MailClient(EmailAddress(address=sender), self, allowed_domains)
 
         return open_client
 

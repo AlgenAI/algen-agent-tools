@@ -8,6 +8,63 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a1] - 2026-10-27
+
+### Added
+
+- The connector catalog: `algen_agent_tools/connectors.json`, generated from the code and
+  shipped in the wheel, lists every connector with its title, category, maturity, pinned pip
+  requirement, docs link, settings (which are secrets, required, defaults), egress hosts, options
+  that still need Python, every tool's full description (input and output schema, side effect,
+  idempotency, permissions, timeout, approval) and the agent configuration that turns it on.
+  Hosts such as Studio read it to list and enable connectors without running connector code.
+  `python -m algen_agent_tools catalog` prints it, `--write` regenerates it and `--check` fails
+  when it is stale; `algen_agent_tools.catalog.load_catalog()` reads the shipped copy. Each
+  release also attaches it to the GitHub Release.
+- `ConnectorInfo`, `Setting` and `Egress` (`algen_agent_tools.catalog`): what each connector
+  declares about itself on its plugin (`connector_info`). Plugin manifests take their `env`
+  from it.
+- Contract tests: the committed catalog is the snapshot of every tool's public contract and must
+  match the code, and the import paths the Runtime's deprecation messages and the migration
+  guide point to must stay importable.
+- `algen_agent_tools.attachments`: the file handling every connector that sends or receives
+  files shares. `AttachmentRef` (an artifact reference; `EmailAttachmentReference` now extends
+  it with an unchanged schema), the deployment-provided `ArtifactLoader` and `ArtifactSink`,
+  `AttachmentPolicy` (size limit, allowed types, and a check that a file's leading bytes match
+  its declared type) and `add_get_attachment_tool`, which stores a fetched file as an artifact
+  and returns only its reference. No connector offers `get_attachment` yet.
+- `ALGEN_TOOLS_SMTP_ALLOWED_DOMAINS` and `ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS`: the recipient
+  domain allowlist as an optional, comma-separated setting, so a deployment configured without
+  code (such as from Studio) can bound who an agent writes to. `allowed_domains=` in code still
+  takes precedence; a malformed domain fails when the client opens. `FakeMailbox.factory` takes
+  `allowed_domains` to test it.
+- `InboundEmailSummary` and `InboundEmailAttachment` are also importable from
+  `algen_agent_tools.mail`, for every mailbox connector; `algen_agent_tools.gmail` still exports
+  them.
+
+### Changed
+
+- Gmail runs on the package's shared HTTP and OAuth code: every request is limited to the
+  configured API and token hosts, and a response larger than twice the attachment limit (plus
+  1 MB) is refused. Tools, schemas and error messages are unchanged.
+
+- Tested against `algen-agent-runtime` 0.1.0a13; the supported range is unchanged
+  (`>=0.1.0a12,<0.2`).
+
+### Upgrade notes
+
+- No tool's name, input schema, side effect or permissions changed; agent configurations keep
+  working as they are.
+- The SMTP and Gmail plugins declare one more environment variable,
+  `ALGEN_TOOLS_<SMTP|GMAIL>_ALLOWED_DOMAINS`, so `describe` lists it. It is optional: leave it
+  unset to keep today's behaviour (any recipient domain).
+- Gmail now refuses requests to any host other than its configured API and token URLs, and
+  responses larger than twice `max_attachment_bytes` plus 1 MB. Deployments using the default
+  settings are unaffected.
+- Connector authors: `toolkit_plugin` (internal) now takes a `ConnectorInfo` instead of a name
+  and `env`; regenerate `connectors.json` with `python -m algen_agent_tools catalog --write`
+  when a connector changes. See docs/writing-a-connector.md.
+
 ## [0.1.0a2] - 2026-10-27
 
 ### Changed

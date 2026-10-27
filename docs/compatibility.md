@@ -7,6 +7,7 @@ run under the default guardrails.
 
 | algen-agent-tools | Supported algen-agent-runtime |
 | --- | --- |
+| 0.2.0a1 | `>=0.1.0a12,<0.2` (tested on 0.1.0a12 and 0.1.0a13) |
 | 0.1.0a2 | `>=0.1.0a12,<0.2` |
 | 0.1.0a1 | `>=0.1.0a11,<0.2` |
 

@@ -7,7 +7,7 @@ OAuth refresh token.
 | --- | --- |
 | Plugin | `algen_agent_tools.gmail` |
 | Extra | `pip install "algen-agent-tools[gmail]"` (no extra packages) |
-| Environment | `ALGEN_TOOLS_GMAIL_CLIENT_ID`, `ALGEN_TOOLS_GMAIL_CLIENT_SECRET`, `ALGEN_TOOLS_GMAIL_REFRESH_TOKEN`, `ALGEN_TOOLS_GMAIL_SENDER` |
+| Environment | `ALGEN_TOOLS_GMAIL_CLIENT_ID`, `ALGEN_TOOLS_GMAIL_CLIENT_SECRET`, `ALGEN_TOOLS_GMAIL_REFRESH_TOKEN`, `ALGEN_TOOLS_GMAIL_SENDER`; optional `ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS` |
 | Owner | @saurav-samantray |
 
 ## Tools
@@ -57,7 +57,8 @@ those addresses leaves `pii` out of its tool boundaries:
 ```
 
 Keep the agent's approval policy on (the default asks before every external call), and use
-`allowed_domains` to bound who it can write to.
+`allowed_domains` (or the `ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS` setting, comma-separated) to bound
+who it can write to.
 
 ## Guarantees
 

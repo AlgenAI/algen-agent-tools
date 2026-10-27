@@ -1,0 +1,1085 @@
+{
+  "catalog_version": 1,
+  "connectors": [
+    {
+      "category": "email",
+      "code_only_options": [
+        "artifact_loader"
+      ],
+      "connector": "gmail",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a1/docs/connectors/gmail.md",
+      "egress": [
+        {
+          "host": "oauth2.googleapis.com",
+          "host_setting": null,
+          "port": 443,
+          "protocol": "https"
+        },
+        {
+          "host": "gmail.googleapis.com",
+          "host_setting": null,
+          "port": 443,
+          "protocol": "https"
+        }
+      ],
+      "manifest": {
+        "domain_plugins": [
+          "algen_agent_tools.gmail"
+        ],
+        "enabled_tools": [
+          "gmail.list_messages",
+          "gmail.send_email"
+        ],
+        "security": {
+          "trusted_plugin_prefixes": [
+            "algen_agent_tools"
+          ]
+        },
+        "tool_permissions": [
+          "gmail.read",
+          "gmail.write"
+        ]
+      },
+      "maturity": "alpha",
+      "plugin": "algen_agent_tools.gmail",
+      "requirement": "algen-agent-tools[gmail]==0.2.0a1",
+      "settings": [
+        {
+          "default": null,
+          "description": "The Google OAuth client ID.",
+          "env": "ALGEN_TOOLS_GMAIL_CLIENT_ID",
+          "example": null,
+          "required": true,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "The Google OAuth client secret.",
+          "env": "ALGEN_TOOLS_GMAIL_CLIENT_SECRET",
+          "example": null,
+          "required": true,
+          "secret": true
+        },
+        {
+          "default": null,
+          "description": "An OAuth refresh token for the mailbox, with Gmail read and send scopes.",
+          "env": "ALGEN_TOOLS_GMAIL_REFRESH_TOKEN",
+          "example": null,
+          "required": true,
+          "secret": true
+        },
+        {
+          "default": null,
+          "description": "The mailbox's address, or a verified alias, that email is sent from.",
+          "env": "ALGEN_TOOLS_GMAIL_SENDER",
+          "example": "agent@example.com",
+          "required": true,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "Comma-separated domains recipients and Reply-To must belong to (subdomains included). Unset: any domain.",
+          "env": "ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS",
+          "example": "example.com,partner.example",
+          "required": false,
+          "secret": false
+        }
+      ],
+      "summary": "Read and send mail for one Gmail or Google Workspace mailbox with an OAuth refresh token: list messages with a Gmail search query, and send from the mailbox's address.",
+      "title": "Gmail",
+      "tools": [
+        {
+          "description": "List messages in the mailbox that match a Gmail search query (for example\n\"is:unread from:billing@example.com newer_than:7d\"): sender, recipients, subject, a\nshort snippet, labels and attachment names, newest first. Use next_page_token to\ncontinue.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "max_results": {
+                "default": 25,
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "page_token": {
+                "anyOf": [
+                  {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "query": {
+                "default": "is:unread",
+                "maxLength": 500,
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "gmail.list_messages",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "messages": {
+                "default": [],
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "attachments": {
+                      "default": [],
+                      "items": {
+                        "additionalProperties": false,
+                        "description": "Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand.",
+                        "properties": {
+                          "filename": {
+                            "maxLength": 255,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "media_type": {
+                            "default": "application/octet-stream",
+                            "maxLength": 255,
+                            "minLength": 3,
+                            "type": "string"
+                          },
+                          "provider_attachment_id": {
+                            "maxLength": 2000,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "size": {
+                            "default": 0,
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "provider_attachment_id",
+                          "filename"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "labels": {
+                      "default": [],
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "provider_message_id": {
+                      "type": "string"
+                    },
+                    "received_at_ms": {
+                      "default": 0,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "recipients": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "sender": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "snippet": {
+                      "default": "",
+                      "maxLength": 2000,
+                      "type": "string"
+                    },
+                    "subject": {
+                      "default": "",
+                      "type": "string"
+                    },
+                    "thread_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    }
+                  },
+                  "required": [
+                    "provider_message_id"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "next_page_token": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "result_size_estimate": {
+                "default": 0,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "permissions": [
+            "gmail.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 120.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "Send one email through Gmail from the deployment's own address. Give at least one recipient, a subject and a text or HTML body. Every call sends a real email.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "description": "What the model supplies to send one email; the sender is the deployment's.",
+            "properties": {
+              "bcc": {
+                "default": [],
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "address": {
+                      "format": "email",
+                      "maxLength": 320,
+                      "minLength": 3,
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "anyOf": [
+                        {
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    }
+                  },
+                  "required": [
+                    "address"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              "cc": {
+                "default": [],
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "address": {
+                      "format": "email",
+                      "maxLength": 320,
+                      "minLength": 3,
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "anyOf": [
+                        {
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    }
+                  },
+                  "required": [
+                    "address"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              "html_body": {
+                "anyOf": [
+                  {
+                    "maxLength": 2000000,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "reply_to": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "address": {
+                        "format": "email",
+                        "maxLength": 320,
+                        "minLength": 3,
+                        "type": "string"
+                      },
+                      "display_name": {
+                        "anyOf": [
+                          {
+                            "maxLength": 256,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
+                      }
+                    },
+                    "required": [
+                      "address"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "subject": {
+                "maxLength": 998,
+                "minLength": 1,
+                "type": "string"
+              },
+              "text_body": {
+                "anyOf": [
+                  {
+                    "maxLength": 1000000,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "to": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "address": {
+                      "format": "email",
+                      "maxLength": 320,
+                      "minLength": 3,
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "anyOf": [
+                        {
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    }
+                  },
+                  "required": [
+                    "address"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 50,
+                "minItems": 1,
+                "type": "array"
+              }
+            },
+            "required": [
+              "to",
+              "subject"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "gmail.send_email",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "accepted_recipients": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "provider_message_id": {
+                "maxLength": 998,
+                "minLength": 1,
+                "type": "string"
+              },
+              "rejected_recipients": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              "status": {
+                "enum": [
+                  "accepted",
+                  "rejected"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "provider",
+              "provider_message_id",
+              "status"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "gmail.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "external",
+          "timeout_seconds": 60.0,
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "category": "database",
+      "code_only_options": [
+        "max_rows",
+        "query",
+        "schemas"
+      ],
+      "connector": "postgres",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a1/docs/connectors/postgres.md",
+      "egress": [
+        {
+          "host": null,
+          "host_setting": "ALGEN_TOOLS_POSTGRES_DSN",
+          "port": null,
+          "protocol": "postgres"
+        }
+      ],
+      "manifest": {
+        "domain_plugins": [
+          "algen_agent_tools.postgres"
+        ],
+        "enabled_tools": [
+          "postgres.describe_table",
+          "postgres.list_tables"
+        ],
+        "security": {
+          "trusted_plugin_prefixes": [
+            "algen_agent_tools"
+          ]
+        },
+        "tool_permissions": [
+          "postgres.read"
+        ]
+      },
+      "maturity": "alpha",
+      "plugin": "algen_agent_tools.postgres",
+      "requirement": "algen-agent-tools[postgres]==0.2.0a1",
+      "settings": [
+        {
+          "default": null,
+          "description": "The connection string (postgresql://user:password@host:port/database).",
+          "env": "ALGEN_TOOLS_POSTGRES_DSN",
+          "example": null,
+          "required": true,
+          "secret": true
+        }
+      ],
+      "summary": "Read a PostgreSQL database through typed tools: list and describe the tables in the allowed schemas. Named, parameterised queries are declared in code; the model never writes SQL.",
+      "title": "PostgreSQL",
+      "tools": [
+        {
+          "description": "Describe one table or view: each column's name, type, whether it may be null, its\ndefault and whether it is part of the primary key.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "schema_name": {
+                "const": "public",
+                "default": "public",
+                "description": "One of: public.",
+                "type": "string"
+              },
+              "table": {
+                "description": "The table or view name.",
+                "maxLength": 63,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "table"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "postgres.describe_table",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "columns": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data_type": {
+                      "type": "string"
+                    },
+                    "default": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "nullable": {
+                      "type": "boolean"
+                    },
+                    "primary_key": {
+                      "default": false,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "data_type",
+                    "nullable"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "name": {
+                "type": "string"
+              },
+              "schema_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schema_name",
+              "name",
+              "columns"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "postgres.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List the tables and views you can read in one database schema, with their approximate row counts.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "schema_name": {
+                "const": "public",
+                "default": "public",
+                "description": "One of: public.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "postgres.list_tables",
+          "output_schema": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "estimated_rows": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "kind": {
+                  "enum": [
+                    "table",
+                    "view",
+                    "materialized_view"
+                  ],
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "schema_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schema_name",
+                "name",
+                "kind"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "permissions": [
+            "postgres.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "category": "utility",
+      "code_only_options": [],
+      "connector": "sample",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a1/docs/connectors/sample.md",
+      "egress": [],
+      "manifest": {
+        "domain_plugins": [
+          "algen_agent_tools.sample"
+        ],
+        "enabled_tools": [
+          "sample.echo"
+        ],
+        "security": {
+          "trusted_plugin_prefixes": [
+            "algen_agent_tools"
+          ]
+        },
+        "tool_permissions": [
+          "sample.read"
+        ]
+      },
+      "maturity": "alpha",
+      "plugin": "algen_agent_tools.sample",
+      "requirement": "algen-agent-tools==0.2.0a1",
+      "settings": [],
+      "summary": "Echoes text back. Use it to check that a deployment loads connectors end to end.",
+      "title": "Sample",
+      "tools": [
+        {
+          "description": "Return the text unchanged with its length. Use it to check that tools are wired up.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "sample.echo",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "length": {
+                "type": "integer"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text",
+              "length"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "sample.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 5.0,
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
+      "category": "email",
+      "code_only_options": [
+        "artifact_loader"
+      ],
+      "connector": "smtp",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a1/docs/connectors/smtp.md",
+      "egress": [
+        {
+          "host": null,
+          "host_setting": "ALGEN_TOOLS_SMTP_HOST",
+          "port": null,
+          "protocol": "smtp"
+        }
+      ],
+      "manifest": {
+        "domain_plugins": [
+          "algen_agent_tools.smtp"
+        ],
+        "enabled_tools": [
+          "smtp.send_email"
+        ],
+        "security": {
+          "trusted_plugin_prefixes": [
+            "algen_agent_tools"
+          ]
+        },
+        "tool_permissions": [
+          "smtp.write"
+        ]
+      },
+      "maturity": "alpha",
+      "plugin": "algen_agent_tools.smtp",
+      "requirement": "algen-agent-tools[smtp]==0.2.0a1",
+      "settings": [
+        {
+          "default": null,
+          "description": "The SMTP server's host name.",
+          "env": "ALGEN_TOOLS_SMTP_HOST",
+          "example": "smtp.example.com",
+          "required": true,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "The address every email is sent from.",
+          "env": "ALGEN_TOOLS_SMTP_SENDER",
+          "example": "agent@example.com",
+          "required": true,
+          "secret": false
+        },
+        {
+          "default": "587",
+          "description": "The SMTP port.",
+          "env": "ALGEN_TOOLS_SMTP_PORT",
+          "example": null,
+          "required": false,
+          "secret": false
+        },
+        {
+          "default": "starttls",
+          "description": "Connection security: starttls, tls or plain.",
+          "env": "ALGEN_TOOLS_SMTP_SECURITY",
+          "example": null,
+          "required": false,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "The SMTP login, when the server needs one.",
+          "env": "ALGEN_TOOLS_SMTP_USERNAME",
+          "example": null,
+          "required": false,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "The SMTP password, when the server needs one.",
+          "env": "ALGEN_TOOLS_SMTP_PASSWORD",
+          "example": null,
+          "required": false,
+          "secret": true
+        },
+        {
+          "default": null,
+          "description": "Comma-separated domains recipients and Reply-To must belong to (subdomains included). Unset: any domain.",
+          "env": "ALGEN_TOOLS_SMTP_ALLOWED_DOMAINS",
+          "example": "example.com,partner.example",
+          "required": false,
+          "secret": false
+        }
+      ],
+      "summary": "Send email through any SMTP server from one fixed sender address. The model chooses recipients, subject and body; every send is an external action.",
+      "title": "SMTP email",
+      "tools": [
+        {
+          "description": "Send one email through SMTP from the deployment's own address. Give at least one recipient, a subject and a text or HTML body. Every call sends a real email.",
+          "idempotency": "keyed",
+          "input_schema": {
+            "additionalProperties": false,
+            "description": "What the model supplies to send one email; the sender is the deployment's.",
+            "properties": {
+              "bcc": {
+                "default": [],
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "address": {
+                      "format": "email",
+                      "maxLength": 320,
+                      "minLength": 3,
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "anyOf": [
+                        {
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    }
+                  },
+                  "required": [
+                    "address"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              "cc": {
+                "default": [],
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "address": {
+                      "format": "email",
+                      "maxLength": 320,
+                      "minLength": 3,
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "anyOf": [
+                        {
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    }
+                  },
+                  "required": [
+                    "address"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              "html_body": {
+                "anyOf": [
+                  {
+                    "maxLength": 2000000,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "reply_to": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "address": {
+                        "format": "email",
+                        "maxLength": 320,
+                        "minLength": 3,
+                        "type": "string"
+                      },
+                      "display_name": {
+                        "anyOf": [
+                          {
+                            "maxLength": 256,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
+                      }
+                    },
+                    "required": [
+                      "address"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "subject": {
+                "maxLength": 998,
+                "minLength": 1,
+                "type": "string"
+              },
+              "text_body": {
+                "anyOf": [
+                  {
+                    "maxLength": 1000000,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "to": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "address": {
+                      "format": "email",
+                      "maxLength": 320,
+                      "minLength": 3,
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "anyOf": [
+                        {
+                          "maxLength": 256,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    }
+                  },
+                  "required": [
+                    "address"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 50,
+                "minItems": 1,
+                "type": "array"
+              }
+            },
+            "required": [
+              "to",
+              "subject"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 1,
+          "name": "smtp.send_email",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "accepted_recipients": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "provider_message_id": {
+                "maxLength": 998,
+                "minLength": 1,
+                "type": "string"
+              },
+              "rejected_recipients": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              "status": {
+                "enum": [
+                  "accepted",
+                  "rejected"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "provider",
+              "provider_message_id",
+              "status"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "smtp.write"
+          ],
+          "requires_approval": false,
+          "side_effect": "external",
+          "timeout_seconds": 60.0,
+          "version": "1.0.0"
+        }
+      ]
+    }
+  ],
+  "package": "algen-agent-tools",
+  "publisher": "AlgenAI",
+  "runtime_requirement": "algen-agent-runtime<0.2,>=0.1.0a12",
+  "trusted_prefix": "algen_agent_tools",
+  "version": "0.2.0a1"
+}

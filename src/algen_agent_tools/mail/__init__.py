@@ -1,6 +1,8 @@
-"""Shared outbound email contracts for the SMTP and Gmail connectors."""
+"""Shared email contracts for the mail connectors: outbound messages and the send tool, and
+bounded summaries of inbound mail."""
 
 from algen_agent_tools.mail.fake import FakeMailbox
+from algen_agent_tools.mail.inbound import InboundEmailAttachment, InboundEmailSummary
 from algen_agent_tools.mail.models import (
     EmailAddress,
     EmailArtifactLoader,
@@ -32,6 +34,8 @@ __all__ = [
     "EmailMessage",
     "EmailSender",
     "FakeMailbox",
+    "InboundEmailAttachment",
+    "InboundEmailSummary",
     "MailClient",
     "OutgoingEmail",
     "OutgoingEmailWithAttachments",

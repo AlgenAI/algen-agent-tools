@@ -10,7 +10,7 @@ body:
     id: version
     attributes:
       label: Versions (algen-agent-tools and algen-agent-runtime)
-      placeholder: algen-agent-tools 0.1.0a2 with algen-agent-runtime 0.1.0a12
+      placeholder: algen-agent-tools 0.2.0a1 with algen-agent-runtime 0.1.0a13
     validations:
       required: true
   - type: input

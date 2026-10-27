@@ -105,6 +105,55 @@ async def test_allowed_domains_bound_the_recipients() -> None:
     assert len(mailbox.sent) == 1
 
 
+async def test_the_allowed_domains_setting_applies_unless_the_code_sets_its_own() -> None:
+    mailbox = FakeMailbox()
+    from_setting = mailbox.factory(allowed_domains=("example.com",))
+    send = named(smtp_toolkit(client=from_setting), "send_email")
+    await send.execute(EMAIL, fake_tool_context(send))
+    with pytest.raises(PolicyDeniedError, match=r"\['elsewhere.net'\]"):
+        await send.execute(
+            {**EMAIL, "to": [{"address": "x@elsewhere.net"}]}, fake_tool_context(send)
+        )
+
+    code_wins = named(
+        smtp_toolkit(client=from_setting, allowed_domains=("elsewhere.net",)), "send_email"
+    )
+    await code_wins.execute(
+        {**EMAIL, "to": [{"address": "x@elsewhere.net"}]}, fake_tool_context(code_wins)
+    )
+    assert [message.to[0].address for message in mailbox.sent] == [
+        "person@example.com",
+        "x@elsewhere.net",
+    ]
+
+
+@pytest.mark.parametrize(("prefix", "factory"), [("SMTP", smtp_toolkit), ("GMAIL", gmail_toolkit)])
+async def test_the_allowed_domains_setting_is_read_when_the_client_opens(
+    monkeypatch: pytest.MonkeyPatch, prefix: str, factory: Factory
+) -> None:
+    for name, value in {
+        "HOST": "smtp.example.com",
+        "CLIENT_ID": "id",
+        "CLIENT_SECRET": "secret",
+        "REFRESH_TOKEN": "refresh",
+        "SENDER": "agent@example.com",
+    }.items():
+        monkeypatch.setenv(f"ALGEN_TOOLS_{prefix}_{name}", value)
+    monkeypatch.delenv(f"ALGEN_TOOLS_{prefix}_ALLOWED_DOMAINS", raising=False)
+    unset = factory()
+    assert (await unset.client()).allowed_domains == ()
+    await unset.aclose()
+
+    monkeypatch.setenv(f"ALGEN_TOOLS_{prefix}_ALLOWED_DOMAINS", " Example.com., partner.example ")
+    toolkit = factory()
+    assert (await toolkit.client()).allowed_domains == ("example.com", "partner.example")
+    await toolkit.aclose()
+
+    monkeypatch.setenv(f"ALGEN_TOOLS_{prefix}_ALLOWED_DOMAINS", "example.com,not a domain")
+    with pytest.raises(ConfigurationError, match="not a domain"):
+        await factory().client()
+
+
 async def test_attachments_are_offered_only_with_an_artifact_loader() -> None:
     mailbox = FakeMailbox()
     send = named(
