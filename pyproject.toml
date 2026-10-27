@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-  "algen-agent-tools[discord,documents,github,gmail,mcp,outlook,postgres,smtp,sqlite,telegram]",
+  "algen-agent-tools[discord,documents,github,gmail,mcp,mysql,outlook,postgres,smtp,sqlite,telegram]",
 ]
 # Discord uses httpx, already installed with the Runtime.
 discord = []
@@ -54,6 +54,7 @@ gmail = []
 # Outlook uses httpx, already installed with the Runtime.
 outlook = []
 mcp = ["algen-agent-runtime[mcp]>=0.1.0a12,<0.2"]
+mysql = ["aiomysql>=0.2,<1"]
 postgres = ["asyncpg>=0.29,<1"]
 smtp = []
 # SQLite uses the standard library's sqlite3.
@@ -72,6 +73,7 @@ dev = [
 "algen_agent_tools.discord" = "algen_agent_tools.discord.plugin:DiscordPlugin"
 "algen_agent_tools.github" = "algen_agent_tools.github.plugin:GithubPlugin"
 "algen_agent_tools.gmail" = "algen_agent_tools.gmail.plugin:GmailPlugin"
+"algen_agent_tools.mysql" = "algen_agent_tools.mysql.plugin:MysqlPlugin"
 "algen_agent_tools.outlook" = "algen_agent_tools.outlook.plugin:OutlookPlugin"
 "algen_agent_tools.postgres" = "algen_agent_tools.postgres.plugin:PostgresPlugin"
 "algen_agent_tools.sample" = "algen_agent_tools.sample.plugin:SamplePlugin"
@@ -108,7 +110,7 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
   "live: tests that call a real external service; run only with ALGEN_TOOLS_LIVE=1",
-  "integration: tests that need a local service such as a PostgreSQL container",
+  "integration: tests that need a local service such as a PostgreSQL or MySQL container",
 ]
 
 [tool.coverage.run]
@@ -128,5 +130,5 @@ strict = true
 packages = ["algen_agent_tools"]
 
 [[tool.mypy.overrides]]
-module = ["asyncpg", "asyncpg.*", "jsonschema", "mcp", "mcp.*", "yaml"]
+module = ["aiomysql", "aiomysql.*", "asyncpg", "asyncpg.*", "jsonschema", "mcp", "mcp.*", "yaml"]
 ignore_missing_imports = true

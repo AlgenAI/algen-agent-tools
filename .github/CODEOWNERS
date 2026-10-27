@@ -19,5 +19,6 @@
 /src/algen_agent_tools/discord/ @saurav-samantray
 /src/algen_agent_tools/github/ @saurav-samantray
 /src/algen_agent_tools/sql/ @saurav-samantray
+/src/algen_agent_tools/mysql/ @saurav-samantray
 /src/algen_agent_tools/sqlite/ @saurav-samantray
 /src/algen_agent_tools/telegram/ @saurav-samantray

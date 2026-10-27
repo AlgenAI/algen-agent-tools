@@ -82,6 +82,37 @@ jobs:
           ALGEN_TOOLS_TEST_POSTGRES_DSN: postgresql://algen:algen_password@localhost:5432/algen_tools_test
         run: pytest -q -p no:cacheprovider -m integration -rs
 
+  mysql-integration:
+    name: MySQL integration
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: algen_tools_test
+          MYSQL_USER: algen
+          MYSQL_PASSWORD: algen_password
+          MYSQL_ROOT_PASSWORD: algen_root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,mysql]'
+      - name: Run MySQL integration tests
+        env:
+          ALGEN_TOOLS_TEST_MYSQL_DSN: mysql://algen:algen_password@127.0.0.1:3306/algen_tools_test
+        run: pytest -q -p no:cacheprovider -m integration -rs tests/integration/test_mysql_live.py
+
   coverage:
     runs-on: ubuntu-latest
     steps:
