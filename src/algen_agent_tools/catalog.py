@@ -75,7 +75,7 @@ class Egress(_Frozen):
     name, or a DSN or URL that contains one).
     """
 
-    protocol: Literal["https", "smtp", "postgres"]
+    protocol: Literal["https", "mysql", "postgres", "smtp"]
     host: str | None = Field(default=None, max_length=253)
     host_setting: str | None = Field(default=None, max_length=128)
     port: int | None = Field(default=None, ge=1, le=65_535)

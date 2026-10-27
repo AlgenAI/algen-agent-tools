@@ -15,6 +15,15 @@ A tool's name, input schema, side effect and permission are part of the public c
   file opens read-only unless the toolkit is built with `read_only=False`. Reads run with
   `PRAGMA query_only`. A progress handler interrupts a statement that runs past the tool's
   timeout. Setting: `ALGEN_TOOLS_SQLITE_PATH`. Part of `all`.
+- MySQL / MariaDB (`algen_agent_tools.mysql`, extra `mysql`, which installs `aiomysql[rsa]`):
+  `mysql.list_tables` and `mysql.describe_table` (read) on the DSN's database, plus
+  code-declared typed queries with `%s` placeholders. Reads run in `START TRANSACTION READ
+  ONLY`. The server enforces the tool's timeout (`max_execution_time` on MySQL,
+  `max_statement_time` on MariaDB, detected at connect), lock waits are capped, and a
+  client-side deadline drops a stuck connection. Errors carry only the MySQL error number.
+  `FakeMysql` serves offline tests, and a new CI job runs integration tests against MySQL 8.4.
+  Setting: `ALGEN_TOOLS_MYSQL_DSN`. Part of `all`.
+- The catalog's `Egress.protocol` adds `mysql`.
 - `algen_agent_tools.sql`: the shared database core, with `SqlToolkit`, `Dialect`,
   `TooManyRows` and the catalog models. `PostgresToolkit` is now a `SqlToolkit` with a
   `PostgresDialect`. Its API, tools and errors are unchanged, and too many rows now raises

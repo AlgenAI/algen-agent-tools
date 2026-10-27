@@ -4000,6 +4000,197 @@
       ]
     },
     {
+      "category": "database",
+      "code_only_options": [
+        "max_rows",
+        "query"
+      ],
+      "connector": "mysql",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a3/docs/connectors/mysql.md",
+      "egress": [
+        {
+          "host": null,
+          "host_setting": "ALGEN_TOOLS_MYSQL_DSN",
+          "port": null,
+          "protocol": "mysql"
+        }
+      ],
+      "manifest": {
+        "domain_plugins": [
+          "algen_agent_tools.mysql"
+        ],
+        "enabled_tools": [
+          "mysql.describe_table",
+          "mysql.list_tables"
+        ],
+        "security": {
+          "trusted_plugin_prefixes": [
+            "algen_agent_tools"
+          ]
+        },
+        "tool_permissions": [
+          "mysql.read"
+        ]
+      },
+      "maturity": "alpha",
+      "plugin": "algen_agent_tools.mysql",
+      "requirement": "algen-agent-tools[mysql]==0.2.0a3",
+      "settings": [
+        {
+          "default": null,
+          "description": "The connection string (mysql://user:password@host:port/database; add ?ssl=verify for verified TLS).",
+          "env": "ALGEN_TOOLS_MYSQL_DSN",
+          "example": null,
+          "required": true,
+          "secret": true
+        }
+      ],
+      "summary": "Read a MySQL or MariaDB database through typed tools: list and describe its tables. Named, parameterised queries are declared in code; the model never writes SQL.",
+      "title": "MySQL / MariaDB",
+      "tools": [
+        {
+          "description": "Describe one table or view: each column's name, type, whether it may be null, its\ndefault and whether it is part of the primary key.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "table": {
+                "description": "The table or view name.",
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "table"
+            ],
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "mysql.describe_table",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "columns": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data_type": {
+                      "type": "string"
+                    },
+                    "default": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "nullable": {
+                      "type": "boolean"
+                    },
+                    "primary_key": {
+                      "default": false,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "data_type",
+                    "nullable"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "name": {
+                "type": "string"
+              },
+              "schema_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schema_name",
+              "name",
+              "columns"
+            ],
+            "type": "object"
+          },
+          "permissions": [
+            "mysql.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List the tables and views you can read in the database, with their approximate row counts.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {},
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "mysql.list_tables",
+          "output_schema": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "estimated_rows": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "kind": {
+                  "enum": [
+                    "table",
+                    "view",
+                    "materialized_view"
+                  ],
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "schema_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "schema_name",
+                "name",
+                "kind"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "permissions": [
+            "mysql.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 30.0,
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
       "category": "email",
       "code_only_options": [
         "artifact_loader",

@@ -51,6 +51,10 @@ class TableDescription(BaseModel):
     columns: list[ColumnDescription]
 
 
+class _ColumnRow(ColumnDescription):
+    schema_name: str | None = None
+
+
 class TooManyRows(ToolExecutionError):
     """A query matched more rows than its limit."""
 
@@ -259,23 +263,30 @@ class SqlToolkit(Toolkit):
         ),
     ) -> Tool:
         """Add ``<toolkit>.describe_table``. ``sql`` returns :class:`ColumnDescription` rows for
-        the values ``values`` takes from ``arguments`` (which has ``schema_name`` and
-        ``table``)."""
+        the values ``values`` takes from ``arguments``, which has ``table`` and may have
+        ``schema_name``; without it, ``sql`` returns each row's ``schema_name`` too."""
         preset = read()
 
         async def describe_table(arguments: BaseModel) -> TableDescription:
-            schema: str = getattr(arguments, "schema_name")  # noqa: B009 - a dynamic model's field
-            table: str = getattr(arguments, "table")  # noqa: B009
-            columns = await self.fetch_rows(
+            table: str = getattr(arguments, "table")  # noqa: B009 - a dynamic model's field
+            schema: str | None = getattr(arguments, "schema_name", None)
+            rows = await self.fetch_rows(
                 sql,
                 values(arguments),
-                ColumnDescription,
+                _ColumnRow,
                 label="describe_table",
                 timeout_seconds=preset.timeout_seconds,
             )
-            if not columns:
-                raise ToolExecutionError(f"no readable table {table!r} in schema {schema!r}")
-            return TableDescription(schema_name=schema, name=table, columns=columns)
+            if not rows:
+                where = f" in schema {schema!r}" if schema else ""
+                raise ToolExecutionError(f"no readable table {table!r}{where}")
+            return TableDescription(
+                schema_name=schema or rows[0].schema_name or "",
+                name=table,
+                columns=[
+                    ColumnDescription(**row.model_dump(exclude={"schema_name"})) for row in rows
+                ],
+            )
 
         describe_table.__doc__ = description
         describe_table.__annotations__ = {"arguments": arguments, "return": TableDescription}
