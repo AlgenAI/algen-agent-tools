@@ -12,7 +12,8 @@ mandatory rules. They apply to people too.
   in domain packs.
 - Never edit the Runtime from here. A connector needs only the Runtime's public API:
   `algen_agent_runtime.tools.authoring`, `.tools.contracts`, `.tools.testing`, `.plugins.sdk`,
-  `.mcp` and `.orchestration.describe`.
+  `.mcp`, `.orchestration.describe` and `.security.documents` (document inspection, used by
+  the `documents` connector instead of a second parser).
 - New connectors follow `docs/connector-policy.md` and `docs/writing-a-connector.md`.
 
 ## 3. Tool rules
