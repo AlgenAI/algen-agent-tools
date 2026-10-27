@@ -33,6 +33,15 @@ A tool's name, input schema, side effect and permission are part of the public c
   `get_message` and, from `files=`, `get_attachment`.
 - `algen_agent_tools.attachments.ID_PATTERN`: provider ids in tool inputs cannot contain a slash
   or be `.` or `..`.
+- Documents (`algen_agent_tools.documents`, extra `documents`): `documents_toolkit(artifact_loader=...)`
+  offers `documents.extract_text` (read), the readable text of a PDF, DOCX, text or Markdown
+  artifact with the Runtime's document inspection findings (hidden text, instructions aimed at
+  the model, risky DOCX packaging) and a `pass`/`review`/`quarantine` disposition. Hidden text is
+  never returned, and a quarantined document's text is withheld unless
+  `quarantine="return"`. Built in code, as it needs the deployment's artifact loader; no plugin
+  yet. The `documents` extra installs `algen-agent-runtime[documents]` (PyMuPDF, AGPL-3.0) for
+  PDFs and is part of `all`.
+- AGENTS.md: `algen_agent_runtime.security.documents` joins the Runtime API connectors may use.
 
 ### Changed
 

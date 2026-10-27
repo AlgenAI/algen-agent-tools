@@ -44,6 +44,7 @@ PUBLIC_NAMES = {
         "toolkit_contract_problems",
     ),
     "algen_agent_tools.catalog": ("ConnectorInfo", "build_catalog", "load_catalog"),
+    "algen_agent_tools.documents": ("DocumentText", "documents_toolkit"),
     "algen_agent_tools.attachments": (
         "ArtifactLoader",
         "ArtifactSink",
