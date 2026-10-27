@@ -47,6 +47,8 @@ PUBLIC_NAMES = {
     ),
     "algen_agent_tools.discord": ("DiscordBotClient", "DiscordSettings", "discord_toolkit"),
     "algen_agent_tools.github": ("github_overlay", "github_toolkit"),
+    "algen_agent_tools.sql": ("Dialect", "SqlToolkit", "TooManyRows"),
+    "algen_agent_tools.sqlite": ("SqliteToolkit", "sqlite_toolkit"),
     "algen_agent_tools.telegram": ("TelegramBotClient", "TelegramSettings", "telegram_toolkit"),
     "algen_agent_tools.testing": (
         "assert_toolkit_contract",

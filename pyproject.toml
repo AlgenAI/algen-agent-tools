@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-  "algen-agent-tools[discord,documents,github,gmail,mcp,outlook,postgres,smtp,telegram]",
+  "algen-agent-tools[discord,documents,github,gmail,mcp,outlook,postgres,smtp,sqlite,telegram]",
 ]
 # Discord uses httpx, already installed with the Runtime.
 discord = []
@@ -56,6 +56,8 @@ outlook = []
 mcp = ["algen-agent-runtime[mcp]>=0.1.0a12,<0.2"]
 postgres = ["asyncpg>=0.29,<1"]
 smtp = []
+# SQLite uses the standard library's sqlite3.
+sqlite = []
 # Telegram uses httpx, already installed with the Runtime.
 telegram = []
 dev = [
@@ -74,6 +76,7 @@ dev = [
 "algen_agent_tools.postgres" = "algen_agent_tools.postgres.plugin:PostgresPlugin"
 "algen_agent_tools.sample" = "algen_agent_tools.sample.plugin:SamplePlugin"
 "algen_agent_tools.smtp" = "algen_agent_tools.smtp.plugin:SmtpPlugin"
+"algen_agent_tools.sqlite" = "algen_agent_tools.sqlite.plugin:SqlitePlugin"
 "algen_agent_tools.telegram" = "algen_agent_tools.telegram.plugin:TelegramPlugin"
 
 [project.urls]

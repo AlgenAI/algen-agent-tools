@@ -61,6 +61,8 @@ them again, so every platform offers the same names and inputs:
 - Chat: `algen_agent_tools.messaging`. Declare a `MessagingPlatform` with its `Capability`
   flags, implement a `MessagingProvider`, and call `messaging_toolkit`. The Telegram connector
   is the example to copy.
+- Databases: `algen_agent_tools.sql`. Implement a `Dialect` and subclass `SqlToolkit`; the
+  PostgreSQL and SQLite connectors are the examples.
 - Files: `algen_agent_tools.attachments` (`add_get_attachment_tool`, `AttachmentPolicy`).
 
 ## The plugin and its catalog entry
