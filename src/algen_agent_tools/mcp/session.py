@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
@@ -62,6 +63,41 @@ def allowed_hosts(server: Any, configured: tuple[str, ...] | None) -> tuple[str,
     return (host,)
 
 
+@dataclass(frozen=True)
+class Drift:
+    """How a server's advertised tools differ from an overlay's reviewed ones."""
+
+    missing: tuple[str, ...] = ()
+    """Declared tools the server no longer offers."""
+    changed: tuple[str, ...] = ()
+    """Declared tools whose input schema differs from the reviewed one."""
+    undeclared: tuple[str, ...] = ()
+    """Tools the server offers that the overlay does not declare (never exposed)."""
+
+    @property
+    def breaking(self) -> bool:
+        """Whether a declared tool is missing or changed."""
+        return bool(self.missing or self.changed)
+
+
+def compare(overlay: McpOverlay, advertised: dict[str, Any]) -> Drift:
+    """Compare the overlay's declared tools with what the server advertises now."""
+    from algen_agent_tools.mcp.overlay import canonical
+
+    missing, changed = [], []
+    for remote, rule in overlay.tools.items():
+        item = advertised.get(remote)
+        if item is None:
+            missing.append(remote)
+        elif canonical(_field(item, "inputSchema") or {}) != canonical(rule.input_schema):
+            changed.append(remote)
+    return Drift(
+        missing=tuple(sorted(missing)),
+        changed=tuple(sorted(changed)),
+        undeclared=tuple(sorted(set(advertised) - set(overlay.tools))),
+    )
+
+
 class McpSession:
     """An open connection to the overlay's server and the tools it may not call."""
 
@@ -75,12 +111,11 @@ class McpSession:
         await self._manager.aclose()
 
 
-async def open_session(
+async def connect(
     overlay: McpOverlay, secrets: SecretResolver, *, session_factory: Any = None
-) -> McpSession:
-    """Connect, then compare each declared tool with what the server advertises now."""
-    from algen_agent_tools.mcp.overlay import canonical
-
+) -> tuple[MCPClientManager, Any, dict[str, Any]]:
+    """Connect to the overlay's server and list its tools: the manager (the caller closes
+    it), the session and the advertised tools by name."""
     server = overlay.server
     # Every env:// reference resolves through the deployment's secret resolver, never ambient
     # process state: stdio env values here, HTTP tokens and headers through the manager.
@@ -102,27 +137,29 @@ async def open_session(
     except BaseException:
         await manager.aclose()
         raise
-    refused: dict[str, str] = {}
-    for remote, rule in overlay.tools.items():
-        item = advertised.get(remote)
-        if item is None:
-            refused[remote] = "the server no longer offers it"
-            continue
-        current = _field(item, "inputSchema") or {}
-        if canonical(current) != canonical(rule.input_schema):
-            reason = "the server changed its input schema since the overlay was reviewed"
-            if overlay.on_drift == "refuse":
-                refused[remote] = reason
-            else:
-                logger.warning("MCP tool %s on %s: %s", remote, server.name, reason)
-    undeclared = sorted(set(advertised) - set(overlay.tools))
-    if undeclared:
+    return manager, connection.session, advertised
+
+
+async def open_session(
+    overlay: McpOverlay, secrets: SecretResolver, *, session_factory: Any = None
+) -> McpSession:
+    """Connect, then compare each declared tool with what the server advertises now."""
+    manager, session, advertised = await connect(overlay, secrets, session_factory=session_factory)
+    drift = compare(overlay, advertised)
+    refused = {remote: "the server no longer offers it" for remote in drift.missing}
+    for remote in drift.changed:
+        reason = "the server changed its input schema since the overlay was reviewed"
+        if overlay.on_drift == "refuse":
+            refused[remote] = reason
+        else:
+            logger.warning("MCP tool %s on %s: %s", remote, overlay.server.name, reason)
+    if drift.undeclared:
         logger.info(
             "MCP server %s offers %d tool(s) the overlay does not declare; they are not exposed",
-            server.name,
-            len(undeclared),
+            overlay.server.name,
+            len(drift.undeclared),
         )
-    return McpSession(manager, connection.session, refused)
+    return McpSession(manager, session, refused)
 
 
 def call_handler(toolkit: McpToolkit, remote: str, definition: ToolDefinition) -> ToolHandler:

@@ -17,7 +17,7 @@ import yaml
 from algen_agent_runtime.config.settings import SecuritySettings
 from algen_agent_runtime.mcp.client import MCPClientManager
 
-from algen_agent_tools.mcp.overlay import ServerHolder
+from algen_agent_tools.mcp.overlay import McpOverlay, ServerHolder
 from algen_agent_tools.mcp.session import _field, allowed_hosts, list_remote_tools
 
 _HEADER = """\
@@ -78,14 +78,31 @@ async def draft(name: str, server: dict[str, Any], *, session_factory: Any = Non
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m algen_agent_tools.mcp",
-        description="Draft an MCP governance overlay from a live server.",
+        description="Draft an MCP governance overlay from a live server, or check one.",
     )
     commands = parser.add_subparsers(dest="command", required=True)
     snapshot = commands.add_parser("snapshot", help="connect and draft an overlay")
     snapshot.add_argument("server", type=Path, help="YAML file with one MCP server config")
     snapshot.add_argument("--name", required=True, help="the overlay (toolkit) name")
     snapshot.add_argument("--output", type=Path, help="write here instead of stdout")
+    checking = commands.add_parser(
+        "check",
+        help="compare a reviewed overlay with its live server; exit 1 on drift",
+        description=(
+            "Connect to the overlay's server, resolving its env:// references from this "
+            "process's environment, and report declared tools that are missing or whose input "
+            "schema changed (exit 1), and tools offered but not declared (exit 0 unless "
+            "--strict)."
+        ),
+    )
+    checking.add_argument("overlay", type=Path, help="the reviewed overlay YAML file")
+    checking.add_argument("--json", action="store_true", help="print a JSON report")
+    checking.add_argument(
+        "--strict", action="store_true", help="also fail when the server offers new tools"
+    )
     arguments = parser.parse_args(argv)
+    if arguments.command == "check":
+        return _check(arguments)
     server = yaml.safe_load(arguments.server.read_text())
     if not isinstance(server, dict):
         parser.error(f"{arguments.server} must hold one MCP server mapping")
@@ -95,3 +112,12 @@ def main(argv: list[str] | None = None) -> int:
     else:
         sys.stdout.write(text)
     return 0
+
+
+def _check(arguments: argparse.Namespace) -> int:
+    from algen_agent_tools.mcp.check import as_json, check, report
+
+    overlay = McpOverlay.from_file(arguments.overlay)
+    drift = asyncio.run(check(overlay))
+    sys.stdout.write((as_json if arguments.json else report)(overlay, drift))
+    return 1 if drift.breaking or (arguments.strict and drift.undeclared) else 0
