@@ -39,11 +39,13 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-  "algen-agent-tools[gmail,mcp,postgres,smtp]",
+  "algen-agent-tools[gmail,mcp,outlook,postgres,smtp]",
 ]
 # Gmail uses httpx and SMTP the standard library, both already installed with the Runtime;
 # their extras exist so every connector installs the same way.
 gmail = []
+# Outlook uses httpx, already installed with the Runtime.
+outlook = []
 mcp = ["algen-agent-runtime[mcp]>=0.1.0a12,<0.2"]
 postgres = ["asyncpg>=0.29,<1"]
 smtp = []
@@ -57,6 +59,7 @@ dev = [
 
 [project.entry-points."algen_agent_runtime.plugins"]
 "algen_agent_tools.gmail" = "algen_agent_tools.gmail.plugin:GmailPlugin"
+"algen_agent_tools.outlook" = "algen_agent_tools.outlook.plugin:OutlookPlugin"
 "algen_agent_tools.postgres" = "algen_agent_tools.postgres.plugin:PostgresPlugin"
 "algen_agent_tools.sample" = "algen_agent_tools.sample.plugin:SamplePlugin"
 "algen_agent_tools.smtp" = "algen_agent_tools.smtp.plugin:SmtpPlugin"

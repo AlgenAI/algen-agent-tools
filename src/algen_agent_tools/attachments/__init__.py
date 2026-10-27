@@ -8,7 +8,12 @@ from algen_agent_tools.attachments.models import (
     AttachmentUpload,
 )
 from algen_agent_tools.attachments.policy import SIGNATURES, AttachmentPolicy, AttachmentRefused
-from algen_agent_tools.attachments.tool import ID_PATTERN, Fetch, add_get_attachment_tool
+from algen_agent_tools.attachments.tool import (
+    ID_PATTERN,
+    Fetch,
+    add_get_attachment_tool,
+    id_field,
+)
 
 __all__ = [
     "ID_PATTERN",
@@ -21,4 +26,5 @@ __all__ = [
     "AttachmentUpload",
     "Fetch",
     "add_get_attachment_tool",
+    "id_field",
 ]
