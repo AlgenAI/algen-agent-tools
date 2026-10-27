@@ -16,6 +16,8 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from algen_agent_tools.attachments.models import AttachmentRef
+
 _HEADER_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]{1,126}$")
 DOMAIN = re.compile(r"^(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?$")
 
@@ -50,27 +52,8 @@ class EmailAddress(BaseModel):
         return formataddr((self.display_name or "", self.address))
 
 
-class EmailAttachmentReference(BaseModel):
+class EmailAttachmentReference(AttachmentRef):
     """Tenant-scoped Runtime artifact reference; message contracts never embed file bytes."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-    artifact_id: str = Field(min_length=1, max_length=256)
-    filename: str = Field(min_length=1, max_length=255)
-    media_type: str = Field(min_length=3, max_length=255)
-
-    @model_validator(mode="after")
-    def validate_filename(self) -> EmailAttachmentReference:
-        reject_header_injection(self.filename, "attachment filename")
-        if "/" in self.filename or "\\" in self.filename or self.filename in {".", ".."}:
-            raise ValueError("attachment filename must not contain a path")
-        media_type, separator, subtype = self.media_type.partition("/")
-        if not separator or not media_type or not subtype:
-            raise ValueError("attachment media_type must be a type/subtype value")
-        if any(character.isspace() for character in self.media_type) or any(
-            character in self.media_type for character in ";\r\n"
-        ):
-            raise ValueError("attachment media_type must not contain parameters or whitespace")
-        return self
 
 
 class EmailMessage(BaseModel):

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Awaitable, Callable
-from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
@@ -17,6 +16,7 @@ from algen_agent_runtime.tools.authoring import Toolkit, external
 from algen_agent_runtime.tools.contracts import Tool, ToolContext
 from pydantic import BaseModel, ConfigDict, Field
 
+from algen_agent_tools._core.context import current_call, tool_call
 from algen_agent_tools.mail.models import (
     EmailAddress,
     EmailArtifactLoader,
@@ -31,16 +31,15 @@ AUDIT_METADATA = {"content_capture": "disabled", "channel": "email"}
 
 ContextualArtifactLoader = Callable[[EmailAttachmentReference, ToolContext], Awaitable[bytes]]
 """Loads an attachment's bytes for one tool call. It receives the call's context so it can
-check that the artifact belongs to the caller's tenant (and run) before returning anything."""
-
-_CALL: ContextVar[ToolContext | None] = ContextVar("algen_agent_tools_mail_call", default=None)
+check that the artifact belongs to the caller's tenant (and run) before returning anything.
+It is :data:`algen_agent_tools.attachments.ArtifactLoader` narrowed to email references."""
 
 
 def bind_artifact_loader(loader: ContextualArtifactLoader) -> EmailArtifactLoader:
     """A transport-level loader that passes the current ``send_email`` call's context on."""
 
     async def load(reference: EmailAttachmentReference) -> bytes:
-        context = _CALL.get()
+        context = current_call()
         if context is None:
             raise EmailDeliveryError("attachments load only inside a send_email tool call")
         return await loader(reference, context)
@@ -121,11 +120,8 @@ def add_send_tool(
             if outside:
                 raise PolicyDeniedError(f"recipients outside the allowed domains: {outside}")
         transport: EmailSender = client.transport
-        token = _CALL.set(context)
-        try:
+        with tool_call(context):
             return await transport.send(message, idempotency_key=context.idempotency_key)
-        finally:
-            _CALL.reset(token)
 
     send_email.__doc__ = (
         f"Send one email through {provider} from the deployment's own address. Give at least "

@@ -7,10 +7,9 @@ from algen_agent_tools.gmail.client import (
     GmailMailboxClient,
     GmailMailboxPage,
     GmailOAuthSettings,
-    InboundEmailAttachment,
-    InboundEmailSummary,
 )
 from algen_agent_tools.gmail.toolkit import gmail_toolkit
+from algen_agent_tools.mail.inbound import InboundEmailAttachment, InboundEmailSummary
 
 __all__ = [
     "GmailMailboxClient",

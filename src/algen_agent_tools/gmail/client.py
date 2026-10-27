@@ -5,16 +5,18 @@ Moved from ``algen_agent_runtime.communications.gmail`` (Runtime 0.1.0a11).
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import re
-import time
 from collections.abc import Mapping
 from typing import Any
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
+from algen_agent_tools._core.auth import OAuthRefresh
+from algen_agent_tools._core.errors import failure
+from algen_agent_tools._core.http import HostLockedClient
+from algen_agent_tools.mail.inbound import InboundEmailAttachment, InboundEmailSummary
 from algen_agent_tools.mail.models import (
     DOMAIN,
     EmailArtifactLoader,
@@ -45,29 +47,6 @@ class GmailOAuthSettings(BaseModel):
         if not DOMAIN.fullmatch(self.message_id_domain):
             raise ValueError("message_id_domain is invalid")
         return self
-
-
-class InboundEmailAttachment(BaseModel):
-    """Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-    provider_attachment_id: str = Field(min_length=1, max_length=2_000)
-    filename: str = Field(min_length=1, max_length=255)
-    media_type: str = Field(default="application/octet-stream", min_length=3, max_length=255)
-    size: int = Field(default=0, ge=0)
-
-
-class InboundEmailSummary(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-    provider_message_id: str
-    thread_id: str | None = None
-    sender: str = ""
-    recipients: str = ""
-    subject: str = ""
-    received_at_ms: int = Field(default=0, ge=0)
-    snippet: str = Field(default="", max_length=2_000)
-    labels: tuple[str, ...] = ()
-    attachments: tuple[InboundEmailAttachment, ...] = ()
 
 
 def _gmail_attachments(payload: Mapping[str, Any]) -> tuple[InboundEmailAttachment, ...]:
@@ -111,39 +90,25 @@ class GmailMailboxClient:
     ) -> None:
         self._settings = settings
         self._artifact_loader = artifact_loader
-        self._client = client or httpx.AsyncClient(timeout=settings.timeout_seconds)
-        self._owns_client = client is None
-        self._access_token: str | None = None
-        self._access_token_expires_at = 0.0
-        self._token_lock = asyncio.Lock()
+        self._http = HostLockedClient(
+            settings.api_base_url,
+            also=(settings.token_uri,),
+            timeout_seconds=settings.timeout_seconds,
+            # A full message or a base64 attachment at the attachment limit, with headroom.
+            max_response_bytes=2 * settings.max_attachment_bytes + 1_000_000,
+            client=client,
+        )
+        self._oauth = OAuthRefresh(
+            self._http,
+            token_uri=settings.token_uri,
+            client_id=settings.client_id,
+            client_secret=settings.client_secret,
+            refresh_token=settings.refresh_token,
+            on_error=lambda exc: EmailDeliveryError(failure("Gmail", "OAuth token request", exc)),
+        )
 
     async def _token(self) -> str:
-        if self._access_token and time.monotonic() < self._access_token_expires_at - 60:
-            return self._access_token
-        async with self._token_lock:
-            if self._access_token and time.monotonic() < self._access_token_expires_at - 60:
-                return self._access_token
-            try:
-                response = await self._client.post(
-                    self._settings.token_uri,
-                    data={
-                        "client_id": self._settings.client_id,
-                        "client_secret": self._settings.client_secret.get_secret_value(),
-                        "refresh_token": self._settings.refresh_token.get_secret_value(),
-                        "grant_type": "refresh_token",
-                    },
-                )
-                response.raise_for_status()
-                payload = response.json()
-                token = str(payload["access_token"])
-                expires_in = max(60, int(payload.get("expires_in", 3600)))
-            except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-                raise EmailDeliveryError(
-                    f"Gmail OAuth token request failed ({type(exc).__name__})"
-                ) from exc
-            self._access_token = token
-            self._access_token_expires_at = time.monotonic() + expires_in
-            return token
+        return await self._oauth.token()
 
     async def send(self, message: EmailMessage, *, idempotency_key: str) -> EmailDeliveryReceipt:
         attachments: list[tuple[EmailAttachmentReference, bytes]] = []
@@ -167,15 +132,15 @@ class GmailMailboxClient:
         raw = base64.urlsafe_b64encode(mime.as_bytes()).decode().rstrip("=")
         token = await self._token()
         try:
-            response = await self._client.post(
-                f"{self._settings.api_base_url.rstrip('/')}/users/me/messages/send",
+            response = await self._http.post(
+                self._http.url("users/me/messages/send"),
                 headers={"Authorization": f"Bearer {token}"},
                 json={"raw": raw},
             )
             response.raise_for_status()
             provider_id = str(response.json()["id"])
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise EmailDeliveryError(f"Gmail delivery failed ({type(exc).__name__})") from exc
+            raise EmailDeliveryError(failure("Gmail", "delivery", exc)) from exc
         recipients = tuple(item.address for item in (*message.to, *message.cc, *message.bcc))
         return EmailDeliveryReceipt(
             provider="gmail",
@@ -199,8 +164,8 @@ class GmailMailboxClient:
         if page_token:
             params["pageToken"] = page_token
         try:
-            response = await self._client.get(
-                f"{self._settings.api_base_url.rstrip('/')}/users/me/messages",
+            response = await self._http.get(
+                self._http.url("users/me/messages"),
                 headers=headers,
                 params=params,
             )
@@ -208,8 +173,8 @@ class GmailMailboxClient:
             listing = response.json()
             rows: list[InboundEmailSummary] = []
             for reference in listing.get("messages", []):
-                detail = await self._client.get(
-                    f"{self._settings.api_base_url.rstrip('/')}/users/me/messages/{reference['id']}",
+                detail = await self._http.get(
+                    self._http.url(f"users/me/messages/{reference['id']}"),
                     headers=headers,
                     params={
                         "format": "full",
@@ -241,7 +206,7 @@ class GmailMailboxClient:
                 result_size_estimate=max(0, int(listing.get("resultSizeEstimate", len(rows)))),
             )
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise EmailDeliveryError(f"Gmail inbox read failed ({type(exc).__name__})") from exc
+            raise EmailDeliveryError(failure("Gmail", "inbox read", exc)) from exc
 
     async def download_attachment(
         self, provider_message_id: str, provider_attachment_id: str
@@ -252,9 +217,10 @@ class GmailMailboxClient:
             raise ValueError("provider_attachment_id is invalid")
         token = await self._token()
         try:
-            response = await self._client.get(
-                f"{self._settings.api_base_url.rstrip('/')}/users/me/messages/"
-                f"{provider_message_id}/attachments/{provider_attachment_id}",
+            response = await self._http.get(
+                self._http.url(
+                    f"users/me/messages/{provider_message_id}/attachments/{provider_attachment_id}"
+                ),
                 headers={"Authorization": f"Bearer {token}"},
             )
             response.raise_for_status()
@@ -266,10 +232,7 @@ class GmailMailboxClient:
         except EmailDeliveryError:
             raise
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise EmailDeliveryError(
-                f"Gmail attachment download failed ({type(exc).__name__})"
-            ) from exc
+            raise EmailDeliveryError(failure("Gmail", "attachment download", exc)) from exc
 
     async def aclose(self) -> None:
-        if self._owns_client:
-            await self._client.aclose()
+        await self._http.aclose()

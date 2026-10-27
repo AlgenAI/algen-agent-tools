@@ -25,8 +25,21 @@ A tool's name, input schema, side effect and permission are part of the public c
 - Contract tests: the committed catalog is the snapshot of every tool's public contract and must
   match the code, and the import paths the Runtime's deprecation messages and the migration
   guide point to must stay importable.
+- `algen_agent_tools.attachments`: the file handling every connector that sends or receives
+  files shares. `AttachmentRef` (an artifact reference; `EmailAttachmentReference` now extends
+  it with an unchanged schema), the deployment-provided `ArtifactLoader` and `ArtifactSink`,
+  `AttachmentPolicy` (size limit, allowed types, and a check that a file's leading bytes match
+  its declared type) and `add_get_attachment_tool`, which stores a fetched file as an artifact
+  and returns only its reference. No connector offers `get_attachment` yet.
+- `InboundEmailSummary` and `InboundEmailAttachment` are also importable from
+  `algen_agent_tools.mail`, for every mailbox connector; `algen_agent_tools.gmail` still exports
+  them.
 
 ### Changed
+
+- Gmail runs on the package's shared HTTP and OAuth code: every request is limited to the
+  configured API and token hosts, and a response larger than twice the attachment limit (plus
+  1 MB) is refused. Tools, schemas and error messages are unchanged.
 
 - Tested against `algen-agent-runtime` 0.1.0a13; the supported range is unchanged
   (`>=0.1.0a12,<0.2`).

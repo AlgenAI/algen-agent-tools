@@ -22,6 +22,8 @@ PUBLIC_NAMES = {
         "EmailMessage",
         "EmailSender",
         "FakeMailbox",
+        "InboundEmailAttachment",
+        "InboundEmailSummary",
     ),
     "algen_agent_tools.smtp": ("SmtpEmailSender", "SmtpSettings", "smtp_toolkit"),
     "algen_agent_tools.gmail": (
@@ -41,6 +43,13 @@ PUBLIC_NAMES = {
         "toolkit_contract_problems",
     ),
     "algen_agent_tools.catalog": ("ConnectorInfo", "build_catalog", "load_catalog"),
+    "algen_agent_tools.attachments": (
+        "ArtifactLoader",
+        "ArtifactSink",
+        "AttachmentPolicy",
+        "AttachmentRef",
+        "add_get_attachment_tool",
+    ),
 }
 
 
