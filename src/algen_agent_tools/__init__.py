@@ -5,7 +5,7 @@ plugin, so an agent names it in ``domain_plugins`` and Studio lists its tools fr
 ``algen-agent-runtime describe``.
 """
 
-__version__ = "0.2.0a1"
+__version__ = "0.2.0a2"
 
 PUBLISHER = "AlgenAI"
 """The publisher recorded on every plugin manifest in this package."""

@@ -8,6 +8,8 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a2] - 2026-10-27
+
 ### Added
 
 - Outlook (`algen_agent_tools.outlook`, extra `outlook`): one Microsoft 365 mailbox through
@@ -54,6 +56,12 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 - Agents that enable every Gmail tool by listing them should add `gmail.get_message` to
   `enabled_tools` to use it; it needs only `gmail.read` and the `gmail.readonly` scope.
+- No existing tool's name, input schema, side effect or permissions changed. The one output
+  change, `part_id` on Gmail list results, is additive.
+- `gmail.get_attachment` and `outlook.get_attachment` appear only when the toolkit is built in
+  code with an `artifact_sink`; plugin-only deployments see no new write path.
+- The `all` extra now includes `documents`, which installs PyMuPDF (AGPL-3.0). Deployments that
+  cannot ship AGPL code should install the extras they use instead of `all`.
 
 ## [0.2.0a1] - 2026-10-27
 
