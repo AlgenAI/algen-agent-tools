@@ -11,7 +11,7 @@ src/algen_agent_tools/<connector>/
   toolkit.py    # <connector>_toolkit(...) -> Toolkit
   client.py     # the vendor client, if any; optional imports happen here, lazily
   fake.py       # an in-memory stand-in for the client, used by tests and by users' tests
-  plugin.py     # <Connector>Plugin = toolkit_plugin("<connector>", ...)
+  plugin.py     # INFO = ConnectorInfo(...); <Connector>Plugin = toolkit_plugin(INFO, ...)
 tests/unit/test_<connector>.py          # offline: contract, every tool against the fake
 tests/integration/test_<connector>.py   # live or container tests, marked live or integration
 docs/connectors/<connector>.md
@@ -53,6 +53,48 @@ def crm_toolkit(
 - Nothing connects in the factory or in `register`; the client opens at container start or on
   first use, and resolves its secrets then.
 - The docstring is what the model reads: say what the action does and when to use it.
+
+## The plugin and its catalog entry
+
+The plugin declares what the connector is and needs, as data. Hosts such as Studio read it from
+the package's connector catalog (`algen_agent_tools/connectors.json`) to list the connector,
+collect its settings and turn it on for an agent, without running connector code.
+
+```python
+INFO = ConnectorInfo(
+    connector="crm",
+    title="Acme CRM",
+    summary="Find accounts in Acme CRM by web domain.",
+    category="utility",
+    extra="crm",
+    settings=(
+        Setting(env="ALGEN_TOOLS_CRM_TOKEN", description="An API token.", secret=True),
+        Setting(env="ALGEN_TOOLS_CRM_REGION", description="Data region.", required=False,
+                default="us"),
+    ),
+    egress=(Egress(protocol="https", host="api.acme-crm.example", port=443),),
+    code_only_options=("client",),
+)
+
+CrmPlugin = toolkit_plugin(INFO, crm_toolkit)
+```
+
+- `settings` lists every variable the zero-configuration toolkit reads; the plugin manifest's
+  `env` comes from it. Mark credentials `secret=True`.
+- `egress` names every host the connector connects to, fixed or taken from a setting
+  (`host_setting`), so a host can build its network allowlist.
+- `code_only_options` names factory options a configuration-only host cannot set yet. Keep it
+  short: prefer a setting to a Python-only option.
+
+Then regenerate the catalog and commit it with the change:
+
+```bash
+python -m algen_agent_tools catalog --write
+```
+
+The catalog records every tool's name, input schema, side effect and permissions, so it is also
+the package's contract snapshot: a test fails when it drifts from the code, and the diff shows
+reviewers exactly which public contract changed. Such a change needs a CHANGELOG entry.
 
 ## Tests
 

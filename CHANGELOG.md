@@ -8,6 +8,29 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Added
+
+- The connector catalog: `algen_agent_tools/connectors.json`, generated from the code and
+  shipped in the wheel, lists every connector with its title, category, maturity, pinned pip
+  requirement, docs link, settings (which are secrets, required, defaults), egress hosts, options
+  that still need Python, every tool's full description (input and output schema, side effect,
+  idempotency, permissions, timeout, approval) and the agent configuration that turns it on.
+  Hosts such as Studio read it to list and enable connectors without running connector code.
+  `python -m algen_agent_tools catalog` prints it, `--write` regenerates it and `--check` fails
+  when it is stale; `algen_agent_tools.catalog.load_catalog()` reads the shipped copy. Each
+  release also attaches it to the GitHub Release.
+- `ConnectorInfo`, `Setting` and `Egress` (`algen_agent_tools.catalog`): what each connector
+  declares about itself on its plugin (`connector_info`). Plugin manifests take their `env`
+  from it.
+- Contract tests: the committed catalog is the snapshot of every tool's public contract and must
+  match the code, and the import paths the Runtime's deprecation messages and the migration
+  guide point to must stay importable.
+
+### Changed
+
+- Tested against `algen-agent-runtime` 0.1.0a13; the supported range is unchanged
+  (`>=0.1.0a12,<0.2`).
+
 ## [0.1.0a2] - 2026-10-27
 
 ### Changed

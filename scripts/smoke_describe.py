@@ -1,5 +1,5 @@
-"""Check an installed wheel end to end: every plugin it ships loads by entry point and
-``algen-agent-runtime describe`` lists its tools.
+"""Check an installed wheel end to end: every plugin it ships loads by entry point,
+``algen-agent-runtime describe`` lists its tools, and the shipped connector catalog matches them.
 
 Run it with the interpreter of a fresh virtualenv, from outside the source tree's ``src``:
 
@@ -65,6 +65,14 @@ def main() -> None:
     loaded = sorted(plugin["reference"] for plugin in inventory["plugins"])
     if loaded != plugins:
         raise SystemExit(f"describe loaded {loaded}, expected {plugins}")
+    from algen_agent_tools.catalog import build_catalog, load_catalog
+
+    shipped = load_catalog()
+    if shipped != build_catalog():
+        raise SystemExit("the wheel's connectors.json does not match its plugins")
+    if [connector.plugin for connector in shipped.connectors] != plugins:
+        listed = [connector.plugin for connector in shipped.connectors]
+        raise SystemExit(f"connectors.json lists {listed}, expected {plugins}")
     ours = sorted(name for name, source in sources.items() if source.startswith(PREFIX))
     print(f"described {len(ours)} tools from {len(plugins)} plugins: {', '.join(ours)}")
 

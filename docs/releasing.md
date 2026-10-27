@@ -38,6 +38,9 @@ artifacts from a workstation.
   section `## [<version>] - <YYYY-MM-DD>` with changes, upgrade notes and known limitations.
 - The supported Runtime range in `pyproject.toml` and `docs/compatibility.md` agree, and the
   Quality workflow's `runtime-range` job passed against both bounds.
+- After setting the version, regenerate the connector catalog with
+  `python -m algen_agent_tools catalog --write`: it records the version, the pinned
+  requirement and versioned docs links, and the tests fail until it matches.
 - `main` is green on every required check, and dependency, CodeQL, Bandit and Gitleaks findings
   are reviewed.
 
@@ -49,9 +52,11 @@ artifacts from a workstation.
    versions are marked pre-release). Merging a version bump is therefore a release action.
 3. **Release** verifies the tag matches the version, runs lint, typing and tests, builds the wheel
    and sdist, writes and checks `SHA256SUMS`, inspects the artifacts, installs the wheel in a
-   fresh virtualenv and describes every plugin it ships, then uploads the artifacts.
+   fresh virtualenv and describes every plugin it ships, checks that the shipped
+   `connectors.json` matches them, then uploads the artifacts.
 4. A reviewer approves the `pypi` environment; Trusted Publishing uploads exactly those
-   artifacts.
+   artifacts. After the upload, `connectors.json` from the published wheel is attached to the
+   GitHub Release, where Studio and other hosts read the catalog of a pinned version.
 5. Verify the published package:
 
    ```bash

@@ -64,7 +64,11 @@ jobs:
           sdist = next(Path("dist").glob("*.tar.gz"))
           with zipfile.ZipFile(wheel) as archive:
               names = set(archive.namelist())
-              required = {"algen_agent_tools/py.typed", "algen_agent_tools/testing.py"}
+              required = {
+                  "algen_agent_tools/py.typed",
+                  "algen_agent_tools/testing.py",
+                  "algen_agent_tools/connectors.json",
+              }
               missing = required - names
               if missing:
                   raise SystemExit(f"wheel missing required files: {sorted(missing)}")
@@ -105,3 +109,23 @@ jobs:
         run: rm -f dist/SHA256SUMS
       - uses: pypa/gh-action-pypi-publish@release/v1
 
+
+  attach-catalog:
+    # Studio and other hosts read the connector catalog of a pinned release from here.
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-distributions
+          path: dist/
+      - name: Attach connectors.json from the published wheel to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          wheel=$(ls dist/*.whl)
+          unzip -p "$wheel" algen_agent_tools/connectors.json > connectors.json
+          gh release upload "$TAG" connectors.json --clobber --repo "$GITHUB_REPOSITORY"

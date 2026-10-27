@@ -1,4 +1,57 @@
+from algen_agent_tools._env import env_name
 from algen_agent_tools._plugin import toolkit_plugin
-from algen_agent_tools.smtp.toolkit import DEFAULT_ENV, smtp_toolkit
+from algen_agent_tools.catalog import ConnectorInfo, Egress, Setting
+from algen_agent_tools.smtp.toolkit import (
+    HOST,
+    PASSWORD,
+    PORT,
+    SECURITY,
+    SENDER,
+    USERNAME,
+    smtp_toolkit,
+)
 
-SmtpPlugin = toolkit_plugin("smtp", smtp_toolkit, env=DEFAULT_ENV)
+INFO = ConnectorInfo(
+    connector="smtp",
+    title="SMTP email",
+    summary=(
+        "Send email through any SMTP server from one fixed sender address. The model chooses "
+        "recipients, subject and body; every send is an external action."
+    ),
+    category="email",
+    extra="smtp",
+    settings=(
+        Setting(
+            env=env_name(HOST),
+            description="The SMTP server's host name.",
+            example="smtp.example.com",
+        ),
+        Setting(
+            env=env_name(SENDER),
+            description="The address every email is sent from.",
+            example="agent@example.com",
+        ),
+        Setting(env=env_name(PORT), description="The SMTP port.", required=False, default="587"),
+        Setting(
+            env=env_name(SECURITY),
+            description="Connection security: starttls, tls or plain.",
+            required=False,
+            default="starttls",
+        ),
+        Setting(
+            env=env_name(USERNAME),
+            description="The SMTP login, when the server needs one.",
+            required=False,
+        ),
+        Setting(
+            env=env_name(PASSWORD),
+            description="The SMTP password, when the server needs one.",
+            secret=True,
+            required=False,
+        ),
+    ),
+    egress=(Egress(protocol="smtp", host_setting=env_name(HOST)),),
+    code_only_options=("allowed_domains", "artifact_loader"),
+)
+
+SmtpPlugin = toolkit_plugin(INFO, smtp_toolkit)
