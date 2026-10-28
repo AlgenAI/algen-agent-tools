@@ -47,6 +47,8 @@ toolkit.query(
 
 - **Placeholders** are plain `?`, filled from the `params` fields in order. Numbered (`?1`) and
   named (`:name`) placeholders are refused, so the order can't silently differ from the model.
+  `context_params=("tenant_id", "user_id")` fills the next ones from the call, never from the
+  model (see [PostgreSQL: the caller's rows](postgres.md#the-callers-rows)).
 - **Reads** run inside a transaction with `PRAGMA query_only` on, so a declared "read" that
   writes fails. A read that matches more than `max_rows` (default 500) is an error, not a
   silently truncated result.

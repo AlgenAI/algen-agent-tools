@@ -21,6 +21,8 @@ parameterised query a developer declares in code, and the model fills in its typ
 - **Writes are keyed and tried once.** A write preset makes the tool keyed and single-attempt;
   with `idempotency_key=True` the call's idempotency key is bound as the last parameter so the
   SQL can be exactly-once.
+- **The caller's identity comes from the call.** `context_params` binds the run's `tenant_id`,
+  `user_id`, `run_id` or `step_id`; they are not tool input, so the model cannot choose them.
 - **Catalog reads are limited** to the schemas you list and to tables the role can `SELECT`.
 
 Use a database role with only the privileges the declared queries need.
@@ -95,12 +97,48 @@ class BillingPlugin:
 
 - `params` fields fill `$1`, `$2`, ... in field order; the toolkit refuses a query whose
   placeholders do not match. Unknown input fields are rejected.
+- `context_params` fill the next placeholders from the call, then the idempotency key fills the
+  last one (see [the caller's rows](#the-callers-rows)).
 - A read returns `list[row]`. A write returns `list[row]` when it has `RETURNING`, otherwise
   `{"rows_affected": n}`.
 - `preset` is any Runtime preset: `read()` (default), `write(approval=...)`,
   `destructive()` (approval on by default), `long_running(...)`.
 - For a read whose result is not a plain list, write your own `@billing.tool(read())` function
   and call `await billing.fetch_rows(sql, values, Row, label="...")`.
+
+### The caller's rows
+
+To keep a query to the caller's own rows in a shared, multi-tenant database, bind the call's
+identity with `context_params` instead of asking the model for it:
+
+```python
+class DueBefore(BaseModel):
+    due_before: date
+
+
+billing.query(
+    "my_invoices",
+    "SELECT id, amount, due FROM invoices "
+    "WHERE due < $1 AND tenant_id = $2 AND owner_id = $3 ORDER BY due",
+    description="List the signed-in user's invoices that fall due before a date.",
+    params=DueBefore,                        # $1, from the model
+    row=Invoice,
+    context_params=("tenant_id", "user_id"), # $2, $3, from the call
+)
+```
+
+- The values are `ToolContext.tenant_id`, `user_id`, `run_id` and `step_id`, which the Runtime
+  sets from the run's authenticated request. Nothing else can be bound: credentials, secrets and
+  permissions are refused when the query is declared.
+- They are not in the tool's input schema, and a call that sends one is rejected. Declaring a
+  `params` field with the same name as a `context_params` value is refused, since the model would
+  then choose it.
+- Placeholders are filled in this order: `params` fields, then `context_params` in the order
+  given, then the idempotency key when `idempotency_key=True`.
+- They narrow rows; they do not replace privileges. Keep a least-privilege role, and use
+  row-level security where the database has it.
+
+The same argument works for MySQL (`%s`) and SQLite (`?`) toolkits.
 
 `postgres_toolkit(name, dsn=..., schemas=(...))` builds a `PostgresToolkit` that already has the
 two catalog reads.
