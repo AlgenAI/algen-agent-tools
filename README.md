@@ -21,7 +21,7 @@ Algen Agent Studio lists each tool with its side effect, permissions and environ
 from `algen-agent-runtime describe`, without running project code.
 
 > [!IMPORTANT]
-> `0.2.0a4` is a pre-release. Tool contracts may change between alpha releases; every change is
+> `0.2.0a5` is a pre-release. Tool contracts may change between alpha releases; every change is
 > recorded in [CHANGELOG.md](CHANGELOG.md) with an upgrade note. Review the
 > [security policy](SECURITY.md) and each connector's guarantees before deployment.
 
@@ -99,6 +99,7 @@ class AcmeTools:
 | MySQL / MariaDB | `algen_agent_tools.mysql` | `mysql` | `mysql.list_tables`, `mysql.describe_table` (read), plus your own typed queries | [mysql](docs/connectors/mysql.md) |
 | SMTP | `algen_agent_tools.smtp` | `smtp` | `smtp.send_email` (external) | [smtp](docs/connectors/smtp.md) |
 | Gmail | `algen_agent_tools.gmail` | `gmail` | `gmail.list_messages`, `gmail.get_message` (read), `gmail.send_email` (external) | [gmail](docs/connectors/gmail.md) |
+| IMAP | `algen_agent_tools.imap` | `imap` | `imap.list_messages`, `imap.get_message` (read), with an artifact sink `imap.get_attachment` (read) | [imap](docs/connectors/imap.md) |
 | Outlook | `algen_agent_tools.outlook` | `outlook` | `outlook.list_messages`, `outlook.get_message` (read), `outlook.send_email` (external) | [outlook](docs/connectors/outlook.md) |
 | Telegram | `algen_agent_tools.telegram` | `telegram` | `telegram.list_messages` (read), `telegram.send_message` (external) | [telegram](docs/connectors/telegram.md) |
 | GitHub | `algen_agent_tools.github` | `github` | 37 reviewed tools from GitHub's MCP server: 22 read, 15 write (5 need approval) | [github](docs/connectors/github.md) |
