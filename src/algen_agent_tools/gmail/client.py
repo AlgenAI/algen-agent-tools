@@ -35,6 +35,7 @@ from algen_agent_tools.mail.models import (
     EmailMessage,
     build_mime_message,
 )
+from algen_agent_tools.mail.sender_auth import GMAIL_AUTHSERV_ID, topmost_verdict
 
 
 class GmailOAuthSettings(BaseModel):
@@ -129,6 +130,14 @@ def _summary_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
         "snippet": str(payload.get("snippet", ""))[:2_000],
         "labels": tuple(str(item) for item in payload.get("labelIds", [])),
         "attachments": _gmail_attachments(payload.get("payload", {})),
+        "sender_auth": topmost_verdict(
+            [
+                str(item.get("value", ""))
+                for item in payload.get("payload", {}).get("headers", [])
+                if str(item.get("name", "")).casefold() == "authentication-results"
+            ],
+            GMAIL_AUTHSERV_ID,
+        ),
     }
 
 

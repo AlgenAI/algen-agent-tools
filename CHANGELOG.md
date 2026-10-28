@@ -8,6 +8,16 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Added
+
+- `InboundEmailSummary.sender_auth` (`pass`, `fail` or `unknown`, default `unknown`): the
+  receiving server's SPF/DKIM/DMARC verdict on the sender. Gmail fills it from the topmost
+  `Authentication-Results` header it stamped itself (`mx.google.com`); other connectors leave it
+  `unknown`. `algen_agent_tools.mail.authentication_verdict(header, trusted_server)` and
+  `topmost_verdict(headers, trusted_server)` expose the rule for other mailbox readers.
+  `gmail.list_messages` and `gmail.get_message` gain the field in their results; inputs, side
+  effects and permissions are unchanged. The connector catalog is regenerated.
+
 ## [0.2.0a4] - 2026-10-27
 
 ### Added

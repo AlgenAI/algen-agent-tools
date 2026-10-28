@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import re
 from html.parser import HTMLParser
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -34,6 +35,9 @@ class InboundEmailSummary(BaseModel):
     snippet: str = Field(default="", max_length=2_000)
     labels: tuple[str, ...] = ()
     attachments: tuple[InboundEmailAttachment, ...] = ()
+    sender_auth: Literal["pass", "fail", "unknown"] = "unknown"
+    """The receiving server's SPF/DKIM/DMARC verdict on the sender, when the connector can read
+    it; see :mod:`algen_agent_tools.mail.sender_auth`. ``unknown`` is never a failure."""
 
 
 class InboundEmailDetail(InboundEmailSummary):

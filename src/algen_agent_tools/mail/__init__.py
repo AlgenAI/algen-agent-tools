@@ -19,6 +19,12 @@ from algen_agent_tools.mail.models import (
     EmailSender,
     build_mime_message,
 )
+from algen_agent_tools.mail.sender_auth import (
+    GMAIL_AUTHSERV_ID,
+    SenderAuth,
+    authentication_verdict,
+    topmost_verdict,
+)
 from algen_agent_tools.mail.tool import (
     ContextualArtifactLoader,
     MailClient,
@@ -30,6 +36,7 @@ from algen_agent_tools.mail.tool import (
 )
 
 __all__ = [
+    "GMAIL_AUTHSERV_ID",
     "ContextualArtifactLoader",
     "EmailAddress",
     "EmailArtifactLoader",
@@ -46,9 +53,12 @@ __all__ = [
     "MailClient",
     "OutgoingEmail",
     "OutgoingEmailWithAttachments",
+    "SenderAuth",
     "add_mailbox_read_tools",
     "add_send_tool",
+    "authentication_verdict",
     "bind_artifact_loader",
     "build_mime_message",
     "html_to_text",
+    "topmost_verdict",
 ]
