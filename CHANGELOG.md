@@ -8,6 +8,35 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Added
+
+- `documents.extract_text` reads Excel (`.xlsx`), PowerPoint (`.pptx`), HTML (`.html`, `.htm`),
+  CSV (`.csv`) and TSV (`.tsv`) documents, as well as PDF, DOCX, text and Markdown
+  ([#28](https://github.com/AlgenAI/algen-agent-tools/issues/28)). Parsing and inspection are
+  the Runtime's (`algen_agent_runtime.security.documents`, 0.1.0a14), with the same guarantees
+  as DOCX: hidden sheets, rows, columns, slides, shapes and HTML elements are left out of the
+  text and reported as `hidden_text.*` findings; Office packages get the zip-bomb, DTD, macro
+  and remote-content checks; visible text goes through the prompt-injection check. The new
+  formats need no extra. The tool's description lists them.
+
+### Changed
+
+- `DocumentText.truncated` is also true when the Runtime reports a `document.truncated`
+  finding, for example an XLSX sheet longer than 5,000 rows, so the model knows the text is
+  incomplete. Before, it only said the text was cut to `max_chars`.
+- The supported Runtime range is `algen-agent-runtime>=0.1.0a14,<0.2` (was `>=0.1.0a12`), for
+  the package and its `documents`, `github` and `mcp` extras. The connector catalog's
+  `runtime_requirement` is regenerated.
+
+### Upgrade notes
+
+- Upgrade `algen-agent-runtime` to 0.1.0a14 or later.
+- `documents.extract_text` accepts files it used to refuse with "only PDF, DOCX, TXT, and
+  Markdown documents are supported"; an agent policy that relied on that refusal to keep
+  spreadsheets, decks or web pages away from the model must now filter by file name or media
+  type itself. Its name, input schema, side effect (read) and permission (`documents.read`) are
+  unchanged.
+
 ## [0.2.0a5] - 2026-10-28
 
 ### Added
