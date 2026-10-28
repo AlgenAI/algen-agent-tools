@@ -8,15 +8,42 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a5] - 2026-10-28
+
 ### Added
 
+- IMAP (`algen_agent_tools.imap`, extra `imap`, no packages: the standard library's `imaplib`),
+  for mailboxes read with an app password ([#26](https://github.com/AlgenAI/algen-agent-tools/issues/26)).
+  The tools are `imap.list_messages` and `imap.get_message` (read), plus
+  `imap.get_attachment` (read) when the toolkit is built with an artifact sink. They return the
+  shared `InboundEmailSummary` / `InboundEmailDetail` contracts. The connector is read-only:
+  folders open with `EXAMINE`, bodies are fetched with `BODY.PEEK`, and nothing is marked as
+  seen. Listing takes typed filters (`from_address`, `subject`, `since`, `before`,
+  `unread_only`) rather than raw IMAP search. Only the folders in `ALGEN_TOOLS_IMAP_FOLDERS`
+  (default `INBOX`) can be read. On Gmail, message and thread ids are Gmail's own (the same ids
+  the Gmail API returns); elsewhere they carry the folder's UIDVALIDITY, so a stale id is an
+  error rather than another message. `sender_auth` trusts the topmost Authentication-Results
+  header from `mx.google.com` on Gmail, or from `ALGEN_TOOLS_IMAP_AUTHSERV_ID`. Bodies and
+  attachments are fetched by part, within byte limits. TLS is always on and the certificate
+  is verified. `FakeImapServer` answers as `imaplib` does, for offline tests. Part of `all`.
+- The catalog's `Egress.protocol` adds `imap`.
 - `InboundEmailSummary.sender_auth` (`pass`, `fail` or `unknown`, default `unknown`): the
   receiving server's SPF/DKIM/DMARC verdict on the sender. Gmail fills it from the topmost
-  `Authentication-Results` header it stamped itself (`mx.google.com`); other connectors leave it
-  `unknown`. `algen_agent_tools.mail.authentication_verdict(header, trusted_server)` and
+  `Authentication-Results` header it stamped itself (`mx.google.com`), and IMAP does the same
+  (above); Outlook leaves it `unknown`. `algen_agent_tools.mail.authentication_verdict(header, trusted_server)` and
   `topmost_verdict(headers, trusted_server)` expose the rule for other mailbox readers.
   `gmail.list_messages` and `gmail.get_message` gain the field in their results; inputs, side
   effects and permissions are unchanged. The connector catalog is regenerated.
+
+### Upgrade notes
+
+- No existing tool's name, input schema, side effect or permissions changed.
+- `gmail.list_messages` and `gmail.get_message` results gain `sender_auth`. It is an additive
+  field, but a consumer that validates results against a closed schema must accept it.
+- The IMAP connector is opt-in and loads only when an agent lists its plugin. The `all` extra
+  includes it, at no extra cost in packages.
+- The connector catalog adds the `imap` egress protocol. Hosts that validate the catalog against
+  a fixed list of values should accept it.
 
 ## [0.2.0a4] - 2026-10-27
 

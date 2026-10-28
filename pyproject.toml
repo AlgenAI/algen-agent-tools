@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-  "algen-agent-tools[discord,documents,github,gmail,mcp,mysql,outlook,postgres,smtp,sqlite,telegram,webhook]",
+  "algen-agent-tools[discord,documents,github,gmail,imap,mcp,mysql,outlook,postgres,smtp,sqlite,telegram,webhook]",
 ]
 # Discord uses httpx, already installed with the Runtime.
 discord = []
@@ -51,6 +51,8 @@ documents = ["algen-agent-runtime[documents]>=0.1.0a12,<0.2"]
 # GitHub is an MCP overlay, so it needs the Runtime's MCP client.
 github = ["algen-agent-runtime[mcp]>=0.1.0a12,<0.2"]
 gmail = []
+# IMAP uses the standard library's imaplib.
+imap = []
 # Outlook uses httpx, already installed with the Runtime.
 outlook = []
 mcp = ["algen-agent-runtime[mcp]>=0.1.0a12,<0.2"]
@@ -76,6 +78,7 @@ dev = [
 "algen_agent_tools.discord" = "algen_agent_tools.discord.plugin:DiscordPlugin"
 "algen_agent_tools.github" = "algen_agent_tools.github.plugin:GithubPlugin"
 "algen_agent_tools.gmail" = "algen_agent_tools.gmail.plugin:GmailPlugin"
+"algen_agent_tools.imap" = "algen_agent_tools.imap.plugin:ImapPlugin"
 "algen_agent_tools.mysql" = "algen_agent_tools.mysql.plugin:MysqlPlugin"
 "algen_agent_tools.outlook" = "algen_agent_tools.outlook.plugin:OutlookPlugin"
 "algen_agent_tools.postgres" = "algen_agent_tools.postgres.plugin:PostgresPlugin"
