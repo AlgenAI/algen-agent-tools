@@ -145,9 +145,13 @@ billing.query(
 
   | The query binds | Cache scope |
   | --- | --- |
-  | `tenant_id`, `user_id` | `user`, `session` or `run` (not `tenant` or `global`) |
+  | `tenant_id`, `user_id` | `user` or `run` (not `tenant` or `global`) |
   | `run_id` | `run` |
   | `step_id` | caching off |
+
+  Don't use `session` for tool results: the Runtime gives the tool cache no session, so every
+  cached call fails. `tests/end_to_end/test_context_params_cache.py` runs these scopes through
+  the Runtime's executor.
 
 The same argument works for MySQL (`%s`) and SQLite (`?`) toolkits.
 

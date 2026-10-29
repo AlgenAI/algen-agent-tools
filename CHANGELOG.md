@@ -20,8 +20,8 @@ A tool's name, input schema, side effect and permission are part of the public c
   bind exactly as before. See docs/connectors/postgres.md#the-callers-rows.
   **Caching:** the Runtime's tool-result cache key does not yet include the bound values
   ([algen-agent-runtime#70](https://github.com/AlgenAI/algen-agent-runtime/issues/70)). If you
-  enable caching for a read that uses `context_params`, scope it to `user`, `session` or `run`
-  when it binds `tenant_id` or `user_id`, to `run` when it binds `run_id`, and turn it off when it
+  enable caching for a read that uses `context_params`, scope it to `user` or `run` when it
+  binds `tenant_id` or `user_id`, to `run` when it binds `run_id`, and turn it off when it
   binds `step_id`; the default `tenant` scope would serve one user's rows to another.
 - `documents.extract_text` reads Excel (`.xlsx`), PowerPoint (`.pptx`), HTML (`.html`, `.htm`),
   CSV (`.csv`) and TSV (`.tsv`) documents, as well as PDF, DOCX, text and Markdown

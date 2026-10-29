@@ -205,8 +205,8 @@ class SqlToolkit(Toolkit):
 
         A read is cacheable, and the Runtime's tool-result cache key does not include the
         ``context_params`` values (algen-agent-runtime#70). Until it does, scope the cache of a
-        read that binds ``tenant_id`` or ``user_id`` to ``USER``, ``SESSION`` or ``RUN``; of one
-        that binds ``run_id`` to ``RUN``; and turn caching off for one that binds ``step_id``.
+        read that binds ``tenant_id`` or ``user_id`` to ``USER`` or ``RUN``, of one that binds
+        ``run_id`` to ``RUN``, and turn caching off for one that binds ``step_id``.
         Otherwise a cached result can reach another caller.
         """
         preset = preset or read()
