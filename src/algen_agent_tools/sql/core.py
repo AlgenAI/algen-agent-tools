@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 from algen_agent_runtime.exceptions.errors import ConfigurationError, ToolExecutionError
 from algen_agent_runtime.tools.authoring import (
@@ -19,9 +19,14 @@ from algen_agent_runtime.tools.authoring import (
     read,
 )
 from algen_agent_runtime.tools.contracts import SideEffect, Tool, ToolContext
-from pydantic import BaseModel, ConfigDict, Field, create_model
+from pydantic import AliasChoices, AliasPath, BaseModel, ConfigDict, Field, create_model
 
 DEFAULT_MAX_ROWS = 500
+
+ContextValue = Literal["tenant_id", "user_id", "run_id", "step_id"]
+"""A call's identity a query may bind: set by the Runtime from the run, never by the model."""
+
+CONTEXT_VALUES: tuple[str, ...] = get_args(ContextValue)
 
 
 class RowsAffected(BaseModel):
@@ -185,25 +190,37 @@ class SqlToolkit(Toolkit):
         preset: ToolPreset | None = None,
         idempotency_key: bool = False,
         max_rows: int | None = None,
+        context_params: Sequence[ContextValue] = (),
     ) -> Tool:
         """Declare one query as the tool ``<toolkit>.<name>``.
 
-        ``params`` fields fill the query's placeholders in field order; with
-        ``idempotency_key`` the call's idempotency key fills the next one, so a write can be
-        made exactly-once. ``row`` is the model of each returned row: a read returns
-        ``list[row]``; a write returns ``list[row]`` when it returns rows, else
-        :class:`RowsAffected`. ``preset`` defaults to ``read()``.
+        ``params`` fields fill the query's placeholders in field order. ``context_params``
+        (``tenant_id``, ``user_id``, ``run_id``, ``step_id``) fill the next ones, in the order
+        given, from the call's :class:`ToolContext`: the Runtime sets them from the run, and
+        they are not part of the tool's input, so the model cannot choose them. Use them to
+        keep a query to the caller's own rows. With ``idempotency_key`` the call's idempotency
+        key fills the last placeholder, so a write can be made exactly-once. ``row`` is the
+        model of each returned row: a read returns ``list[row]``; a write returns ``list[row]``
+        when it returns rows, else :class:`RowsAffected`. ``preset`` defaults to ``read()``.
+
+        A read is cacheable, and the Runtime's tool-result cache key does not include the
+        ``context_params`` values (algen-agent-runtime#70). Until it does, scope the cache of a
+        read that binds ``tenant_id`` or ``user_id`` to ``USER`` or ``RUN``, of one that binds
+        ``run_id`` to ``RUN``, and turn caching off for one that binds ``step_id``.
+        Otherwise a cached result can reach another caller.
         """
         preset = preset or read()
         reads = preset.side_effect in (SideEffect.NONE, SideEffect.READ)
         params = _forbid_extra(params, name) if params else strict_model(f"{name}_arguments")
         fields = tuple(params.model_fields)
-        expected = len(fields) + (1 if idempotency_key else 0)
+        bound = _context_params(name, context_params, params)
+        expected = len(fields) + len(bound) + (1 if idempotency_key else 0)
         problem = self.dialect.placeholder_problem(sql, expected)
         if problem is not None:
+            declared = [*fields, *(f"context {value}" for value in bound)]
             raise ConfigurationError(
                 f"query {name!r} {problem} but declares {expected} value(s): "
-                f"{', '.join(fields) or 'no params'}"
+                f"{', '.join(declared) or 'no params'}"
                 f"{' and the idempotency key' if idempotency_key else ''}"
             )
         if reads and row is None:
@@ -216,6 +233,7 @@ class SqlToolkit(Toolkit):
 
         async def run(arguments: BaseModel, context: ToolContext) -> Any:
             values = [getattr(arguments, field) for field in fields]
+            values.extend(getattr(context, value) for value in bound)
             if idempotency_key:
                 values.append(context.idempotency_key)
             if reads:
@@ -291,6 +309,46 @@ class SqlToolkit(Toolkit):
         describe_table.__doc__ = description
         describe_table.__annotations__ = {"arguments": arguments, "return": TableDescription}
         return self.tool(preset)(describe_table)
+
+
+def _context_params(
+    name: str, requested: Sequence[str], params: type[BaseModel]
+) -> tuple[str, ...]:
+    """``requested`` checked: known context values, each once, none also a model input name."""
+    if isinstance(requested, str):
+        raise ConfigurationError(f"query {name!r} context_params must be a sequence of names")
+    bound = tuple(requested)
+    unknown = [value for value in bound if value not in CONTEXT_VALUES]
+    if unknown:
+        raise ConfigurationError(
+            f"query {name!r} context_params {unknown} are not one of {', '.join(CONTEXT_VALUES)}"
+        )
+    if len(set(bound)) != len(bound):
+        raise ConfigurationError(f"query {name!r} lists a context_params value twice")
+    shadowed = sorted(set(bound) & _input_names(params))
+    if shadowed:
+        raise ConfigurationError(
+            f"query {name!r} params field(s) or alias(es) {shadowed} would let the model choose "
+            "a value that context_params binds from the call; remove them from params"
+        )
+    return bound
+
+
+def _input_names(params: type[BaseModel]) -> set[str]:
+    """Every top-level name the model can fill a ``params`` field by: its name and aliases."""
+    names: set[str] = set()
+    for field_name, field in params.model_fields.items():
+        names.add(field_name)
+        if field.alias:
+            names.add(field.alias)
+        aliases = field.validation_alias
+        choices = aliases.choices if isinstance(aliases, AliasChoices) else [aliases]
+        for choice in choices:
+            if isinstance(choice, str):
+                names.add(choice)
+            elif isinstance(choice, AliasPath) and isinstance(choice.path[0], str):
+                names.add(choice.path[0])
+    return names
 
 
 def schema_argument(schemas: tuple[str, ...]) -> tuple[Any, Any]:

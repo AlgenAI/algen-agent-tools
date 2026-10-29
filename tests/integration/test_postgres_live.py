@@ -134,3 +134,22 @@ async def test_a_read_query_cannot_write(schema: str) -> None:
             await sneaky.execute({"customer": "acme"}, fake_tool_context(sneaky))
     finally:
         await toolkit.aclose()
+
+
+async def test_context_params_keep_a_query_to_the_callers_rows(schema: str) -> None:
+    toolkit = PostgresToolkit("billing", dsn=f"env://{DSN_VARIABLE}")
+    mine = toolkit.query(
+        "my_invoices",
+        f"SELECT id, amount FROM {schema}.invoices WHERE customer = $1 ORDER BY id",
+        description="List the calling tenant's invoices.",
+        row=Invoice,
+        context_params=("tenant_id",),
+    )
+    try:
+        acme = await mine.execute({}, fake_tool_context(mine, tenant_id="acme"))
+        other = await mine.execute({}, fake_tool_context(mine, tenant_id="globex"))
+    finally:
+        await toolkit.aclose()
+
+    assert acme == [{"id": 1, "amount": "10.50"}, {"id": 2, "amount": "3.00"}]
+    assert other == []

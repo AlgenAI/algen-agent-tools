@@ -10,6 +10,19 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ### Added
 
+- `context_params` on `SqlToolkit.query`, so on the PostgreSQL, MySQL and SQLite toolkits
+  ([#30](https://github.com/AlgenAI/algen-agent-tools/issues/30)): a declared query binds the
+  call's `tenant_id`, `user_id`, `run_id` or `step_id` from its `ToolContext`, after the
+  `params` fields and before the idempotency key, to keep a query to the caller's own rows. The
+  values are not tool input, so the model cannot choose them; unknown or repeated names, and a
+  `params` field whose name or alias shadows one, are refused when the query is declared. New
+  `algen_agent_tools.sql.ContextValue` and `CONTEXT_VALUES`. Queries without `context_params`
+  bind exactly as before. See docs/connectors/postgres.md#the-callers-rows.
+  **Caching:** the Runtime's tool-result cache key does not yet include the bound values
+  ([algen-agent-runtime#70](https://github.com/AlgenAI/algen-agent-runtime/issues/70)). If you
+  enable caching for a read that uses `context_params`, scope it to `user` or `run` when it
+  binds `tenant_id` or `user_id`, to `run` when it binds `run_id`, and turn it off when it
+  binds `step_id`; the default `tenant` scope would serve one user's rows to another.
 - `documents.extract_text` reads Excel (`.xlsx`), PowerPoint (`.pptx`), HTML (`.html`, `.htm`),
   CSV (`.csv`) and TSV (`.tsv`) documents, as well as PDF, DOCX, text and Markdown
   ([#28](https://github.com/AlgenAI/algen-agent-tools/issues/28)). Parsing and inspection are
