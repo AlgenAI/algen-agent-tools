@@ -19,7 +19,7 @@ from algen_agent_runtime.tools.authoring import (
     read,
 )
 from algen_agent_runtime.tools.contracts import SideEffect, Tool, ToolContext
-from pydantic import BaseModel, ConfigDict, Field, create_model
+from pydantic import AliasChoices, AliasPath, BaseModel, ConfigDict, Field, create_model
 
 DEFAULT_MAX_ROWS = 500
 
@@ -202,12 +202,18 @@ class SqlToolkit(Toolkit):
         key fills the last placeholder, so a write can be made exactly-once. ``row`` is the
         model of each returned row: a read returns ``list[row]``; a write returns ``list[row]``
         when it returns rows, else :class:`RowsAffected`. ``preset`` defaults to ``read()``.
+
+        A read is cacheable, and the Runtime's tool-result cache key does not include the
+        ``context_params`` values (algen-agent-runtime#70). Until it does, scope the cache of a
+        read that binds ``tenant_id`` or ``user_id`` to ``USER``, ``SESSION`` or ``RUN``; of one
+        that binds ``run_id`` to ``RUN``; and turn caching off for one that binds ``step_id``.
+        Otherwise a cached result can reach another caller.
         """
         preset = preset or read()
         reads = preset.side_effect in (SideEffect.NONE, SideEffect.READ)
         params = _forbid_extra(params, name) if params else strict_model(f"{name}_arguments")
         fields = tuple(params.model_fields)
-        bound = _context_params(name, context_params, fields)
+        bound = _context_params(name, context_params, params)
         expected = len(fields) + len(bound) + (1 if idempotency_key else 0)
         problem = self.dialect.placeholder_problem(sql, expected)
         if problem is not None:
@@ -306,9 +312,9 @@ class SqlToolkit(Toolkit):
 
 
 def _context_params(
-    name: str, requested: Sequence[str], fields: tuple[str, ...]
+    name: str, requested: Sequence[str], params: type[BaseModel]
 ) -> tuple[str, ...]:
-    """``requested`` checked: known context values, each once, none also a model field."""
+    """``requested`` checked: known context values, each once, none also a model input name."""
     if isinstance(requested, str):
         raise ConfigurationError(f"query {name!r} context_params must be a sequence of names")
     bound = tuple(requested)
@@ -319,13 +325,30 @@ def _context_params(
         )
     if len(set(bound)) != len(bound):
         raise ConfigurationError(f"query {name!r} lists a context_params value twice")
-    shadowed = sorted(set(bound) & set(fields))
+    shadowed = sorted(set(bound) & _input_names(params))
     if shadowed:
         raise ConfigurationError(
-            f"query {name!r} params field(s) {shadowed} would let the model choose a value that "
-            "context_params binds from the call; remove them from params"
+            f"query {name!r} params field(s) or alias(es) {shadowed} would let the model choose "
+            "a value that context_params binds from the call; remove them from params"
         )
     return bound
+
+
+def _input_names(params: type[BaseModel]) -> set[str]:
+    """Every top-level name the model can fill a ``params`` field by: its name and aliases."""
+    names: set[str] = set()
+    for field_name, field in params.model_fields.items():
+        names.add(field_name)
+        if field.alias:
+            names.add(field.alias)
+        aliases = field.validation_alias
+        choices = aliases.choices if isinstance(aliases, AliasChoices) else [aliases]
+        for choice in choices:
+            if isinstance(choice, str):
+                names.add(choice)
+            elif isinstance(choice, AliasPath) and isinstance(choice.path[0], str):
+                names.add(choice.path[0])
+    return names
 
 
 def schema_argument(schemas: tuple[str, ...]) -> tuple[Any, Any]:

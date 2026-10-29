@@ -11,7 +11,7 @@ from algen_agent_runtime.exceptions.errors import ConfigurationError
 from algen_agent_runtime.tools.authoring import write
 from algen_agent_runtime.tools.contracts import Tool
 from algen_agent_runtime.tools.testing import fake_tool_context
-from pydantic import BaseModel, ValidationError
+from pydantic import AliasChoices, AliasPath, BaseModel, Field, ValidationError
 
 from algen_agent_tools.postgres import FakePostgres, PostgresToolkit
 from algen_agent_tools.sql import CONTEXT_VALUES
@@ -130,17 +130,37 @@ def test_context_params_are_checked_when_declared(
         toolkit.query("q", sql, description="d", params=DueBefore, row=Invoice, **kwargs)
 
 
-def test_a_model_field_cannot_shadow_a_context_value() -> None:
-    class Spoofable(BaseModel):
-        tenant_id: str
+class ByName(BaseModel):
+    tenant_id: str
 
+
+class ByAlias(BaseModel):
+    tenant: str = Field(alias="tenant_id")
+
+
+class ByValidationAlias(BaseModel):
+    tenant: str = Field(validation_alias="tenant_id")
+
+
+class ByAliasChoice(BaseModel):
+    tenant: str = Field(validation_alias=AliasChoices("org", "tenant_id"))
+
+
+class ByAliasPath(BaseModel):
+    tenant: str = Field(validation_alias=AliasPath("tenant_id", 0))
+
+
+@pytest.mark.parametrize(
+    "spoofable", [ByName, ByAlias, ByValidationAlias, ByAliasChoice, ByAliasPath]
+)
+def test_a_model_field_cannot_shadow_a_context_value(spoofable: type[BaseModel]) -> None:
     toolkit = PostgresToolkit("billing", client=FakePostgres().factory)
     with pytest.raises(ConfigurationError, match="would let the model choose"):
         toolkit.query(
             "q",
             "SELECT id, amount FROM invoices WHERE tenant_id = $1 AND tenant_id = $2",
             description="d",
-            params=Spoofable,
+            params=spoofable,
             row=Invoice,
             context_params=("tenant_id",),
         )

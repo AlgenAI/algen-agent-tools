@@ -23,6 +23,7 @@ parameterised query a developer declares in code, and the model fills in its typ
   SQL can be exactly-once.
 - **The caller's identity comes from the call.** `context_params` binds the run's `tenant_id`,
   `user_id`, `run_id` or `step_id`; they are not tool input, so the model cannot choose them.
+  Scope tool-result caching for such a read to the caller (see [the caller's rows](#the-callers-rows)).
 - **Catalog reads are limited** to the schemas you list and to tables the role can `SELECT`.
 
 Use a database role with only the privileges the declared queries need.
@@ -131,12 +132,22 @@ billing.query(
   sets from the run's authenticated request. Nothing else can be bound: credentials, secrets and
   permissions are refused when the query is declared.
 - They are not in the tool's input schema, and a call that sends one is rejected. Declaring a
-  `params` field with the same name as a `context_params` value is refused, since the model would
+  `params` field whose name or alias is a `context_params` value is refused, since the model would
   then choose it.
 - Placeholders are filled in this order: `params` fields, then `context_params` in the order
   given, then the idempotency key when `idempotency_key=True`.
 - They narrow rows; they do not replace privileges. Keep a least-privilege role, and use
   row-level security where the database has it.
+- **Tool-result caching.** A read is cacheable, and until
+  [algen-agent-runtime#70](https://github.com/AlgenAI/algen-agent-runtime/issues/70) lands the
+  Runtime's cache key does not include the bound values. Caching is off by default; if you turn
+  it on for such a tool, scope it so a cached result never reaches another caller:
+
+  | The query binds | Cache scope |
+  | --- | --- |
+  | `tenant_id`, `user_id` | `user`, `session` or `run` (not `tenant` or `global`) |
+  | `run_id` | `run` |
+  | `step_id` | caching off |
 
 The same argument works for MySQL (`%s`) and SQLite (`?`) toolkits.
 
