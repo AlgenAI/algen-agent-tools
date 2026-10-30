@@ -203,11 +203,9 @@ class SqlToolkit(Toolkit):
         model of each returned row: a read returns ``list[row]``; a write returns ``list[row]``
         when it returns rows, else :class:`RowsAffected`. ``preset`` defaults to ``read()``.
 
-        A read is cacheable, and the Runtime's tool-result cache key does not include the
-        ``context_params`` values (algen-agent-runtime#70). Until it does, scope the cache of a
-        read that binds ``tenant_id`` or ``user_id`` to ``USER`` or ``RUN``, of one that binds
-        ``run_id`` to ``RUN``, and turn caching off for one that binds ``step_id``.
-        Otherwise a cached result can reach another caller.
+        The tool declares ``context_params`` as its ``cache_context``, so the Runtime's
+        tool-result cache keys a read on the bound values too and never serves one caller's
+        rows to another, whatever the cache scope.
         """
         preset = preset or read()
         reads = preset.side_effect in (SideEffect.NONE, SideEffect.READ)
@@ -267,7 +265,7 @@ class SqlToolkit(Toolkit):
             "context": ToolContext,
             "return": list[row] if row is not None else RowsAffected,  # type: ignore[valid-type]
         }
-        return self.tool(preset, description=description)(run)
+        return self.tool(preset, description=description, cache_context=bound)(run)
 
     def add_describe_table(
         self,

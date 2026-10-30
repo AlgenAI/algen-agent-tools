@@ -1,8 +1,8 @@
 """``context_params`` reads through the Runtime's real executor with tool-result caching on.
 
-The cache key holds the tool's arguments and the identity its scope selects, never the values a
-query binds from the call (algen-agent-runtime#70). These tests pin the cache scopes the SQL
-docs recommend, and the leak at the default ``tenant`` scope that makes the advice necessary.
+The tool declares the values it binds as its ``cache_context`` (algen-agent-runtime#70), so the
+cache key holds them as well as the tool's arguments and the identity the scope selects. Two
+users of one tenant making the same call each get their own rows at every scope.
 """
 
 from __future__ import annotations
@@ -99,9 +99,13 @@ async def test_a_user_scoped_cache_still_serves_the_same_user() -> None:
 
 
 @pytest.mark.parametrize("scope", ["tenant", "global"])
-async def test_a_tenant_wide_cache_serves_one_users_rows_to_another(scope: str) -> None:
-    # The leak the docs warn about. When algen-agent-runtime#70 lands this fails: change it to
-    # expect ["acme/u-1", "acme/u-2"] and drop the caching caveat from the SQL docs, the
-    # ``query`` docstring and the CHANGELOG.
-    assert await owners_seen(scope, ["u-1", "u-2"]) == ["acme/u-1", "acme/u-1"]
+async def test_a_tenant_wide_cache_keeps_users_apart(scope: str) -> None:
+    # The tool's cache_context puts the bound user in the key, so even a cache shared by the
+    # whole tenant, or by everyone, answers each user from their own query.
+    assert await owners_seen(scope, ["u-1", "u-2"]) == ["acme/u-1", "acme/u-2"]
+    assert sql_runs() == 2
+
+
+async def test_a_tenant_wide_cache_still_serves_the_same_user() -> None:
+    assert await owners_seen("tenant", ["u-1", "u-1"]) == ["acme/u-1", "acme/u-1"]
     assert sql_runs() == 1

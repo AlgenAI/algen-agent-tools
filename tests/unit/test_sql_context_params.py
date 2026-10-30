@@ -71,6 +71,15 @@ def test_context_params_are_not_part_of_the_tool_input() -> None:
     assert CONTEXT_VALUES == ("tenant_id", "user_id", "run_id", "step_id")
 
 
+def test_context_params_are_the_tools_cache_context() -> None:
+    # The Runtime's tool-result cache keys on them, so a cached result stays with its caller.
+    toolkit = billing(FakePostgres())
+    assert tool(toolkit, "my_invoices").definition.cache_context == {"tenant_id", "user_id"}
+    plain = PostgresToolkit("plain", client=FakePostgres().factory)
+    plain.query("q", "SELECT id, amount FROM invoices", description="d", row=Invoice)
+    assert plain.tools[0].definition.cache_context == frozenset()
+
+
 async def test_a_read_binds_the_callers_tenant_and_user_after_the_model_params() -> None:
     fake = FakePostgres().on("FROM invoices", rows=[{"id": 1, "amount": 9.5}])
     read_tool = tool(billing(fake), "my_invoices")
