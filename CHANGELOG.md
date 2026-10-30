@@ -18,11 +18,10 @@ A tool's name, input schema, side effect and permission are part of the public c
   `params` field whose name or alias shadows one, are refused when the query is declared. New
   `algen_agent_tools.sql.ContextValue` and `CONTEXT_VALUES`. Queries without `context_params`
   bind exactly as before. See docs/connectors/postgres.md#the-callers-rows.
-  **Caching:** the Runtime's tool-result cache key does not yet include the bound values
-  ([algen-agent-runtime#70](https://github.com/AlgenAI/algen-agent-runtime/issues/70)). If you
-  enable caching for a read that uses `context_params`, scope it to `user` or `run` when it
-  binds `tenant_id` or `user_id`, to `run` when it binds `run_id`, and turn it off when it
-  binds `step_id`; the default `tenant` scope would serve one user's rows to another.
+  The tool declares the bound values as its `cache_context`
+  ([algen-agent-runtime#70](https://github.com/AlgenAI/algen-agent-runtime/issues/70)), so the
+  Runtime's tool-result cache keys each result on them and never serves one caller's rows to
+  another, at any cache scope. An end-to-end test runs this through the Runtime's executor.
 - `documents.extract_text` reads Excel (`.xlsx`), PowerPoint (`.pptx`), HTML (`.html`, `.htm`),
   CSV (`.csv`) and TSV (`.tsv`) documents, as well as PDF, DOCX, text and Markdown
   ([#28](https://github.com/AlgenAI/algen-agent-tools/issues/28)). Parsing and inspection are
@@ -37,13 +36,16 @@ A tool's name, input schema, side effect and permission are part of the public c
 - `DocumentText.truncated` is also true when the Runtime reports a `document.truncated`
   finding, for example an XLSX sheet longer than 5,000 rows, so the model knows the text is
   incomplete. Before, it only said the text was cut to `max_chars`.
-- The supported Runtime range is `algen-agent-runtime>=0.1.0a14,<0.2` (was `>=0.1.0a12`), for
-  the package and its `documents`, `github` and `mcp` extras. The connector catalog's
+- The supported Runtime range is `algen-agent-runtime>=0.1.0a18,<0.2` (was `>=0.1.0a12`), for
+  the package and its `documents`, `github` and `mcp` extras: 0.1.0a14 for the document
+  formats, 0.1.0a18 for `cache_context`. The connector catalog's
   `runtime_requirement` is regenerated.
 
 ### Upgrade notes
 
-- Upgrade `algen-agent-runtime` to 0.1.0a14 or later.
+- Upgrade `algen-agent-runtime` to 0.1.0a18 or later.
+- Don't scope the tool-result cache to `session`: on Runtime 0.1.0a18 it fails every cacheable
+  tool call ([algen-agent-runtime#79](https://github.com/AlgenAI/algen-agent-runtime/issues/79)).
 - `documents.extract_text` accepts files it used to refuse with "only PDF, DOCX, TXT, and
   Markdown documents are supported"; an agent policy that relied on that refusal to keep
   spreadsheets, decks or web pages away from the model must now filter by file name or media

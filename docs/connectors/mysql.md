@@ -44,7 +44,7 @@ toolkit.query(
 - **Placeholders** are `%s`, filled from the `params` fields in order, and a literal `%` is
   written `%%`. Named placeholders and a stray `%` are refused when the query is declared, not
   at the first call. `context_params=("tenant_id", "user_id")` fills the next ones from the
-  call, never from the model; scope tool-result caching for such a read to the caller (see
+  call, never from the model, and the tool-result cache keys on them (see
   [PostgreSQL: the caller's rows](postgres.md#the-callers-rows)).
 - **Reads** run in `START TRANSACTION READ ONLY`, so a declared "read" that writes fails. More
   rows than `max_rows` (default 500) is an error, not a truncated result.

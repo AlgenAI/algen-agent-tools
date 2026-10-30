@@ -6540,7 +6540,7 @@
   ],
   "package": "algen-agent-tools",
   "publisher": "AlgenAI",
-  "runtime_requirement": "algen-agent-runtime<0.2,>=0.1.0a14",
+  "runtime_requirement": "algen-agent-runtime<0.2,>=0.1.0a18",
   "trusted_prefix": "algen_agent_tools",
   "version": "0.2.0a5"
 }

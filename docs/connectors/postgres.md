@@ -23,7 +23,6 @@ parameterised query a developer declares in code, and the model fills in its typ
   SQL can be exactly-once.
 - **The caller's identity comes from the call.** `context_params` binds the run's `tenant_id`,
   `user_id`, `run_id` or `step_id`; they are not tool input, so the model cannot choose them.
-  Scope tool-result caching for such a read to the caller (see [the caller's rows](#the-callers-rows)).
 - **Catalog reads are limited** to the schemas you list and to tables the role can `SELECT`.
 
 Use a database role with only the privileges the declared queries need.
@@ -138,20 +137,13 @@ billing.query(
   given, then the idempotency key when `idempotency_key=True`.
 - They narrow rows; they do not replace privileges. Keep a least-privilege role, and use
   row-level security where the database has it.
-- **Tool-result caching.** A read is cacheable, and until
-  [algen-agent-runtime#70](https://github.com/AlgenAI/algen-agent-runtime/issues/70) lands the
-  Runtime's cache key does not include the bound values. Caching is off by default; if you turn
-  it on for such a tool, scope it so a cached result never reaches another caller:
-
-  | The query binds | Cache scope |
-  | --- | --- |
-  | `tenant_id`, `user_id` | `user` or `run` (not `tenant` or `global`) |
-  | `run_id` | `run` |
-  | `step_id` | caching off |
-
-  Don't use `session` for tool results: the Runtime gives the tool cache no session, so every
-  cached call fails. `tests/end_to_end/test_context_params_cache.py` runs these scopes through
-  the Runtime's executor.
+- **Tool-result caching.** The tool declares the bound values as its `cache_context`, so the
+  Runtime's tool-result cache (0.1.0a18 and later) keys each result on them too: a cached
+  result never reaches a caller with another tenant, user, run or step, whatever the cache
+  scope. Don't use the `session` scope for tool results: the Runtime gives the tool cache no
+  session, so every cached call fails
+  ([algen-agent-runtime#79](https://github.com/AlgenAI/algen-agent-runtime/issues/79)).
+  `tests/end_to_end/test_context_params_cache.py` runs this through the Runtime's executor.
 
 The same argument works for MySQL (`%s`) and SQLite (`?`) toolkits.
 
