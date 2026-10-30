@@ -3,13 +3,13 @@
 `algen-agent-tools` is built on the Runtime's tool authoring API (`@tool`, presets, `Toolkit`),
 declared plugins and `describe`, all introduced in `algen-agent-runtime` 0.1.0a11. From 0.1.0a2 it
 needs 0.1.0a12, whose `pii` guardrail leaves fields declared `format: email` alone, so email tools
-run under the default guardrails. The next release needs 0.1.0a18: 0.1.0a14's document
+run under the default guardrails. From 0.2.0a6 it needs 0.1.0a18: 0.1.0a14's document
 inspection reads XLSX, PPTX, HTML, CSV and TSV for `documents.extract_text`, and 0.1.0a18's
 `cache_context` keys cached SQL results on the values `context_params` binds.
 
 | algen-agent-tools | Supported algen-agent-runtime |
 | --- | --- |
-| Unreleased | `>=0.1.0a18,<0.2` |
+| 0.2.0a6 | `>=0.1.0a18,<0.2` (tested on 0.1.0a18) |
 | 0.2.0a5 | `>=0.1.0a12,<0.2` (tested on 0.1.0a12 and 0.1.0a13) |
 | 0.2.0a4 | `>=0.1.0a12,<0.2` (tested on 0.1.0a12 and 0.1.0a13) |
 | 0.2.0a3 | `>=0.1.0a12,<0.2` (tested on 0.1.0a12 and 0.1.0a13) |

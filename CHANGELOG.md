@@ -8,6 +8,8 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a6] - 2026-10-30
+
 ### Added
 
 - `context_params` on `SqlToolkit.query`, so on the PostgreSQL, MySQL and SQLite toolkits
