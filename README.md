@@ -23,7 +23,8 @@ from `algen-agent-runtime describe`, without running project code.
 > [!IMPORTANT]
 > `0.2.0a6` is a pre-release. Tool contracts may change between alpha releases; every change is
 > recorded in [CHANGELOG.md](CHANGELOG.md) with an upgrade note. Review the
-> [security policy](SECURITY.md) and each connector's guarantees before deployment.
+> [security policy](SECURITY.md) and each connector's guarantees before deployment. What must be
+> true before the beta and 1.0 is tracked in [beta and GA criteria](docs/ga-criteria.md).
 
 ## Why a separate package
 

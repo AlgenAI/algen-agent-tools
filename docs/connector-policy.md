@@ -40,7 +40,8 @@ Open a "Connector proposal" issue before writing code.
 The package follows [Semantic Versioning](https://semver.org/). During `0.x`, any release may
 change a public contract, but only with a CHANGELOG entry and an upgrade note. A tool's name,
 input schema, side effect or permission is part of its public contract: agents and Studio
-reviews depend on them.
+reviews depend on them. The path to a frozen beta and to `1.0` is tracked in
+[beta and GA criteria](ga-criteria.md).
 
 ## Deprecation
 
