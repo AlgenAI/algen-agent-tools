@@ -1,8 +1,8 @@
 # Beta and general availability (1.0) criteria
 
 Owner: AlgenAI Maintainers  
-Status: Active tracking — pre-release (`0.2.0a6`)  
-Last reviewed: 2026-10-30
+Status: Active tracking — pre-release (`0.2.0a7`)  
+Last reviewed: 2026-10-31
 
 `1.0.0` is a promise, not a connector count: a tool's name, input schema, side effect and
 permission stay compatible across `1.x`, upgrades are documented and safe, and every `stable`
