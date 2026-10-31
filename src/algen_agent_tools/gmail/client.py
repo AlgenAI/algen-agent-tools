@@ -14,7 +14,7 @@ from urllib.parse import quote
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
-from algen_agent_tools._core.auth import OAuthRefresh
+from algen_agent_tools._core.auth import OAuthRefresh, RefreshTokenSink
 from algen_agent_tools._core.errors import failure, not_attempted, rejected
 from algen_agent_tools._core.http import HostLockedClient
 from algen_agent_tools.attachments.models import AttachmentUpload
@@ -162,7 +162,9 @@ class GmailMailboxClient:
         *,
         artifact_loader: EmailArtifactLoader | None = None,
         client: httpx.AsyncClient | None = None,
+        on_refresh_token: RefreshTokenSink | None = None,
     ) -> None:
+        """``on_refresh_token`` stores a refresh token Google rotated (see ``OAuthRefresh``)."""
         self._settings = settings
         self._artifact_loader = artifact_loader
         self._http = HostLockedClient(
@@ -180,6 +182,7 @@ class GmailMailboxClient:
             client_secret=settings.client_secret,
             refresh_token=settings.refresh_token,
             on_error=lambda exc: EmailDeliveryError(failure("Gmail", "OAuth token request", exc)),
+            on_rotate=on_refresh_token,
         )
 
     async def _token(self) -> str:

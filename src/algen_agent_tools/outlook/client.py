@@ -14,7 +14,7 @@ from urllib.parse import parse_qsl, quote, urlencode, urlsplit
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
-from algen_agent_tools._core.auth import OAuthClientCredentials, OAuthRefresh
+from algen_agent_tools._core.auth import OAuthClientCredentials, OAuthRefresh, RefreshTokenSink
 from algen_agent_tools._core.errors import failure, not_attempted, rejected
 from algen_agent_tools._core.http import HostLockedClient
 from algen_agent_tools.attachments.models import AttachmentUpload
@@ -148,6 +148,7 @@ class OutlookMailboxClient:
         *,
         artifact_loader: EmailArtifactLoader | None = None,
         client: httpx.AsyncClient | None = None,
+        on_refresh_token: RefreshTokenSink | None = None,
     ) -> None:
         self._settings = settings
         self._artifact_loader = artifact_loader
@@ -173,6 +174,7 @@ class OutlookMailboxClient:
                 self._http,
                 refresh_token=settings.refresh_token,
                 scope=f"offline_access {GRAPH_SCOPE}",
+                on_rotate=on_refresh_token,
                 **common,
             )
             self._root = "me"
