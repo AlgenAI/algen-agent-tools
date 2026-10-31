@@ -6,6 +6,7 @@ from algen_agent_tools.attachments.models import (
     ArtifactSink,
     AttachmentRef,
     AttachmentUpload,
+    runtime_attachment_loader,
 )
 from algen_agent_tools.attachments.policy import SIGNATURES, AttachmentPolicy, AttachmentRefused
 from algen_agent_tools.attachments.tool import (
@@ -27,4 +28,5 @@ __all__ = [
     "Fetch",
     "add_get_attachment_tool",
     "id_field",
+    "runtime_attachment_loader",
 ]

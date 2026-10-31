@@ -59,3 +59,16 @@ that the artifact belongs to the caller's tenant (and run) before returning anyt
 ArtifactSink = Callable[[AttachmentUpload, ToolContext], Awaitable[AttachmentRef]]
 """Stores a fetched file as an artifact of the calling tenant and returns its reference. The
 deployment provides it; it may scan the file before accepting it."""
+
+
+async def runtime_attachment_loader(reference: AttachmentRef, context: ToolContext) -> bytes:
+    """An :data:`ArtifactLoader` over the Runtime's own artifact store, for the files attached
+    to the run (``RunRequest.attachments``, Runtime 0.1.0a19).
+
+    It reads only the run's attachments, for the run's tenant: any other artifact is refused
+    (``PolicyDeniedError``), so a model cannot name an arbitrary artifact id. Use the
+    deployment's loader for files that reach the agent another way (an email attachment saved
+    with ``gmail.get_attachment``, say).
+    """
+    artifact = await context.read_attachment(reference.artifact_id)
+    return artifact.data
