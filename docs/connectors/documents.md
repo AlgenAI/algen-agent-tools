@@ -1,15 +1,15 @@
 # Documents
 
 Read the text of a PDF, Word (DOCX), Excel (XLSX), PowerPoint (PPTX), HTML, CSV, TSV, plain-text
-or Markdown document an agent received, for example an email attachment saved with `gmail.get_attachment`. Parsing and inspection are the Runtime's
-[untrusted document inspection](https://github.com/AlgenAI/algen-agent-runtime/blob/main/docs/document-security.md)
-(`algen_agent_runtime.security.documents`); this connector reads the artifact for the calling
-tenant, bounds the call and governs it as a tool.
+or Markdown document an agent received, for example an email attachment saved with `gmail.get_attachment`, or a file attached to the run. Parsing and inspection are this package's
+[document inspection](#document-inspection) (`algen_agent_tools.documents.inspection`, moved from
+the Runtime's `algen_agent_runtime.security` in 0.2.0a7); this connector reads the artifact for
+the calling tenant, bounds the call and governs it as a tool.
 
 | | |
 | --- | --- |
 | Plugin | none yet: the toolkit needs the deployment's artifact loader, so it is built in code |
-| Extra | `pip install "algen-agent-tools[documents]"` for PDFs (installs `algen-agent-runtime[documents]`, which needs PyMuPDF, licensed AGPL-3.0); every other format uses only the standard library and needs no extra |
+| Extra | `pip install "algen-agent-tools[documents]"` for PDFs (installs PyMuPDF, licensed AGPL-3.0); every other format uses only the standard library and needs no extra |
 | Environment | none |
 | Owner | @saurav-samantray |
 
@@ -85,3 +85,39 @@ returned as visible text.
 Pass any async `artifact_loader`, for example one that serves bytes from a dict. PDF tests need
 the `documents` extra; tests for every other format need nothing, and can build small DOCX, XLSX
 and PPTX packages with `zipfile`.
+
+To read the files attached to the run (`RunRequest.attachments`, Runtime 0.1.0a19), use the
+Runtime-backed loader. It reads only the run's own attachments, for the run's tenant, and refuses
+any other artifact id the model names:
+
+```python
+from algen_agent_tools.attachments import runtime_attachment_loader
+
+documents = documents_toolkit(artifact_loader=runtime_attachment_loader)
+```
+
+## Document inspection
+
+`algen_agent_tools.documents` re-exports the inspection's public names, so code that used the
+Runtime's modules switches by changing the import:
+
+```python
+# Before (deprecated in algen-agent-runtime 0.1.0a19):
+from algen_agent_runtime.security.documents import extractor_for
+# Now:
+from algen_agent_tools.documents import extractor_for, ExtractedDocument, DocumentDisposition
+
+extracted = extractor_for("cv.docx").extract(data, filename="cv.docx")
+```
+
+`extractor_for(filename)` returns the extractor for the suffix; each returns an
+`ExtractedDocument` with `text`, `sanitized_text` (what a reader would see), `spans`,
+`findings` and a `disposition` (`pass`, `review` or `quarantine`). The extractor classes
+(`PdfDocumentExtractor`, `DocxDocumentExtractor`, `XlsxDocumentExtractor`,
+`PptxDocumentExtractor`, `HtmlDocumentExtractor`, `PlainTextDocumentExtractor`) and
+`classify_findings`, `sanitize_untrusted_text`, `prompt_injection_findings` and `redact_pii` are
+in `algen_agent_tools.documents.inspection`.
+
+PDF, DOCX and PPTX documents with text and embedded images report `document.images_excluded`
+(low): the images were not read, so a one-line cover note over a scanned invoice is `review`, not
+`pass`. A document with images and no text reports `document.ocr_required`.

@@ -49,6 +49,9 @@ addresses redacted; leaving it out (below) shows them.
 Create an OAuth client in Google Cloud, authorise the mailbox once to obtain a refresh token, and
 grant only the scopes the agent needs: `gmail.readonly` for `list_messages`, `get_message` and
 `get_attachment`, `gmail.send` for `send_email`. The access token is refreshed in memory and never leaves the client.
+If Google returns a new refresh token with an access token (rotation), the client uses it for the
+next refresh; pass `on_refresh_token=` to `GmailMailboxClient` to store it in your secret store,
+or the next process start uses the old one.
 
 ## Agent configuration
 
@@ -64,14 +67,13 @@ agents:
     tool_permissions: [gmail.read, gmail.write]
 ```
 
-`pii` also redacts tool results, so with the defaults `list_messages` and `get_message` show the model
-`[REDACTED_EMAIL]` in place of each sender and recipient. An agent that must read or reply to
-those addresses leaves `pii` out of its tool boundaries:
-
-```yaml
-    guardrail_policy:
-      tool_policies: [secrets, prompt_injection, output_validation]
-```
+`pii` also screens tool results. Each `list_messages` and `get_message` row carries the
+addresses on their own, in `sender_address`, `sender_name`, `recipient_addresses` and (in
+`get_message`) `cc_addresses`, declared `"format": "email"`. With Runtime 0.1.0a19 or later `pii`
+leaves those fields alone, so an agent can reply to the sender it just read under the default
+guardrails; addresses in the free text (`sender`, `recipients`, the snippet, the body) are still
+redacted. Before 0.1.0a19 an agent that must read the addresses left `pii` out of its tool
+boundaries.
 
 Keep the agent's approval policy on (the default asks before every external call), and use
 `allowed_domains` (or the `ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS` setting, comma-separated) to bound

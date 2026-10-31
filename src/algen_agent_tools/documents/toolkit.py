@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from algen_agent_runtime.tools.authoring import Toolkit, read
 from algen_agent_runtime.tools.contracts import ToolContext
@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from algen_agent_tools._env import missing_extra
 from algen_agent_tools.attachments import ArtifactLoader, AttachmentRef
+from algen_agent_tools.documents.inspection import ExtractedDocument, extractor_for
 
 MAX_CHARS = 100_000
 AUDIT_METADATA = {"content_capture": "disabled", "channel": "documents"}
@@ -52,11 +53,9 @@ class DocumentText(BaseModel):
     """The text was not returned because the document is quarantined."""
 
 
-def _inspect(data: bytes, filename: str) -> Any:
-    # The Runtime's extractors (algen_agent_runtime.security.documents) do the parsing and the
-    # hidden-text and prompt-injection checks; this package only bounds and governs the call.
-    from algen_agent_runtime.security.documents import extractor_for
-
+def _inspect(data: bytes, filename: str) -> ExtractedDocument:
+    # The extractors (documents.inspection) do the parsing and the hidden-text and
+    # prompt-injection checks; this function bounds and governs the call.
     try:
         return extractor_for(filename).extract(data, filename=filename)
     except ImportError:

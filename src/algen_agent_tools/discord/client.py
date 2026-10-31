@@ -14,7 +14,7 @@ from algen_agent_runtime.exceptions.errors import PolicyDeniedError
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 from algen_agent_tools import __version__
-from algen_agent_tools._core.errors import failure
+from algen_agent_tools._core.errors import failure, not_attempted, rejected
 from algen_agent_tools._core.http import HostLockedClient
 from algen_agent_tools.attachments.models import AttachmentUpload, check_media_type
 from algen_agent_tools.messaging.models import (
@@ -122,7 +122,8 @@ class DiscordBotClient:
         except (httpx.HTTPError, ValueError) as exc:
             raise MessagingError(failure("Discord", operation, exc)) from exc
         if response.status_code >= 400:
-            raise MessagingError(f"Discord {operation} failed (HTTP {response.status_code})")
+            error = MessagingError(f"Discord {operation} failed (HTTP {response.status_code})")
+            raise not_attempted(error) if rejected(response.status_code) else error
         try:
             return response.json()
         except ValueError as exc:

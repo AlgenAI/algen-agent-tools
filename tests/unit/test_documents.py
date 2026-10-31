@@ -351,3 +351,44 @@ async def test_an_instruction_in_a_csv_cell_is_found() -> None:
 
     assert result["disposition"] == "quarantine"
     assert result["text_withheld"] is True
+
+
+async def test_the_runtime_loader_reads_the_runs_attachments_and_nothing_else() -> None:
+    from algen_agent_runtime.exceptions.errors import PolicyDeniedError
+    from algen_agent_runtime.types.contracts import Artifact, RunAttachment
+
+    from algen_agent_tools.attachments import runtime_attachment_loader
+
+    data = docx(paragraph("Invoice 42 is due."))
+    stored = {"a1": Artifact(tenant_id="t", name="i.docx", media_type=DOCX_TYPE, data=data)}
+    toolkit = documents_toolkit(artifact_loader=runtime_attachment_loader)
+    [tool] = toolkit.tools
+    context = fake_tool_context(tool).model_copy(
+        update={"attachments": (RunAttachment(artifact_id="a1"),)}
+    )
+
+    async def load(artifact_id: str) -> Artifact | None:
+        return stored.get(artifact_id)
+
+    context._attachment_loader = load
+
+    result = await tool.execute({"document": ref("a1", "i.docx", DOCX_TYPE)}, context)
+    assert result["text"] == "Invoice 42 is due."
+    with pytest.raises(PolicyDeniedError):
+        await tool.execute({"document": ref("a2", "x.docx", DOCX_TYPE)}, context)
+
+
+def test_the_inspection_is_this_packages_and_the_runtimes_is_not_imported() -> None:
+    import subprocess
+
+    code = (
+        "import sys, warnings; warnings.simplefilter('error', DeprecationWarning);"
+        "import algen_agent_tools.documents as d;"
+        "assert d.extractor_for('a.docx').__module__.startswith('algen_agent_tools.');"
+        "print(sorted(m for m in sys.modules if m.startswith('algen_agent_runtime.security.')"
+        " and m.rsplit('.', 1)[1] in {'documents','docx','pptx','xlsx','html','ooxml'}))"
+    )
+    loaded = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    assert loaded == "[]"

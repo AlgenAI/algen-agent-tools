@@ -76,8 +76,9 @@ agents:
     tool_permissions: [imap.read, smtp.write]
 ```
 
-As with Gmail, the `pii` tool policy redacts addresses in results; leave it out of the agent's
-tool boundaries when the agent must see who wrote.
+As with [Gmail](gmail.md#agent-configuration), each row carries `sender_address`,
+`recipient_addresses` and `cc_addresses` declared `"format": "email"`, which the `pii` tool
+policy leaves alone with Runtime 0.1.0a19 or later; addresses in free text are still redacted.
 
 ## Guarantees
 

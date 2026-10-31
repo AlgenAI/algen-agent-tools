@@ -14,8 +14,8 @@ from urllib.parse import parse_qsl, quote, urlencode, urlsplit
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
-from algen_agent_tools._core.auth import OAuthClientCredentials, OAuthRefresh
-from algen_agent_tools._core.errors import failure
+from algen_agent_tools._core.auth import OAuthClientCredentials, OAuthRefresh, RefreshTokenSink
+from algen_agent_tools._core.errors import failure, not_attempted, rejected
 from algen_agent_tools._core.http import HostLockedClient
 from algen_agent_tools.attachments.models import AttachmentUpload
 from algen_agent_tools.mail.inbound import (
@@ -148,6 +148,7 @@ class OutlookMailboxClient:
         *,
         artifact_loader: EmailArtifactLoader | None = None,
         client: httpx.AsyncClient | None = None,
+        on_refresh_token: RefreshTokenSink | None = None,
     ) -> None:
         self._settings = settings
         self._artifact_loader = artifact_loader
@@ -173,6 +174,7 @@ class OutlookMailboxClient:
                 self._http,
                 refresh_token=settings.refresh_token,
                 scope=f"offline_access {GRAPH_SCOPE}",
+                on_rotate=on_refresh_token,
                 **common,
             )
             self._root = "me"
@@ -220,7 +222,10 @@ class OutlookMailboxClient:
             )
             response.raise_for_status()
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise EmailDeliveryError(failure("Outlook", "delivery", exc)) from exc
+            error = EmailDeliveryError(failure("Outlook", "delivery", exc))
+            if isinstance(exc, httpx.HTTPStatusError) and rejected(exc.response.status_code):
+                raise not_attempted(error) from exc  # Graph refused the message
+            raise error from exc
         recipients = tuple(item.address for item in (*message.to, *message.cc, *message.bcc))
         return EmailDeliveryReceipt(
             provider="outlook",
@@ -234,10 +239,14 @@ class OutlookMailboxClient:
         self, reference: EmailAttachmentReference, sent_bytes: int
     ) -> dict[str, Any]:
         if self._artifact_loader is None:
-            raise EmailDeliveryError("Outlook attachments require an artifact loader")
+            raise not_attempted(
+                EmailDeliveryError("Outlook attachments require an artifact loader")
+            )
         payload = await self._artifact_loader(reference)
         if sent_bytes + len(payload) > self._settings.max_attachment_bytes:
-            raise EmailDeliveryError("email attachments exceed the configured size limit")
+            raise not_attempted(
+                EmailDeliveryError("email attachments exceed the configured size limit")
+            )
         return {
             "@odata.type": "#microsoft.graph.fileAttachment",
             "name": reference.filename,

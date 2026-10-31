@@ -15,6 +15,7 @@ from algen_agent_runtime.exceptions.errors import (
     ConfigurationError,
     PolicyDeniedError,
     ToolExecutionError,
+    ToolNotAttemptedError,
 )
 from algen_agent_runtime.mcp.client import MCPClientManager
 from algen_agent_runtime.mcp.contracts import MCPStdioServerConfig
@@ -99,16 +100,33 @@ def compare(overlay: McpOverlay, advertised: dict[str, Any]) -> Drift:
 
 
 class McpSession:
-    """An open connection to the overlay's server and the tools it may not call."""
+    """An open connection to the overlay's server and the tools it may not call.
 
-    def __init__(self, manager: MCPClientManager, session: Any, refused: dict[str, str]) -> None:
+    The connection is opened and closed by one task the session owns, whichever task first
+    used it and whichever closes it: the MCP client's cancel scopes must be exited in the task
+    that entered them, and a workflow can open the session from a node's task and close the
+    container from another.
+    """
+
+    def __init__(
+        self,
+        manager: MCPClientManager,
+        session: Any,
+        refused: dict[str, str],
+        *,
+        closing: asyncio.Event,
+        owner: asyncio.Task[None],
+    ) -> None:
         self._manager = manager
         self.session = session
         self.refused = refused
         """Remote tool name to the reason calls to it are refused."""
+        self._closing = closing
+        self._owner = owner
 
     async def aclose(self) -> None:
-        await self._manager.aclose()
+        self._closing.set()
+        await asyncio.shield(self._owner)
 
 
 async def connect(
@@ -144,7 +162,32 @@ async def open_session(
     overlay: McpOverlay, secrets: SecretResolver, *, session_factory: Any = None
 ) -> McpSession:
     """Connect, then compare each declared tool with what the server advertises now."""
-    manager, session, advertised = await connect(overlay, secrets, session_factory=session_factory)
+    loop = asyncio.get_running_loop()
+    opened: asyncio.Future[tuple[MCPClientManager, Any, dict[str, Any]]] = loop.create_future()
+    closing = asyncio.Event()
+
+    async def own_connection() -> None:
+        try:
+            manager, session, advertised = await connect(
+                overlay, secrets, session_factory=session_factory
+            )
+        except BaseException as exc:
+            if not opened.done():
+                opened.set_exception(exc)
+            return
+        try:
+            opened.set_result((manager, session, advertised))
+            await closing.wait()
+        finally:
+            await manager.aclose()
+
+    owner = asyncio.create_task(own_connection(), name=f"mcp-session-{overlay.server.name}")
+    try:
+        manager, session, advertised = await opened
+    except BaseException:
+        closing.set()
+        await owner
+        raise
     drift = compare(overlay, advertised)
     refused = {remote: "the server no longer offers it" for remote in drift.missing}
     for remote in drift.changed:
@@ -159,7 +202,7 @@ async def open_session(
             overlay.server.name,
             len(drift.undeclared),
         )
-    return McpSession(manager, session, refused)
+    return McpSession(manager, session, refused, closing=closing, owner=owner)
 
 
 def call_handler(toolkit: McpToolkit, remote: str, definition: ToolDefinition) -> ToolHandler:
@@ -172,7 +215,7 @@ def call_handler(toolkit: McpToolkit, remote: str, definition: ToolDefinition) -
             first = errors[0]
             where = "/".join(str(part) for part in first.absolute_path) or "the arguments"
             # Name the field and the rule; the jsonschema message would echo the value.
-            raise ToolExecutionError(
+            raise ToolNotAttemptedError(
                 f"invalid arguments for {definition.name}: {where} fails {first.validator!r}"
             )
         connection: McpSession = await toolkit.client()

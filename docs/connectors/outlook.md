@@ -37,7 +37,8 @@ registration.
 
 - **Delegated** (`ALGEN_TOOLS_OUTLOOK_REFRESH_TOKEN` set): the connector acts as the signed-in
   user on `/me`. Grant the delegated permissions `Mail.Read` (or `Mail.ReadWrite`) and
-  `Mail.Send`, plus `offline_access`.
+  `Mail.Send`, plus `offline_access`. Microsoft rotates refresh tokens: the client uses each new
+  one for the next refresh; pass `on_refresh_token=` to `OutlookMailboxClient` to store it.
 - **Application** (no refresh token): the app's own credentials on the mailbox
   `ALGEN_TOOLS_OUTLOOK_MAILBOX` names. Grant the application permissions `Mail.Read` and
   `Mail.Send`, and **limit the app to that mailbox** with an Exchange Online application access

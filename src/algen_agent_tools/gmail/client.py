@@ -14,8 +14,8 @@ from urllib.parse import quote
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
-from algen_agent_tools._core.auth import OAuthRefresh
-from algen_agent_tools._core.errors import failure
+from algen_agent_tools._core.auth import OAuthRefresh, RefreshTokenSink
+from algen_agent_tools._core.errors import failure, not_attempted, rejected
 from algen_agent_tools._core.http import HostLockedClient
 from algen_agent_tools.attachments.models import AttachmentUpload
 from algen_agent_tools.mail.inbound import (
@@ -162,7 +162,9 @@ class GmailMailboxClient:
         *,
         artifact_loader: EmailArtifactLoader | None = None,
         client: httpx.AsyncClient | None = None,
+        on_refresh_token: RefreshTokenSink | None = None,
     ) -> None:
+        """``on_refresh_token`` stores a refresh token Google rotated (see ``OAuthRefresh``)."""
         self._settings = settings
         self._artifact_loader = artifact_loader
         self._http = HostLockedClient(
@@ -180,6 +182,7 @@ class GmailMailboxClient:
             client_secret=settings.client_secret,
             refresh_token=settings.refresh_token,
             on_error=lambda exc: EmailDeliveryError(failure("Gmail", "OAuth token request", exc)),
+            on_rotate=on_refresh_token,
         )
 
     async def _token(self) -> str:
@@ -190,11 +193,15 @@ class GmailMailboxClient:
         total_bytes = 0
         for reference in message.attachments:
             if self._artifact_loader is None:
-                raise EmailDeliveryError("Gmail attachments require an artifact loader")
+                raise not_attempted(
+                    EmailDeliveryError("Gmail attachments require an artifact loader")
+                )
             payload = await self._artifact_loader(reference)
             total_bytes += len(payload)
             if total_bytes > self._settings.max_attachment_bytes:
-                raise EmailDeliveryError("email attachments exceed the configured size limit")
+                raise not_attempted(
+                    EmailDeliveryError("email attachments exceed the configured size limit")
+                )
             attachments.append((reference, payload))
         mime, _ = build_mime_message(
             message,
@@ -215,7 +222,10 @@ class GmailMailboxClient:
             response.raise_for_status()
             provider_id = str(response.json()["id"])
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise EmailDeliveryError(failure("Gmail", "delivery", exc)) from exc
+            error = EmailDeliveryError(failure("Gmail", "delivery", exc))
+            if isinstance(exc, httpx.HTTPStatusError) and rejected(exc.response.status_code):
+                raise not_attempted(error) from exc  # Gmail refused the message
+            raise error from exc
         recipients = tuple(item.address for item in (*message.to, *message.cc, *message.bcc))
         return EmailDeliveryReceipt(
             provider="gmail",

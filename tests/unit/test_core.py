@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from urllib.parse import parse_qs
 
 import httpx
 import pytest
@@ -106,6 +107,63 @@ async def test_a_token_near_expiry_is_renewed() -> None:
     )
     assert await tokens.token() == "first"
     assert await tokens.token() == "second"  # 60 s is inside the renewal margin
+
+
+async def test_a_rotated_refresh_token_is_used_next_and_handed_to_the_host() -> None:
+    """Providers that rotate refresh tokens invalidate the old one (#35 item 4)."""
+    sent: list[str] = []
+    issued = iter(("refresh-2", "refresh-3"))
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent.append(parse_qs(request.content.decode())["refresh_token"][0])
+        return httpx.Response(
+            200, json={"access_token": "access", "expires_in": 60, "refresh_token": next(issued)}
+        )
+
+    stored: list[str] = []
+
+    async def store(token: SecretStr) -> None:
+        stored.append(token.get_secret_value())
+
+    tokens = OAuthRefresh(
+        locked(httpx.MockTransport(handler)),
+        token_uri=TOKEN_URI,
+        client_id="client",
+        client_secret=SecretStr("client-secret"),
+        refresh_token=SecretStr("refresh-1"),
+        on_error=lambda exc: RuntimeError(failure("Example", "OAuth token request", exc)),
+        on_rotate=store,
+    )
+    await tokens.token()
+    await tokens.token()  # 60 s is inside the renewal margin: refreshes again
+
+    assert sent == ["refresh-1", "refresh-2"]
+    assert stored == ["refresh-2", "refresh-3"]
+
+
+async def test_a_host_that_cannot_store_the_rotated_token_does_not_fail_the_call(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    async def broken(token: SecretStr) -> None:
+        raise OSError("vault unavailable")
+
+    tokens = OAuthRefresh(
+        locked(
+            httpx.MockTransport(
+                lambda request: httpx.Response(
+                    200, json={"access_token": "access", "refresh_token": "refresh-2"}
+                )
+            )
+        ),
+        token_uri=TOKEN_URI,
+        client_id="client",
+        client_secret=SecretStr("client-secret"),
+        refresh_token=SecretStr("refresh-1"),
+        on_error=lambda exc: RuntimeError(failure("Example", "OAuth token request", exc)),
+        on_rotate=broken,
+    )
+    assert await tokens.token() == "access"
+    assert "OSError" in caplog.text and "refresh-2" not in caplog.text
 
 
 @pytest.mark.parametrize(

@@ -8,6 +8,63 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a7] - 2026-10-31
+
+Needs `algen-agent-runtime>=0.1.0a20`.
+
+### Upgrade notes
+
+- The supported Runtime range is now `>=0.1.0a20,<0.2`. 0.1.0a19 treats a tool's
+  `PolicyDeniedError` as not attempted, keeps declared `format: email` result fields out of `pii`
+  redaction and gives tools the run's attachments; 0.1.0a20 keeps a toolkit's configuration
+  error message (0.1.0a19 replaced it with the error's type).
+- Document inspection moved into this package (`algen_agent_tools.documents.inspection`,
+  re-exported from `algen_agent_tools.documents`). Code importing
+  `algen_agent_runtime.security.documents` (deprecated in Runtime 0.1.0a19) switches to
+  `from algen_agent_tools.documents import extractor_for, ExtractedDocument, ...`. The
+  `documents` extra now installs PyMuPDF directly instead of `algen-agent-runtime[documents]`.
+- DOCX and PPTX documents with text and embedded images report `document.images_excluded`
+  (low), so `documents.extract_text` returns `review` for them instead of `pass`.
+- Mail tool results gain `sender_address`, `sender_name`, `recipient_addresses` and
+  `cc_addresses`. The existing display-string fields are unchanged.
+- A connector's error for a refusal before the send (see Fixed) is now also a
+  `ToolNotAttemptedError`; its type and message are unchanged, so existing `except` clauses still
+  catch it.
+
+### Added
+
+- `algen_agent_tools.documents.inspection`: the PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, text and
+  Markdown extractors and their contracts, moved from the Runtime with its tests
+  ([#36](https://github.com/AlgenAI/algen-agent-tools/issues/36)).
+- `algen_agent_tools.attachments.runtime_attachment_loader`: an artifact loader over the run's own
+  attachments (`RunRequest.attachments`), so `documents.extract_text` reads files attached to the
+  run without host wiring. It refuses any artifact not attached to the run.
+- Structured address fields on mail results (Gmail, Outlook, IMAP), declared `format: email`, so
+  under the default `pii` guardrail an agent can reply to the sender it read
+  ([#35](https://github.com/AlgenAI/algen-agent-tools/issues/35) item 2).
+- `on_refresh_token=` on `GmailMailboxClient` and `OutlookMailboxClient` (`on_rotate` on
+  `OAuthRefresh`) to store a rotated refresh token.
+
+### Fixed
+
+- Refusals before anything is sent are recorded as not attempted, not "may have happened", so a
+  retry runs instead of asking for manual reconciliation (#35 item 1): a token that could not be
+  fetched, a request to an unconfigured host, an attachment policy refusal, a missing artifact
+  loader or attachments over the size limit (Outlook, Gmail, SMTP), invalid MCP tool arguments, a
+  too-large webhook payload, and a definite rejection by the provider (a 4xx other than 408 from
+  Graph, Gmail, Telegram, Discord or a webhook receiver; an SMTP connection, login, sender,
+  recipient or data refusal). Timeouts, dropped connections and 5xx stay indeterminate.
+- An MCP overlay session opened in one task and closed from another (a workflow node, then the
+  container) no longer fails with "exit cancel scope in a different task" (#35 item 3).
+- `OAuthRefresh` uses a rotated refresh token for the next refresh instead of the one it was
+  built with, which providers that rotate tokens had invalidated (#35 item 4).
+
+### Known limitations
+
+- An MCP tool result marked as an error stays indeterminate: the server reported it after
+  receiving the call.
+- A rotated refresh token is kept in memory unless the host passes `on_refresh_token`.
+
 ## [0.2.0a6] - 2026-10-30
 
 ### Added

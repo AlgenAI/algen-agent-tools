@@ -34,7 +34,7 @@ classifiers = [
 ]
 # The supported Runtime range. CI tests the lowest and the highest release in it.
 dependencies = [
-  "algen-agent-runtime>=0.1.0a18,<0.2",
+  "algen-agent-runtime>=0.1.0a20,<0.2",
 ]
 
 [project.optional-dependencies]
@@ -45,17 +45,17 @@ all = [
 discord = []
 # Gmail uses httpx and SMTP the standard library, both already installed with the Runtime;
 # their extras exist so every connector installs the same way.
-# PDFs are read by the Runtime's document inspection, which needs PyMuPDF (AGPL-3.0). DOCX, XLSX,
-# PPTX, HTML, CSV, TSV, text and Markdown need nothing beyond the Runtime.
-documents = ["algen-agent-runtime[documents]>=0.1.0a18,<0.2"]
+# PDFs are read with PyMuPDF (AGPL-3.0). DOCX, XLSX, PPTX, HTML, CSV, TSV, text and Markdown
+# need only the standard library.
+documents = ["PyMuPDF>=1.24,<2"]
 # GitHub is an MCP overlay, so it needs the Runtime's MCP client.
-github = ["algen-agent-runtime[mcp]>=0.1.0a18,<0.2"]
+github = ["algen-agent-runtime[mcp]>=0.1.0a20,<0.2"]
 gmail = []
 # IMAP uses the standard library's imaplib.
 imap = []
 # Outlook uses httpx, already installed with the Runtime.
 outlook = []
-mcp = ["algen-agent-runtime[mcp]>=0.1.0a18,<0.2"]
+mcp = ["algen-agent-runtime[mcp]>=0.1.0a20,<0.2"]
 # rsa: MySQL 8 authenticates with caching_sha2_password, which needs cryptography.
 mysql = ["aiomysql[rsa]>=0.2,<1"]
 postgres = ["asyncpg>=0.29,<1"]
@@ -136,5 +136,5 @@ strict = true
 packages = ["algen_agent_tools"]
 
 [[tool.mypy.overrides]]
-module = ["aiomysql", "aiomysql.*", "asyncpg", "asyncpg.*", "jsonschema", "mcp", "mcp.*", "yaml"]
+module = ["aiomysql", "aiomysql.*", "asyncpg", "asyncpg.*", "fitz", "jsonschema", "mcp", "mcp.*", "yaml"]
 ignore_missing_imports = true
