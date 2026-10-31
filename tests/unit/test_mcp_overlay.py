@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import copy
 import json
 import sys
@@ -286,6 +287,26 @@ async def test_against_the_real_sample_server_over_stdio(monkeypatch: pytest.Mon
 
     assert ticket["data"] == {"id": "T-1", "title": "Printer is on fire"}
     assert opened["data"] == {"id": "T-2", "title": "Coffee machine"}
+
+
+async def test_a_session_opened_in_a_child_task_closes_from_the_parent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A workflow node's task opens the session lazily; the container closes it later from
+    another task. The MCP client's cancel scopes must not be exited across tasks (#35)."""
+    monkeypatch.setenv("ALGEN_TOOLS_TEST_DESK_TOKEN", "token")
+    data = mapping()
+    data["server"].update(command=sys.executable, cwd=str(FIXTURES.parents[2]))
+    toolkit = McpOverlay.from_mapping(data).toolkit()
+    get = named(toolkit, "desk.get_ticket")
+
+    async def node() -> Any:
+        return await get.execute({"ticket_id": "T-1"}, fake_tool_context(get))
+
+    [ticket] = await asyncio.gather(asyncio.create_task(node()))
+    await toolkit.aclose()  # raised "exit cancel scope in a different task" before
+
+    assert ticket["data"] == {"id": "T-1", "title": "Printer is on fire"}
 
 
 def test_snapshot_cli_writes_a_draft(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
