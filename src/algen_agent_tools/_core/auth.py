@@ -9,6 +9,7 @@ from collections.abc import Callable
 import httpx
 from pydantic import SecretStr
 
+from algen_agent_tools._core.errors import not_attempted
 from algen_agent_tools._core.http import HostLockedClient
 
 REFRESH_MARGIN_SECONDS = 60
@@ -57,7 +58,8 @@ class _CachedToken:
                 token = str(payload["access_token"])
                 expires_in = max(60, int(payload.get("expires_in", 3600)))
             except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-                raise self._on_error(exc) from exc
+                # A token is fetched before the call it authorizes: that call was not sent.
+                raise not_attempted(self._on_error(exc)) from exc
             self._token = token
             self._expires_at = time.monotonic() + expires_in
             return token

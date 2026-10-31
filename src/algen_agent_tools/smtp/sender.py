@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import smtplib
+import socket
 import ssl
 from collections.abc import Callable, Mapping
 from email.message import EmailMessage as MimeEmailMessage
@@ -14,6 +15,7 @@ from typing import Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
+from algen_agent_tools._core.errors import not_attempted
 from algen_agent_tools.mail.models import (
     DOMAIN,
     EmailArtifactLoader,
@@ -24,6 +26,21 @@ from algen_agent_tools.mail.models import (
     EmailMessage,
     build_mime_message,
     reject_header_injection,
+)
+
+# Failures that leave the message undelivered: the server could not be reached, refused the
+# login, the sender, every recipient or the message itself. A timeout or a dropped connection
+# may come after the server accepted the message, so those stay unmarked.
+_REFUSED_BEFORE_DELIVERY = (
+    ConnectionRefusedError,
+    socket.gaierror,
+    smtplib.SMTPConnectError,
+    smtplib.SMTPHeloError,
+    smtplib.SMTPAuthenticationError,
+    smtplib.SMTPNotSupportedError,
+    smtplib.SMTPSenderRefused,
+    smtplib.SMTPRecipientsRefused,
+    smtplib.SMTPDataError,
 )
 
 
@@ -80,18 +97,25 @@ class SmtpEmailSender:
         total_bytes = 0
         for reference in message.attachments:
             if self._artifact_loader is None:
-                raise EmailDeliveryError("SMTP attachments require an artifact loader")
+                raise not_attempted(
+                    EmailDeliveryError("SMTP attachments require an artifact loader")
+                )
             payload = await self._artifact_loader(reference)
             total_bytes += len(payload)
             if total_bytes > self._settings.max_attachment_bytes:
-                raise EmailDeliveryError("email attachments exceed the configured size limit")
+                raise not_attempted(
+                    EmailDeliveryError("email attachments exceed the configured size limit")
+                )
             attachments.append((reference, payload))
         mime, message_id = self._build_message(message, idempotency_key, attachments)
         all_recipients = tuple(item.address for item in (*message.to, *message.cc, *message.bcc))
         try:
             refused = await asyncio.to_thread(self._send_sync, mime, all_recipients)
         except (smtplib.SMTPException, OSError, TimeoutError) as exc:
-            raise EmailDeliveryError(f"SMTP delivery failed ({type(exc).__name__})") from exc
+            error = EmailDeliveryError(f"SMTP delivery failed ({type(exc).__name__})")
+            if isinstance(exc, _REFUSED_BEFORE_DELIVERY):
+                raise not_attempted(error) from exc
+            raise error from exc
         rejected = {address: f"SMTP {details[0]}" for address, details in refused.items()}
         accepted = tuple(address for address in all_recipients if address not in refused)
         return EmailDeliveryReceipt(

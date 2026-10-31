@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from algen_agent_runtime.exceptions.errors import ToolNotAttemptedError
 from pydantic import BaseModel, ConfigDict, Field
 
 from algen_agent_tools.attachments.models import AttachmentUpload, check_media_type
@@ -26,7 +27,7 @@ _TEXT = re.compile(r"^text/|^application/(json|xml)$")
 _SNIFF_BYTES = 8_192
 
 
-class AttachmentRefused(ValueError):
+class AttachmentRefused(ValueError, ToolNotAttemptedError):
     """A fetched file breaks the connector's attachment policy. The message names the rule, not
     the file's content."""
 

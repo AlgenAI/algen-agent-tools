@@ -19,13 +19,17 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
-from algen_agent_runtime.exceptions.errors import ConfigurationError, ToolExecutionError
+from algen_agent_runtime.exceptions.errors import (
+    ConfigurationError,
+    ToolExecutionError,
+    ToolNotAttemptedError,
+)
 from algen_agent_runtime.tools.authoring import Toolkit, external
 from algen_agent_runtime.tools.contracts import ToolContext
 from pydantic import BaseModel, ConfigDict
 
 from algen_agent_tools import __version__
-from algen_agent_tools._core.errors import failure
+from algen_agent_tools._core.errors import failure, rejected
 from algen_agent_tools._core.http import HostLockedClient
 from algen_agent_tools._env import SecretResolver, env_name, env_names, resolve_optional
 
@@ -195,7 +199,7 @@ def _add_target(toolkit: Toolkit, target: WebhookTarget) -> None:
         resolved = webhook.targets[target.action]
         body = json.dumps(payload.model_dump(mode="json"), separators=(",", ":")).encode()
         if len(body) > MAX_BODY_BYTES:
-            raise ToolExecutionError(f"webhook {target.action!r} payload is too large")
+            raise ToolNotAttemptedError(f"webhook {target.action!r} payload is too large")
         headers = {
             "Content-Type": "application/json",
             "User-Agent": f"algen-agent-tools/{__version__}",
@@ -215,9 +219,11 @@ def _add_target(toolkit: Toolkit, target: WebhookTarget) -> None:
             # The httpx message names the URL; keep only the cause's type.
             raise ToolExecutionError(failure("webhook", target.action, exc)) from None
         if not 200 <= response.status_code < 300:
-            raise ToolExecutionError(
-                f"webhook {target.action!r} failed (HTTP {response.status_code})"
-            )
+            message = f"webhook {target.action!r} failed (HTTP {response.status_code})"
+            # A 4xx is the receiver refusing the delivery; a 5xx may follow its side effect.
+            if rejected(response.status_code):
+                raise ToolNotAttemptedError(message)
+            raise ToolExecutionError(message)
         return WebhookDelivery(action=target.action, status_code=response.status_code)
 
     deliver.__name__ = deliver.__qualname__ = target.action

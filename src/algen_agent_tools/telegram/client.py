@@ -12,7 +12,7 @@ from urllib.parse import quote
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
-from algen_agent_tools._core.errors import failure
+from algen_agent_tools._core.errors import failure, not_attempted, rejected
 from algen_agent_tools._core.http import HostLockedClient
 from algen_agent_tools.attachments.models import AttachmentUpload, check_media_type
 from algen_agent_tools.messaging.models import (
@@ -177,7 +177,9 @@ class TelegramBotClient:
             detail = f"error {code}" if isinstance(code, int) else f"HTTP {response.status_code}"
             if code == 409:
                 detail += ": another getUpdates consumer or a webhook is active"
-            raise MessagingError(f"Telegram {operation} failed ({detail})")
+            error = MessagingError(f"Telegram {operation} failed ({detail})")
+            status = code if isinstance(code, int) else response.status_code
+            raise not_attempted(error) if rejected(status) else error
         return body.get("result")
 
     async def list_conversations(self, *, max_results: int, page_token: str | None) -> Any:
