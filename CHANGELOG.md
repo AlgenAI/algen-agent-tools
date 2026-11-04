@@ -8,6 +8,23 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Added
+
+- An OCR hook for document inspection
+  ([#39](https://github.com/AlgenAI/algen-agent-tools/issues/39), step 1). A host passes a
+  `TextRecognizer` (any object with `recognize(image, *, media_type) -> RecognizedText`) as
+  `extractor_for(filename, ocr=..., ocr_max_pages=3)` or `documents_toolkit(ocr=...)`. With one,
+  PNG, JPEG, WebP, GIF, BMP and TIFF images are read by the new `ImageDocumentExtractor`, and PDF
+  pages that have images and almost no text are rendered with PyMuPDF (DPI and pixel caps) and
+  recognized, up to `ocr_max_pages` per PDF. Recognized text is a `DocumentSpan` with
+  `source="ocr"` (and the recognizer's `confidence`) and passes the same prompt-injection checks,
+  so an instruction in a scan quarantines. OCRed pages no longer report
+  `document.ocr_required`; scanned pages past the limit report it per page, and an image or page
+  with no recognized text reports `document.ocr_no_text` (low). No OCR engine ships yet; a
+  Tesseract extra is planned. Without a recognizer, behaviour is unchanged: images are refused
+  and nothing is rendered.
+- `DocumentSpan.source` (`"text"` or `"ocr"`, default `"text"`) and `DocumentSpan.confidence`.
+
 ## [0.2.0a7] - 2026-10-31
 
 Needs `algen-agent-runtime>=0.1.0a20`.

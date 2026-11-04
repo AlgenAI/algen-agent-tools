@@ -13,6 +13,8 @@ from algen_agent_tools.documents.inspection import (
     DocumentSpan,
     ExtractedDocument,
     FindingSeverity,
+    RecognizedText,
+    TextRecognizer,
     extractor_for,
 )
 from algen_agent_tools.documents.toolkit import (
@@ -31,6 +33,8 @@ __all__ = [
     "DocumentText",
     "ExtractedDocument",
     "FindingSeverity",
+    "RecognizedText",
+    "TextRecognizer",
     "documents_toolkit",
     "extractor_for",
 ]
