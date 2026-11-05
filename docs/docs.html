@@ -746,13 +746,13 @@ mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); co
       <!-- ═══════════════ GET STARTED ═══════════════ -->
       <section class="doc" id="welcome" style="padding-top:0">
         <div class="hero">
-          <span class="eyebrow">Algen Agent Tools · v0.2.0a7</span>
+          <span class="eyebrow">Algen Agent Tools · v0.2.0a9</span>
           <h1>Typed tools for agents. <span class="accent">Governed by default.</span></h1>
           <p class="lead">Curated connectors for agents built on Algen Agent Runtime. Each connector is a set of narrow, typed actions with a declared side effect, permission and approval rule, registered as a Runtime plugin so Studio can list it before anything runs.</p>
           <div class="hero-meta">
-            <span class="pill brand"><span class="dot"></span>0.2.0a7 · pre-alpha</span>
+            <span class="pill brand"><span class="dot"></span>0.2.0a9 · pre-alpha</span>
             <span class="pill">Python 3.12 &amp; 3.13</span>
-            <span class="pill">Runtime &gt;=0.1.0a20,&lt;0.2</span>
+            <span class="pill">Runtime &gt;=0.1.0a23,&lt;0.2</span>
             <span class="pill">Apache-2.0</span>
           </div>
           <div class="hero-actions">
@@ -785,7 +785,7 @@ mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); co
           <a class="card feature" href="#mcp-overlays"><span class="section-icon"><svg class="i"><use href="#i-plug"/></svg></span><h4>MCP, reviewed</h4><p>A governance overlay turns a remote MCP server into declared, schema-pinned tools; anything undeclared is never exposed.</p></a>
           <a class="card feature" href="#connector-policy"><span class="section-icon"><svg class="i"><use href="#i-user-check"/></svg></span><h4>Curated and owned</h4><p>Each connector has an owner, a security review and its own release cadence, so the Runtime core stays small.</p></a>
         </div>
-        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Pre-release.</strong> <code>0.2.0a7</code> is an alpha. A tool's name, input schema, side effect and permission are public contract; any change ships with a CHANGELOG entry and an upgrade note.</p></div>
+        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Pre-release.</strong> <code>0.2.0a9</code> is an alpha. A tool's name, input schema, side effect and permission are public contract; any change ships with a CHANGELOG entry and an upgrade note.</p></div>
       </section>
 
       <section class="doc" id="install">
@@ -823,7 +823,8 @@ mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); co
             <tr><td><code>telegram</code></td><td>Telegram</td><td>nothing extra (uses the Runtime's HTTP client)</td></tr>
             <tr><td><code>discord</code></td><td>Discord</td><td>nothing extra (uses the Runtime's HTTP client)</td></tr>
             <tr><td><code>github</code></td><td>GitHub (MCP overlay)</td><td>the Runtime's <code>mcp</code> extra</td></tr>
-            <tr><td><code>documents</code></td><td>Documents</td><td>the Runtime's <code>documents</code> extra, for PDFs (PyMuPDF, AGPL-3.0); every other format needs nothing</td></tr>
+            <tr><td><code>documents</code></td><td>Documents</td><td>PyMuPDF 1.x, for PDFs (AGPL-3.0); every other format needs nothing</td></tr>
+            <tr><td><code>ocr</code></td><td>Documents (OCR)</td><td><code>pytesseract</code> and <code>Pillow</code>, for <code>TesseractRecognizer</code>; the host installs the Tesseract program and its languages</td></tr>
             <tr><td><code>webhook</code></td><td>Webhook</td><td>nothing extra (uses the Runtime's HTTP client)</td></tr>
             <tr><td><code>mcp</code></td><td>MCP overlays</td><td>the Runtime's <code>mcp</code> extra</td></tr>
             <tr><td><code>all</code></td><td>everything above</td><td>includes PyMuPDF (AGPL-3.0) through <code>documents</code>; install only the extras you use if you cannot ship AGPL code</td></tr>
@@ -891,6 +892,21 @@ security:
       <section class="doc" id="releases">
         <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-history"/></svg></span>Get started</div>
         <h2>What's new<a class="anchor" href="#releases" aria-label="Link to this section">#</a></h2>
+        <h3 id="release-0-2-0a9">0.2.0a9 · 5 November 2026<a class="anchor" href="#release-0-2-0a9" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>Whole threads.</strong> <code>get_thread</code> on Gmail, Outlook and IMAP returns a thread's messages oldest first, at most 50, keeping the newest. <code>get_message</code> results gain <code>message_id_header</code>, <code>in_reply_to</code> and <code>references</code>.</li>
+          <li><strong>An attachment's text in one call.</strong> Built with <code>documents=DocumentReader()</code>, the Gmail, Outlook and IMAP toolkits offer <code>read_attachment</code>: it downloads the attachment, checks it and returns its inspected text, so the file never passes through the model. See <a href="#gmail-reading-attachments">Reading attachments</a>.</li>
+          <li><strong>Email files.</strong> <code>documents.extract_text</code> reads <code>.eml</code> messages with their attachments; results gain <code>attachments</code>, and a finding in an attachment names it in <code>part</code>.</li>
+          <li><strong>IMAP search and folders.</strong> <code>imap.list_messages</code> takes <code>text_contains</code> and, on Gmail, <code>gmail_query</code>; the folders setting accepts special-use names such as <code>\Sent</code> and <code>\All</code>; <code>imap.list_folders</code> lists the readable folders. On a plain IMAP server <code>thread_id</code> is no longer empty.</li>
+          <li>Requires <code>algen-agent-runtime&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23).</li>
+        </ul>
+        <h3 id="release-0-2-0a8">0.2.0a8 · 5 November 2026<a class="anchor" href="#release-0-2-0a8" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>Unread is not risky.</strong> A scanned PDF, an image-only DOCX, a cover note over a scan or an XLSX past the row limit is now <code>pass</code> with <code>coverage</code> <code>none</code> or <code>partial</code>, where it was <code>review</code>. Code that treated <code>review</code> as "not fully read" checks <code>coverage != "full"</code> (or <code>needs_ocr</code>) instead; see <a href="#documents-coverage">Unread content</a>.</li>
+          <li><strong>OCR, when you want it.</strong> Pass a <code>TextRecognizer</code> to <code>documents_toolkit(ocr=...)</code> or <code>extractor_for</code> to read images and scanned PDF pages. The new <code>ocr</code> extra ships <code>TesseractRecognizer</code>; OCR is never on by default. See <a href="#documents-ocr">OCR</a>.</li>
+          <li><strong>Known limitations.</strong> Images inside DOCX and PPTX are not recognized, and a recognizer still running when the 120 s timeout fires finishes in its worker thread.</li>
+          <li>Requires <code>algen-agent-runtime&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23). Runtime 0.1.0a22 and 0.1.0a23 fix two ways an approval-required workflow tool step could run without its approval; no tool changes are needed.</li>
+        </ul>
         <h3 id="release-0-2-0a7">0.2.0a7 · 31 October 2026<a class="anchor" href="#release-0-2-0a7" aria-label="Link to this section">#</a></h3>
         <ul>
           <li><strong>Refusals are not "may have happened".</strong> A refusal before anything is sent (a token that could not be fetched, an unconfigured host, an attachment refused or over the limit, invalid MCP arguments, a too-large webhook payload) and a provider&#39;s definite rejection (a 4xx other than 408 from Graph, Gmail, Telegram, Discord or a webhook receiver; an SMTP connection, login, sender, recipient or data refusal) are recorded as not attempted, so a retry runs instead of manual reconciliation. Timeouts, dropped connections and 5xx stay indeterminate. Errors keep their type and message.</li>
@@ -1121,19 +1137,30 @@ billing.query(
           <tbody>
             <tr><td><code>gmail.list_messages</code></td><td>read</td><td><code>gmail.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr>
             <tr><td><code>gmail.get_message</code></td><td>read</td><td><code>gmail.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr>
+            <tr><td><code>gmail.get_thread</code></td><td>read</td><td><code>gmail.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr>
             <tr><td><code>gmail.get_attachment</code> (with <code>artifact_sink</code>)</td><td>read</td><td><code>gmail.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr>
+            <tr><td><code>gmail.read_attachment</code> (with <code>documents</code>)</td><td>read</td><td><code>gmail.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr>
             <tr><td><code>gmail.send_email</code></td><td>external</td><td><code>gmail.write</code></td><td>60 s</td><td>1</td><td>agent policy (asks by default)</td></tr>
           </tbody>
         </table></div>
         <ul>
-          <li><code>gmail.list_messages(query="is:unread", max_results=25, page_token=None)</code> takes a Gmail search query and returns message metadata: sender, recipients, subject, a snippet, labels, attachments with their <code>part_id</code>, and <code>sender_auth</code>, at most 100 per page. Bodies and attachment bytes are not returned.</li>
+          <li><code>gmail.list_messages(query="is:unread", max_results=25, page_token=None)</code> takes a Gmail search query and returns message metadata: sender, recipients, subject, a snippet, labels, attachments with their <code>part_id</code>, and <code>sender_auth</code>, at most 100 per page. Bodies and attachment bytes are not returned. The query reaches every folder: <code>in:sent</code> lists sent mail, <code>in:anywhere</code> includes archived mail, spam and trash.</li>
           <li><code>sender_auth</code> is Gmail's own SPF, DKIM and DMARC verdict on the sender (<code>pass</code>, <code>fail</code> or <code>unknown</code>), read only from the <code>Authentication-Results</code> header Gmail stamped. Use it to keep a spoofed From out of trusted workflows; <code>unknown</code> is not a failure.</li>
-          <li><code>gmail.get_message(message_id, max_chars=20000)</code> reads one message with its body as plain text (HTML without markup, scripts or styles), with <code>body_truncated</code> set when cut. The tool tells the model to treat instructions in the message as data.</li>
+          <li><code>gmail.get_message(message_id, max_chars=20000)</code> reads one message with its body as plain text (HTML without markup, scripts or styles), with <code>body_truncated</code> set when cut. The tool tells the model to treat instructions in the message as data. Results carry <code>message_id_header</code>, <code>in_reply_to</code> and <code>references</code>.</li>
+          <li><code>gmail.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)</code> reads a whole thread, oldest first, each message as <code>get_message</code> returns it with the body cut to <code>max_chars_per_message</code> (at most 10,000). At most 50 messages; a longer thread keeps its newest and sets <code>truncated</code>. Quoted history is not removed yet, so each reply repeats the text it quotes.</li>
           <li><code>gmail.get_attachment(message_id, attachment_id)</code> is offered only when the toolkit is built in code with an <code>artifact_sink</code>. It saves one attachment as an artifact, within the <code>attachment_policy</code> size and type checks, and returns only its reference. Pass the stable <code>part_id</code> from the listing.</li>
+          <li><code>gmail.read_attachment(message_id, attachment_id, max_chars=50000)</code> is offered only when the toolkit is built with <code>documents</code>; see <a href="#gmail-reading-attachments">Reading attachments</a>.</li>
           <li><code>gmail.send_email</code> takes the same input as <a href="#smtp"><code>smtp.send_email</code></a>, sends from <code>ALGEN_TOOLS_GMAIL_SENDER</code>, and delivers Bcc recipients without exposing them to other recipients.</li>
         </ul>
         <h3 id="gmail-credentials">Credentials<a class="anchor" href="#gmail-credentials" aria-label="Link to this section">#</a></h3>
-        <p>Create an OAuth client in Google Cloud, authorise the mailbox once to obtain a refresh token, and grant only the scopes the agent needs: <code>gmail.readonly</code> for <code>list_messages</code>, <code>get_message</code> and <code>get_attachment</code>, <code>gmail.send</code> for <code>send_email</code>. The access token is refreshed in memory and never leaves the client; token and API errors name only the failure type.</p>
+        <p>Create an OAuth client in Google Cloud, authorise the mailbox once to obtain a refresh token, and grant only the scopes the agent needs: <code>gmail.readonly</code> for <code>list_messages</code>, <code>get_message</code>, <code>get_thread</code>, <code>get_attachment</code> and <code>read_attachment</code>, <code>gmail.send</code> for <code>send_email</code>. The access token is refreshed in memory and never leaves the client; token and API errors name only the failure type.</p>
+        <h3 id="gmail-reading-attachments">Reading attachments<a class="anchor" href="#gmail-reading-attachments" aria-label="Link to this section">#</a></h3>
+        <p><code>documents=DocumentReader()</code> adds <code>read_attachment</code>: it downloads one attachment, checks it against <code>attachment_policy</code> and reads it with the <a href="#documents">Documents</a> inspection, so the model gets the attachment's text in one call instead of <code>get_attachment</code> then <code>documents.extract_text</code>. The result is the same as <code>documents.extract_text</code> (<code>text</code>, <code>disposition</code>, <code>findings</code>, <code>coverage</code>, <code>attachments</code> for an attached email) plus <code>artifact</code>; a quarantined attachment's text is withheld. With an <code>artifact_sink</code> as well, the file is also saved and its reference returned, for example so a person can review a quarantined file. <code>DocumentReader(max_bytes=..., quarantine=..., ocr=...)</code> takes the documents toolkit's options. The same option exists on the Outlook and IMAP toolkits.</p>
+<div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>plugin.py<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd"><span class="t-k">from</span> algen_agent_tools.documents <span class="t-k">import</span> DocumentReader
+<span class="t-k">from</span> algen_agent_tools.gmail <span class="t-k">import</span> gmail_toolkit
+
+gmail = gmail_toolkit(documents=DocumentReader())  <span class="t-c"># adds gmail.read_attachment; PDFs need the documents extra</span></span></pre></div>
       </section>
 
       <section class="doc" id="outlook">
@@ -1145,11 +1172,13 @@ billing.query(
         </table></div>
         <div class="table-wrap"><table>
           <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
-          <tbody><tr><td><code>outlook.list_messages</code></td><td>read</td><td><code>outlook.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.get_message</code></td><td>read</td><td><code>outlook.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.get_attachment</code> (with <code>artifact_sink</code>)</td><td>read</td><td><code>outlook.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.send_email</code></td><td>external</td><td><code>outlook.write</code></td><td>60 s</td><td>1</td><td>agent policy (asks by default)</td></tr></tbody>
+          <tbody><tr><td><code>outlook.list_messages</code></td><td>read</td><td><code>outlook.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.get_message</code></td><td>read</td><td><code>outlook.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.get_thread</code></td><td>read</td><td><code>outlook.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.get_attachment</code> (with <code>artifact_sink</code>)</td><td>read</td><td><code>outlook.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.read_attachment</code> (with <code>documents</code>)</td><td>read</td><td><code>outlook.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.send_email</code></td><td>external</td><td><code>outlook.write</code></td><td>60 s</td><td>1</td><td>agent policy (asks by default)</td></tr></tbody>
         </table></div>
         <ul>
           <li><code>outlook.list_messages(folder="inbox", search=None, unread_only=False, max_results=25, page_token=None)</code> lists one folder (<code>inbox</code>, <code>sentitems</code>, <code>drafts</code>, <code>archive</code>, <code>junkemail</code>), newest first, at most 50 per page. The page token is opaque and never a URL; the connector rebuilds each request for its own mailbox.</li>
           <li><code>get_message</code> and <code>get_attachment</code> are the same shared tools as Gmail's. Only file attachments can be saved.</li>
+          <li><code>outlook.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)</code> reads a conversation (<code>conversationId</code>) across the mailbox's folders, as for <a href="#gmail">Gmail</a>. Graph returns at most 50 of its messages in one call; <code>truncated</code> says when there were more. In-Reply-To and References come from the message's internet headers, which Graph keeps only for received mail.</li>
+          <li><code>outlook.read_attachment(message_id, attachment_id, max_chars=50000)</code>, with <code>documents=DocumentReader()</code>, is the shared tool: an attachment's inspected text in one call; see <a href="#gmail-reading-attachments">Reading attachments</a>.</li>
           <li><code>outlook.send_email</code> takes the same input as <a href="#smtp"><code>smtp.send_email</code></a> and saves a copy in Sent Items. Attachments travel inline, at most 3 MB in all.</li>
           <li><strong>Delegated access</strong> (a refresh token is set) acts as the signed-in user. <strong>Application access</strong> uses the app's own credentials on <code>ALGEN_TOOLS_OUTLOOK_MAILBOX</code>.</li>
         </ul>
@@ -1165,12 +1194,17 @@ billing.query(
         </table></div>
         <div class="table-wrap"><table>
           <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
-          <tbody><tr><td><code>imap.list_messages</code></td><td>read</td><td><code>imap.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>imap.get_message</code></td><td>read</td><td><code>imap.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>imap.get_attachment</code> (with <code>artifact_sink</code>)</td><td>read</td><td><code>imap.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr></tbody>
+          <tbody><tr><td><code>imap.list_messages</code></td><td>read</td><td><code>imap.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>imap.list_folders</code></td><td>read</td><td><code>imap.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>imap.get_message</code></td><td>read</td><td><code>imap.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>imap.get_thread</code></td><td>read</td><td><code>imap.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>imap.get_attachment</code> (with <code>artifact_sink</code>)</td><td>read</td><td><code>imap.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>imap.read_attachment</code> (with <code>documents</code>)</td><td>read</td><td><code>imap.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr></tbody>
         </table></div>
         <ul>
-          <li><code>imap.list_messages</code> takes typed filters, not raw IMAP search: <code>from_address</code>, <code>subject</code>, <code>since</code>, <code>before</code> and <code>unread_only</code>, at most 100 per page, newest first.</li>
+          <li><code>imap.list_messages</code> takes typed filters, not raw IMAP search: <code>from_address</code>, <code>subject</code>, <code>since</code>, <code>before</code>, <code>unread_only</code> and <code>text_contains</code> (text anywhere in the headers or body, IMAP <code>TEXT</code>), at most 100 per page, newest first. Search text is printable ASCII; anything else is refused rather than sent.</li>
+          <li><code>gmail_query</code> on <code>imap.list_messages</code> is a Gmail search (<code>X-GM-RAW</code>, for example <code>has:attachment newer_than:7d</code>) and is refused unless the server is Gmail.</li>
           <li>Only the folders in <code>ALGEN_TOOLS_IMAP_FOLDERS</code> can be read. Folders open with <code>EXAMINE</code> and bodies are fetched with <code>BODY.PEEK</code>, by part and within byte limits.</li>
-          <li>On Gmail, message and thread ids are Gmail's own, the same ones the Gmail API returns. Elsewhere an id carries the folder's UIDVALIDITY, so a stale id is an error rather than another message.</li>
+          <li><strong>Special-use folders.</strong> An entry in <code>ALGEN_TOOLS_IMAP_FOLDERS</code> may be <code>\Sent</code>, <code>\All</code>, <code>\Archive</code>, <code>\Drafts</code>, <code>\Junk</code>, <code>\Trash</code> or <code>\Flagged</code>, resolved with <code>LIST</code> when the connection opens, so <code>INBOX,\Sent,\All</code> reads the inbox, sent mail and, on Gmail, All Mail, whatever the server calls them. A name the server does not mark is left out. On Gmail, <code>\All</code> also lets <code>get_message</code> find a message by its id after it has left the inbox.</li>
+          <li><code>imap.list_folders()</code> lists the folders the tools may read, each with its special use when the server marks one, never a folder outside <code>ALGEN_TOOLS_IMAP_FOLDERS</code>.</li>
+          <li>On Gmail, message and thread ids are Gmail's own, the same ones the Gmail API returns. Elsewhere an id carries the folder's UIDVALIDITY, so a stale id is an error rather than another message, and <code>thread_id</code> (empty before 0.2.0a9) is <code>r.&lt;base64url&gt;</code> of the thread's first Message-ID.</li>
+          <li><code>imap.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)</code> reads a thread across the configured folders: by <code>X-GM-THRID</code> on Gmail, by the References chain elsewhere. Add <code>\Sent</code> to the folders to see the mailbox's own replies.</li>
+          <li><code>imap.read_attachment(message_id, attachment_id, max_chars=50000)</code>, with <code>documents=DocumentReader()</code>, returns an attachment's inspected text in one call; see <a href="#gmail-reading-attachments">Reading attachments</a>.</li>
           <li><code>sender_auth</code> trusts the topmost <code>Authentication-Results</code> header only from <code>mx.google.com</code> on Gmail, or from the server named in <code>ALGEN_TOOLS_IMAP_AUTHSERV_ID</code>; otherwise it is <code>unknown</code>.</li>
           <li>TLS on port 993 is always on, with the certificate and host name verified. The password is sent only in <code>LOGIN</code>.</li>
         </ul>
@@ -1245,18 +1279,18 @@ billing.query(
         <h2>Documents<a class="anchor" href="#documents" aria-label="Link to this section">#</a></h2>
         <p>Read the text of a document an agent received, for example an email attachment saved with <code>gmail.get_attachment</code>. Parsing and inspection are the untrusted-document checks in <code>algen_agent_tools.documents</code> (moved from the Runtime in 0.2.0a7); the connector reads the artifact for the calling tenant, bounds the call and governs it as a tool.</p>
         <div class="table-wrap"><table>
-          <tbody><tr><td>Module</td><td><code>algen_agent_tools.documents</code> (built in code; it needs an artifact loader, the deployment&#39;s or <code>runtime_attachment_loader</code> for the run&#39;s attachments, so there is no plugin yet)</td></tr><tr><td>Extra</td><td><code>documents</code> for PDFs (PyMuPDF, AGPL-3.0); every other format needs nothing</td></tr><tr><td>Environment</td><td>none</td></tr></tbody>
+          <tbody><tr><td>Module</td><td><code>algen_agent_tools.documents</code> (built in code; it needs an artifact loader, the deployment&#39;s or <code>runtime_attachment_loader</code> for the run&#39;s attachments, so there is no plugin yet)</td></tr><tr><td>Extra</td><td><code>documents</code> for PDFs (PyMuPDF, AGPL-3.0); every other format needs nothing. Optional <code>ocr</code> for Tesseract OCR</td></tr><tr><td>Environment</td><td>none</td></tr></tbody>
         </table></div>
         <div class="table-wrap"><table>
           <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
           <tbody><tr><td><code>documents.extract_text</code></td><td>read</td><td><code>documents.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr></tbody>
         </table></div>
         <ul>
-          <li><strong>Formats</strong> come from the file name: <code>.pdf</code>, <code>.docx</code>, <code>.xlsx</code>, <code>.pptx</code>, <code>.html</code>, <code>.htm</code>, <code>.csv</code>, <code>.tsv</code>, <code>.txt</code> and <code>.md</code>. Any other suffix, or content that doesn't match its name, is refused.</li>
+          <li><strong>Formats</strong> come from the file name: <code>.pdf</code>, <code>.docx</code>, <code>.xlsx</code>, <code>.pptx</code>, <code>.html</code>, <code>.htm</code>, <code>.csv</code>, <code>.tsv</code>, <code>.txt</code>, <code>.md</code> and <code>.eml</code>, and images with a recognizer (see <a href="#documents-ocr">OCR</a>). Any other suffix, or content that doesn't match its name, is refused.</li>
           <li><strong>Only visible text</strong> is returned, cut to <code>max_chars</code> (at most 100,000). Hidden PDF text, hidden DOCX runs, hidden XLSX sheets, rows and columns, hidden PPTX slides and shapes, and HTML hidden by attribute or inline style are reported as findings instead.</li>
           <li><strong>A disposition</strong> (<code>pass</code>, <code>review</code> or <code>quarantine</code>) and <strong>findings</strong> cover hidden text, instructions aimed at the model and risky Office packaging (macros, remote templates). A quarantined document's text is withheld unless the toolkit is built with <code>quarantine="return"</code>.</li>
           <li><code>truncated</code> is true when the text was cut, by <code>max_chars</code> or by the inspection (an XLSX sheet past 5,000 rows).</li>
-          <li><strong>Images are not read.</strong> A PDF, DOCX or PPTX with text and embedded images reports <code>document.images_excluded</code> and returns <code>review</code> (DOCX and PPTX from 0.2.0a7). Attach the file to the run instead when a vision model should see it.</li>
+          <li><strong>Images are not read without OCR.</strong> A PDF, DOCX or PPTX with text and embedded images reports <code>document.images_excluded</code> as a coverage finding. Pass a recognizer (<a href="#documents-ocr">OCR</a>), or attach the file to the run when a vision model should see it.</li>
           <li><strong>Inspection without the tool.</strong> <code>from algen_agent_tools.documents import extractor_for</code> gives the extractors directly. They replace <code>algen_agent_runtime.security.documents</code>, deprecated in Runtime 0.1.0a19.</li>
         </ul>
 <div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>plugin.py<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
@@ -1267,6 +1301,37 @@ documents = documents_toolkit(artifact_loader=load_artifact)  <span class="t-c">
 <span class="t-c"># or, for the files attached to the run (Runtime 0.1.0a19+): refuses any other artifact</span>
 <span class="t-k">from</span> algen_agent_tools.attachments <span class="t-k">import</span> runtime_attachment_loader
 documents = documents_toolkit(artifact_loader=runtime_attachment_loader)</span></pre></div>
+        <h3 id="documents-coverage">Unread content<a class="anchor" href="#documents-coverage" aria-label="Link to this section">#</a></h3>
+        <p>From 0.2.0a8, content the inspection did not read is reported apart from security findings, so a caller can tell "dangerous" from "not read":</p>
+        <ul>
+          <li><strong><code>coverage</code></strong> is <code>full</code> (everything was read), <code>partial</code> (some content was not) or <code>none</code> (content was found but no text could be read). <strong><code>needs_ocr</code></strong> is true when images or scanned pages hold text only OCR can read.</li>
+          <li><strong>Each finding has a <code>category</code></strong>, <code>security</code> or <code>coverage</code>. <code>document.ocr_required</code>, <code>document.images_excluded</code>, <code>document.ocr_no_text</code>, <code>document.truncated</code>, <code>document.attachment_skipped</code> and <code>document.attachment_unread</code> are coverage findings; only security findings set the disposition.</li>
+          <li><strong>A scanned ID card without OCR</strong> is <code>pass</code> with <code>coverage="none"</code> and <code>needs_ocr=true</code>; a cover note over a scan is <code>pass</code> with <code>coverage="partial"</code>. Hidden text or an instruction aimed at the model still makes it <code>review</code> or <code>quarantine</code>.</li>
+        </ul>
+        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><code>pass</code> with <code>coverage="none"</code> means nothing dangerous was found because nothing was read. Before 0.2.0a8 such documents were <code>review</code>; code that used <code>review</code> to mean "not fully read" checks <code>coverage != "full"</code> instead.</p></div>
+        <h3 id="documents-ocr">OCR<a class="anchor" href="#documents-ocr" aria-label="Link to this section">#</a></h3>
+        <p>OCR is off unless the host passes a recognizer, a <code>TextRecognizer</code>: any object with <code>recognize(image, *, media_type)</code> returning <code>RecognizedText</code>. Pass it as <code>documents_toolkit(ocr=...)</code> or <code>extractor_for(filename, ocr=..., ocr_max_pages=3)</code>. The <code>ocr</code> extra ships <code>TesseractRecognizer</code>, backed by the Tesseract program, which the host installs with its languages.</p>
+<div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>plugin.py<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd"><span class="t-c"># pip install "algen-agent-tools[documents,ocr]"</span>
+<span class="t-k">from</span> algen_agent_tools.documents <span class="t-k">import</span> TesseractRecognizer, documents_toolkit
+
+documents = documents_toolkit(
+    artifact_loader=load_artifact, ocr=TesseractRecognizer(languages=(<span class="t-s">"eng"</span>, <span class="t-s">"deu"</span>), timeout=30)
+)</span></pre></div>
+        <ul>
+          <li><strong>Images</strong> (<code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>, <code>.webp</code>, <code>.gif</code>, <code>.bmp</code>, <code>.tif</code>, <code>.tiff</code>) are accepted only with a recognizer, within 40 megapixels and 64 frames.</li>
+          <li><strong>Scanned PDF pages</strong> (images and almost no text) are rendered and recognized, up to <code>ocr_max_pages</code> per PDF (default 3); pages past the limit report <code>document.ocr_required</code>.</li>
+          <li><strong>Recognized text is checked like any other.</strong> It passes the same prompt-injection checks, so an instruction in a scan quarantines the document. An image or page with no recognized text reports <code>document.ocr_no_text</code>.</li>
+          <li><code>TesseractRecognizer</code> fails when it is built, naming the fix, if the extra, the program or a language is missing. It is never the default.</li>
+          <li>The recognizer runs inside the tool's 120 s timeout. Images inside DOCX and PPTX are not recognized yet.</li>
+        </ul>
+        <h3 id="documents-email">Email files<a class="anchor" href="#documents-email" aria-label="Link to this section">#</a></h3>
+        <p>From 0.2.0a9 an <code>.eml</code> file is read as its headers (From, To, Cc, Date, Subject) and body, then each attachment's text under an <code>[Attachment: &lt;name&gt;]</code> line, read by the extractor for its type. Attached emails are read at most two levels deep, and at most 20 attachments in the whole message.</p>
+        <ul>
+          <li><strong><code>attachments</code></strong> lists the attachments that were read (file name, media type, disposition, coverage).</li>
+          <li><strong>An attachment's findings are the message's.</strong> Hidden text or an instruction in an attachment quarantines the message, and the finding names the attachment in <code>part</code>.</li>
+          <li><strong>Skipped is not refused.</strong> An attachment past a limit, of an unsupported type or unreadable is a coverage finding (<code>document.attachment_skipped</code> or <code>document.attachment_unread</code>), so the message is <code>pass</code> with <code>coverage="partial"</code>. Outlook <code>.msg</code> files are not read yet.</li>
+        </ul>
       </section>
 
       <section class="doc" id="webhook">
@@ -1544,12 +1609,16 @@ notices = smtp_toolkit(
             <tr><td><code>smtp.send_email</code></td><td><code>algen_agent_tools.smtp</code></td><td>external</td><td><code>smtp.write</code></td><td>60 s</td></tr>
             <tr><td><code>gmail.list_messages</code></td><td><code>algen_agent_tools.gmail</code></td><td>read</td><td><code>gmail.read</code></td><td>120 s</td></tr>
             <tr><td><code>gmail.get_message</code></td><td><code>algen_agent_tools.gmail</code></td><td>read</td><td><code>gmail.read</code></td><td>60 s</td></tr>
+            <tr><td><code>gmail.get_thread</code></td><td><code>algen_agent_tools.gmail</code></td><td>read</td><td><code>gmail.read</code></td><td>120 s</td></tr>
             <tr><td><code>gmail.send_email</code></td><td><code>algen_agent_tools.gmail</code></td><td>external</td><td><code>gmail.write</code></td><td>60 s</td></tr>
             <tr><td><code>outlook.list_messages</code></td><td><code>algen_agent_tools.outlook</code></td><td>read</td><td><code>outlook.read</code></td><td>120 s</td></tr>
             <tr><td><code>outlook.get_message</code></td><td><code>algen_agent_tools.outlook</code></td><td>read</td><td><code>outlook.read</code></td><td>60 s</td></tr>
+            <tr><td><code>outlook.get_thread</code></td><td><code>algen_agent_tools.outlook</code></td><td>read</td><td><code>outlook.read</code></td><td>120 s</td></tr>
             <tr><td><code>outlook.send_email</code></td><td><code>algen_agent_tools.outlook</code></td><td>external</td><td><code>outlook.write</code></td><td>60 s</td></tr>
             <tr><td><code>imap.list_messages</code></td><td><code>algen_agent_tools.imap</code></td><td>read</td><td><code>imap.read</code></td><td>120 s</td></tr>
+            <tr><td><code>imap.list_folders</code></td><td><code>algen_agent_tools.imap</code></td><td>read</td><td><code>imap.read</code></td><td>60 s</td></tr>
             <tr><td><code>imap.get_message</code></td><td><code>algen_agent_tools.imap</code></td><td>read</td><td><code>imap.read</code></td><td>60 s</td></tr>
+            <tr><td><code>imap.get_thread</code></td><td><code>algen_agent_tools.imap</code></td><td>read</td><td><code>imap.read</code></td><td>120 s</td></tr>
             <tr><td><code>telegram.list_messages</code></td><td><code>algen_agent_tools.telegram</code></td><td>read</td><td><code>telegram.read</code></td><td>60 s</td></tr>
             <tr><td><code>telegram.send_message</code></td><td><code>algen_agent_tools.telegram</code></td><td>external</td><td><code>telegram.write</code></td><td>60 s</td></tr>
             <tr><td><code>discord.list_conversations</code></td><td><code>algen_agent_tools.discord</code></td><td>read</td><td><code>discord.read</code></td><td>60 s</td></tr>
@@ -1559,7 +1628,7 @@ notices = smtp_toolkit(
             <tr><td><code>sample.echo</code></td><td><code>algen_agent_tools.sample</code></td><td>read</td><td><code>sample.read</code></td><td>5 s</td></tr>
           </tbody>
         </table></div>
-        <p>Also registered, but only when built in code: <code>&lt;name&gt;.get_attachment</code> (read, 120 s) for Gmail, Outlook, IMAP, Telegram and Discord with an <code>artifact_sink</code>; <code>documents.extract_text</code> (read, 120 s); and one <code>webhook.&lt;action&gt;</code> (external, <code>webhook.write</code>) per webhook target. Typed SQL queries and your own MCP overlay tools are named by your toolkit or overlay (<code>billing.list_open_invoices</code>) and appear in <code>describe</code> the same way. The full contract of every tool is in the package's <code>connectors.json</code>, which each GitHub release also attaches.</p>
+        <p>Also registered, but only when built in code: <code>&lt;name&gt;.get_attachment</code> (read, 120 s) for Gmail, Outlook, IMAP, Telegram and Discord with an <code>artifact_sink</code>; <code>&lt;name&gt;.read_attachment</code> (read, 120 s) for Gmail, Outlook and IMAP with <code>documents=DocumentReader()</code>; <code>documents.extract_text</code> (read, 120 s); and one <code>webhook.&lt;action&gt;</code> (external, <code>webhook.write</code>) per webhook target. Typed SQL queries and your own MCP overlay tools are named by your toolkit or overlay (<code>billing.list_open_invoices</code>) and appear in <code>describe</code> the same way. The full contract of every tool is in the package's <code>connectors.json</code>, which each GitHub release also attaches.</p>
       </section>
 
       <section class="doc" id="compatibility">
@@ -1567,9 +1636,9 @@ notices = smtp_toolkit(
         <h2>Runtime compatibility<a class="anchor" href="#compatibility" aria-label="Link to this section">#</a></h2>
         <div class="table-wrap"><table>
           <thead><tr><th>algen-agent-tools</th><th>Supported algen-agent-runtime</th></tr></thead>
-          <tbody><tr><td>0.2.0a7</td><td><code>&gt;=0.1.0a20,&lt;0.2</code> (tested on 0.1.0a20 and 0.1.0a21)</td></tr><tr><td>0.2.0a6</td><td><code>&gt;=0.1.0a18,&lt;0.2</code></td></tr><tr><td>0.2.0a1 to 0.2.0a5</td><td><code>&gt;=0.1.0a12,&lt;0.2</code> (tested on 0.1.0a12 and 0.1.0a13)</td></tr><tr><td>0.1.0a2</td><td><code>&gt;=0.1.0a12,&lt;0.2</code></td></tr><tr><td>0.1.0a1</td><td><code>&gt;=0.1.0a11,&lt;0.2</code></td></tr></tbody>
+          <tbody><tr><td>0.2.0a9</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a8</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a7</td><td><code>&gt;=0.1.0a20,&lt;0.2</code> (tested on 0.1.0a20 and 0.1.0a21)</td></tr><tr><td>0.2.0a6</td><td><code>&gt;=0.1.0a18,&lt;0.2</code></td></tr><tr><td>0.2.0a1 to 0.2.0a5</td><td><code>&gt;=0.1.0a12,&lt;0.2</code> (tested on 0.1.0a12 and 0.1.0a13)</td></tr><tr><td>0.1.0a2</td><td><code>&gt;=0.1.0a12,&lt;0.2</code></td></tr><tr><td>0.1.0a1</td><td><code>&gt;=0.1.0a11,&lt;0.2</code></td></tr></tbody>
         </table></div>
-        <p>The package is built on the Runtime's tool authoring API (<code>@tool</code>, presets, <code>Toolkit</code>), declared plugins and <code>describe</code>, all introduced in Runtime 0.1.0a11. From 0.1.0a2 it needs Runtime 0.1.0a12, whose <code>pii</code> guardrail leaves fields declared <code>format: email</code> alone. From 0.2.0a6 it needs Runtime 0.1.0a18: 0.1.0a14's document inspection reads XLSX, PPTX, HTML, CSV and TSV, and 0.1.0a18's <code>cache_context</code> keys cached SQL results on the values <code>context_params</code> binds. CI runs the full suite against the lowest supported Runtime and the newest release inside the range; a Runtime release that breaks a connector lowers the upper bound until it is fixed. Every plugin targets plugin core API version <code>1</code>.</p>
+        <p>The package is built on the Runtime's tool authoring API (<code>@tool</code>, presets, <code>Toolkit</code>), declared plugins and <code>describe</code>, all introduced in Runtime 0.1.0a11. From 0.1.0a2 it needs Runtime 0.1.0a12, whose <code>pii</code> guardrail leaves fields declared <code>format: email</code> alone. From 0.2.0a6 it needs Runtime 0.1.0a18: 0.1.0a14's document inspection reads XLSX, PPTX, HTML, CSV and TSV, and 0.1.0a18's <code>cache_context</code> keys cached SQL results on the values <code>context_params</code> binds. From 0.2.0a7 it needs Runtime 0.1.0a20, which records refusals as not attempted, keeps declared <code>format: email</code> result fields out of <code>pii</code> redaction and gives tools the run's attachments. From 0.2.0a8 it needs Runtime 0.1.0a23: 0.1.0a22 and 0.1.0a23 fix two ways an approval-required workflow tool step could run without its approval, and run synchronous tools in a worker thread within their timeout. CI runs the full suite against the lowest supported Runtime and the newest release inside the range; a Runtime release that breaks a connector lowers the upper bound until it is fixed. Every plugin targets plugin core API version <code>1</code>.</p>
       </section>
 
       <section class="doc" id="migrating">
@@ -1618,7 +1687,7 @@ notices = smtp_toolkit(
 
       <div class="no-results" id="noResults">No sections match your search. Try a different term.</div>
       <footer class="page-foot">
-        <span>Algen Agent Tools · Apache-2.0 · Documentation for package version 0.2.0a7</span>
+        <span>Algen Agent Tools · Apache-2.0 · Documentation for package version 0.2.0a9</span>
         <span>© AlgenAI</span>
       </footer>
     </div>
