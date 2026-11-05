@@ -8,6 +8,7 @@ import pytest
 from algen_agent_tools.documents.inspection.core import (
     DocumentDisposition,
     PlainTextDocumentExtractor,
+    UnreadContent,
     extractor_for,
 )
 from algen_agent_tools.documents.inspection.html import HtmlDocumentExtractor
@@ -317,11 +318,16 @@ def test_xlsx_rows_beyond_the_limit_are_reported_as_truncated() -> None:
     cut = XlsxDocumentExtractor(max_rows_per_sheet=3).extract(data, filename="a.xlsx")
     assert cut.sanitized_text == "--- Sheet: S ---\npay\npay\npay"
     assert [f.kind for f in cut.findings] == ["document.truncated"]
-    assert cut.disposition == DocumentDisposition.REVIEW
+    assert cut.disposition == DocumentDisposition.PASS
+    assert (cut.coverage, cut.unread) == ("partial", (UnreadContent(kind="rows", page=1),))
 
     whole = XlsxDocumentExtractor(max_rows_per_sheet=4).extract(data, filename="a.xlsx")
     assert whole.findings == ()
-    assert whole.disposition == DocumentDisposition.PASS
+    assert (whole.disposition, whole.coverage, whole.unread) == (
+        DocumentDisposition.PASS,
+        "full",
+        (),
+    )
 
 
 def test_xlsx_cells_without_a_reference_follow_the_previous_cell() -> None:
@@ -351,6 +357,11 @@ def test_pptx_flagged_visible_text_with_images_does_not_need_ocr() -> None:
     assert "document.ocr_required" not in kinds
     assert "document.images_excluded" in kinds
     assert any(kind.startswith("prompt_injection") for kind in kinds)
+    # Unread images never soften a security finding.
+    assert (extracted.disposition, extracted.coverage) == (
+        DocumentDisposition.QUARANTINE,
+        "partial",
+    )
 
 
 def test_pptx_text_over_an_image_reports_the_excluded_image() -> None:
@@ -359,4 +370,5 @@ def test_pptx_text_over_an_image_reports_the_excluded_image() -> None:
     extracted = PptxDocumentExtractor().extract(deck, filename="d.pptx")
 
     assert [finding.kind for finding in extracted.findings] == ["document.images_excluded"]
-    assert extracted.disposition == DocumentDisposition.REVIEW
+    assert extracted.disposition == DocumentDisposition.PASS
+    assert extracted.coverage == "partial"

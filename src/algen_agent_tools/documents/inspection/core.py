@@ -4,9 +4,9 @@ import re
 import unicodedata
 from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from algen_agent_tools.documents.inspection.ocr import render_page_png, validate_ocr_options
 
@@ -43,6 +43,17 @@ class DocumentSpan(BaseModel):
     """The recognizer's confidence for an ``ocr`` span, when it reports one."""
 
 
+COVERAGE_KINDS = frozenset(
+    {
+        "document.images_excluded",
+        "document.ocr_no_text",
+        "document.ocr_required",
+        "document.truncated",
+    }
+)
+"""Finding kinds that report content the inspection did not read, not a security concern."""
+
+
 class DocumentSecurityFinding(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -51,6 +62,39 @@ class DocumentSecurityFinding(BaseModel):
     message: str
     page: int | None = None
     evidence: str | None = Field(default=None, max_length=300)
+    category: Literal["security", "coverage"] = "security"
+    """``coverage`` when the finding reports content that was not read (images, scanned pages,
+    rows past a limit); it does not affect the disposition. Set from ``kind`` when omitted."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _category_from_kind(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "category" not in data:
+            kind = data.get("kind")
+            return {**data, "category": "coverage" if kind in COVERAGE_KINDS else "security"}
+        return data
+
+
+class UnreadContent(BaseModel):
+    """Content the inspection did not read: images, scanned pages or rows past a limit."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    kind: Literal["image", "page", "rows"]
+    page: int | None = None
+    """The page, slide or sheet, when known."""
+
+
+def _unread_content(findings: tuple[DocumentSecurityFinding, ...]) -> tuple[UnreadContent, ...]:
+    unread: list[UnreadContent] = []
+    for finding in findings:
+        if finding.kind == "document.truncated":
+            unread.append(UnreadContent(kind="rows", page=finding.page))
+        elif finding.kind == "document.ocr_required" and finding.page is not None:
+            unread.append(UnreadContent(kind="page", page=finding.page))
+        elif finding.kind in COVERAGE_KINDS:
+            unread.append(UnreadContent(kind="image", page=finding.page))
+    return tuple(unread)
 
 
 class ExtractedDocument(BaseModel):
@@ -64,6 +108,33 @@ class ExtractedDocument(BaseModel):
     disposition: DocumentDisposition = DocumentDisposition.PASS
     page_count: int = Field(default=1, ge=1)
     image_count: int = Field(default=0, ge=0)
+    coverage: Literal["full", "partial", "none"] = "full"
+    """``full`` when everything was read; ``partial`` when some text was read and some content
+    was not; ``none`` when content was found but no text could be read (a scan without OCR).
+    Derived from the coverage findings when omitted."""
+    unread: tuple[UnreadContent, ...] = ()
+    """What was not read. Derived from the coverage findings when omitted."""
+    needs_ocr: bool = False
+    """Images or scanned pages hold text that only OCR can read. Derived when omitted."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coverage_from_findings(cls, data: Any) -> Any:
+        if not isinstance(data, dict) or {"coverage", "unread", "needs_ocr"} & data.keys():
+            return data
+        findings = tuple(
+            item if isinstance(item, DocumentSecurityFinding) else DocumentSecurityFinding(**item)
+            for item in data.get("findings", ())
+        )
+        unread = _unread_content(findings)
+        if not unread:
+            coverage = "full"
+        elif str(data.get("text", "")).strip():
+            coverage = "partial"
+        else:
+            coverage = "none"
+        needs_ocr = any(finding.kind == "document.ocr_required" for finding in findings)
+        return {**data, "coverage": coverage, "unread": unread, "needs_ocr": needs_ocr}
 
 
 class DocumentExtractor(Protocol):
@@ -184,7 +255,8 @@ def redact_pii(text: str, *, entities: tuple[str, ...] = ()) -> str:
 def classify_findings(
     findings: list[DocumentSecurityFinding],
 ) -> tuple[tuple[DocumentSecurityFinding, ...], DocumentDisposition]:
-    """Keep one finding per kind and page, and derive the document's disposition."""
+    """Keep one finding per kind and page, and derive the document's disposition from the
+    security findings: coverage findings (content not read) never make a document ``review``."""
     unique: list[DocumentSecurityFinding] = []
     seen: set[tuple[str, int | None]] = set()
     for finding in findings:
@@ -192,10 +264,11 @@ def classify_findings(
         if key not in seen:
             seen.add(key)
             unique.append(finding)
-    severities = {finding.severity for finding in unique}
+    security = [finding for finding in unique if finding.category == "security"]
+    severities = {finding.severity for finding in security}
     if severities & {FindingSeverity.CRITICAL, FindingSeverity.HIGH}:
         return tuple(unique), DocumentDisposition.QUARANTINE
-    return tuple(unique), DocumentDisposition.REVIEW if unique else DocumentDisposition.PASS
+    return tuple(unique), DocumentDisposition.REVIEW if security else DocumentDisposition.PASS
 
 
 def recognize_span(

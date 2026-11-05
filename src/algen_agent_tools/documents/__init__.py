@@ -15,6 +15,7 @@ from algen_agent_tools.documents.inspection import (
     FindingSeverity,
     RecognizedText,
     TextRecognizer,
+    UnreadContent,
     extractor_for,
 )
 from algen_agent_tools.documents.toolkit import (
@@ -35,6 +36,7 @@ __all__ = [
     "FindingSeverity",
     "RecognizedText",
     "TextRecognizer",
+    "UnreadContent",
     "documents_toolkit",
     "extractor_for",
 ]

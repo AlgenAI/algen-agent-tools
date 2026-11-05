@@ -287,8 +287,14 @@ async def test_a_sheet_past_the_runtimes_row_limit_is_marked_truncated() -> None
     )
 
     assert result["truncated"] is True
-    assert result["disposition"] == "review"
-    assert [f["kind"] for f in result["findings"]] == ["document.truncated"]
+    assert (result["disposition"], result["coverage"], result["needs_ocr"]) == (
+        "pass",
+        "partial",
+        False,
+    )
+    assert [(f["kind"], f["category"]) for f in result["findings"]] == [
+        ("document.truncated", "coverage")
+    ]
     assert result["text"].endswith("\n4999")
     assert len(result["text"]) < 50_000
 

@@ -33,6 +33,9 @@ class DocumentFinding(BaseModel):
     severity: Literal["low", "medium", "high", "critical"]
     message: str = Field(max_length=500)
     page: int | None = None
+    category: Literal["security", "coverage"] = "security"
+    """``coverage``: content that was not read (images, scanned pages, rows past a limit), not a
+    security concern."""
 
 
 class DocumentText(BaseModel):
@@ -44,8 +47,14 @@ class DocumentText(BaseModel):
     page_count: int = Field(ge=1)
     image_count: int = Field(ge=0)
     disposition: Disposition
-    """``pass``; ``review`` (findings worth a look); ``quarantine`` (hidden or model-directed
-    content: a reason for human review, not a verdict)."""
+    """``pass``; ``review`` (security findings worth a look); ``quarantine`` (hidden or
+    model-directed content: a reason for human review, not a verdict). Content that was not read
+    does not change it: see ``coverage``."""
+    coverage: Literal["full", "partial", "none"] = "full"
+    """``full``: everything was read. ``partial``: some content (images, scanned pages, rows)
+    was not. ``none``: nothing could be read, so ``pass`` says nothing about the content."""
+    needs_ocr: bool = False
+    """Images or scanned pages hold text that only OCR can read."""
     findings: tuple[DocumentFinding, ...] = Field(default=(), max_length=50)
     text: str = Field(max_length=MAX_CHARS)
     """Only what a reader would see; hidden text is left out."""
@@ -132,12 +141,15 @@ def documents_toolkit(
             page_count=extracted.page_count,
             image_count=extracted.image_count,
             disposition=disposition,
+            coverage=extracted.coverage,
+            needs_ocr=extracted.needs_ocr,
             findings=tuple(
                 DocumentFinding(
                     kind=finding.kind[:100],
                     severity=finding.severity.value,
                     message=finding.message[:500],
                     page=finding.page,
+                    category=finding.category,
                 )
                 for finding in extracted.findings[:50]
             ),

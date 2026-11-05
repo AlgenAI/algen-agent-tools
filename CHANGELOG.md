@@ -8,7 +8,23 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Upgrade notes
+
+- Content that was not read no longer makes a document `review`
+  ([#40](https://github.com/AlgenAI/algen-agent-tools/issues/40)). `document.ocr_required`,
+  `document.images_excluded`, `document.ocr_no_text` and `document.truncated` are now coverage
+  findings, and the disposition comes from security findings only. A scanned PDF, an image-only
+  DOCX, a cover note over a scan or an XLSX past the row limit is now `pass`, with `coverage`
+  `none` or `partial`, where it was `review`. The finding kinds and severities are unchanged.
+  Code that treated `review` as "not fully read" checks `coverage != "full"` (or `needs_ocr`)
+  instead. `pass` with `coverage="none"` means nothing was read, not that the content is safe.
+
 ### Added
+
+- `coverage` (`full`, `partial` or `none`), `unread` (`UnreadContent(kind, page)`) and
+  `needs_ocr` on `ExtractedDocument`; `category` (`security` or `coverage`) on
+  `DocumentSecurityFinding`. `documents.extract_text` results gain `coverage`, `needs_ocr` and
+  each finding's `category` (#40).
 
 - An OCR hook for document inspection
   ([#39](https://github.com/AlgenAI/algen-agent-tools/issues/39), step 1). A host passes a
