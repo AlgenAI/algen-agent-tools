@@ -47,11 +47,6 @@ A tool's name, input schema, side effect and permission are part of the public c
 - With a recognizer, `documents.extract_text`'s description says images and scanned pages are
   read by OCR. Without one it is unchanged.
 
-### Changed
-
-- The `documents` extra accepts PyMuPDF 2.x (`PyMuPDF>=1.24,<3`); the document tests pass on
-  1.28 and 2.1.
-
 ## [0.2.0a7] - 2026-10-31
 
 Needs `algen-agent-runtime>=0.1.0a20`.

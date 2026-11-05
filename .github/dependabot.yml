@@ -4,6 +4,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # PyMuPDF 2.x adds onnxruntime and layout packages with no declared license; see the
+      # documents extra in pyproject.toml before lifting this.
+      - dependency-name: pymupdf
+        versions: [">=2"]
     groups:
       python-runtime:
         dependency-type: production
