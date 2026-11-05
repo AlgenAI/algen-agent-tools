@@ -1,6 +1,7 @@
 # Documents
 
-Read the text of a PDF, Word (DOCX), Excel (XLSX), PowerPoint (PPTX), HTML, CSV, TSV, plain-text,
+Read the text of a PDF, Word (DOCX), Excel (XLSX), PowerPoint (PPTX), OpenDocument (ODT, ODS,
+ODP), HTML, CSV, TSV, plain-text,
 Markdown or email (EML, or Outlook MSG) document an agent received, for example an email attachment saved with `gmail.get_attachment`, or a file attached to the run. Parsing and inspection are this package's
 [document inspection](#document-inspection) (`algen_agent_tools.documents.inspection`, moved from
 the Runtime's `algen_agent_runtime.security` in 0.2.0a7); this connector reads the artifact for
@@ -39,7 +40,8 @@ the calling tenant, bounds the call and governs it as a tool.
   disposition, coverage). A finding in an attachment names it in `part`. See [Email](#email).
 - `page_count` (pages, sheets or slides), `image_count`, and `text_withheld`.
 
-The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.html`,
+The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`,
+`.odp`, `.html`,
 `.htm`, `.csv`, `.tsv`, `.txt`, `.md`, `.eml` or `.msg`. Any other suffix is refused. When the
 content's own signature names another type, the content wins: a `scan.pdf` that is really a
 JPEG is read as an image (with OCR), a `.docx` renamed `.doc` as Word, a PDF named `.txt` as a
@@ -81,6 +83,16 @@ Register it from your project's plugin with `documents.register(context)`, and e
 - A file whose content does not match its name (a renamed executable as `.pdf`) is refused.
 - Errors name the rule that refused the document, never its content.
 - Parsing runs in a worker thread, so a large document does not block other calls.
+
+## OpenDocument
+
+ODT, ODS and ODP files (LibreOffice, Google Docs exports) are read with the standard library, with
+the same rules as their Office counterparts: text a style or `text:display="none"` hides, hidden
+text fields and paragraphs, and text under 2 pt are left out and reported; so are hidden sheets,
+rows and columns and hidden slides. Spreadsheets come out sheet by sheet under
+`--- Sheet: <name> ---` with cells joined by ` | `, cut at 5,000 rows per sheet. Comments,
+tracked changes and speaker notes are not extracted. A Basic macro project, or an image or object
+loaded from a remote address, is a finding, and encrypted files are refused.
 
 ## Email
 

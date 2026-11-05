@@ -94,7 +94,8 @@ def test_a_png_is_recognized_as_an_ocr_span() -> None:
 
 def test_images_are_refused_without_a_recognizer() -> None:
     with pytest.raises(
-        ValueError, match="PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, TXT, Markdown, EML and MSG"
+        ValueError,
+        match="PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP, HTML, CSV, TSV, TXT, Markdown, EML and MSG",
     ):
         extractor_for("scan.png")
 

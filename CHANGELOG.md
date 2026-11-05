@@ -30,6 +30,11 @@ A tool's name, input schema, side effect and permission are part of the public c
   back from UTF-8 to Windows-1252 (and read UTF-16 with a byte-order mark) instead of replacing
   accented letters (`decode_text`). A PDF over the page limit is read up to it with the new
   coverage finding `document.pages_skipped` (`PdfDocumentExtractor(on_excess="truncate")`).
+- OpenDocument text, spreadsheets and slides (ODT, ODS, ODP) in `documents.extract_text` and
+  `extractor_for` (#45), standard library only (`OdfDocumentExtractor`), with the Office rules:
+  hidden and tiny text, hidden sheets, rows, columns and slides are left out and reported, a
+  sheet is cut at 5,000 rows, comments and notes are skipped, Basic macros and remote objects
+  are findings, and encrypted files are refused.
 
 ### Changed
 

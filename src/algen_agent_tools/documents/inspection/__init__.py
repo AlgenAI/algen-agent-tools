@@ -35,6 +35,7 @@ from algen_agent_tools.documents.inspection.email import EmailDocumentExtractor
 from algen_agent_tools.documents.inspection.html import HtmlDocumentExtractor
 from algen_agent_tools.documents.inspection.image import ImageDocumentExtractor
 from algen_agent_tools.documents.inspection.ocr import RecognizedText, TextRecognizer
+from algen_agent_tools.documents.inspection.odf import OdfDocumentExtractor
 from algen_agent_tools.documents.inspection.pptx import PptxDocumentExtractor
 from algen_agent_tools.documents.inspection.tesseract import TesseractRecognizer
 from algen_agent_tools.documents.inspection.xlsx import XlsxDocumentExtractor
@@ -51,6 +52,7 @@ __all__ = [
     "FindingSeverity",
     "HtmlDocumentExtractor",
     "ImageDocumentExtractor",
+    "OdfDocumentExtractor",
     "PdfDocumentExtractor",
     "PlainTextDocumentExtractor",
     "PptxDocumentExtractor",
