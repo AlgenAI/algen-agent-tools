@@ -35,6 +35,11 @@ A tool's name, input schema, side effect and permission are part of the public c
   hidden and tiny text, hidden sheets, rows, columns and slides are left out and reported, a
   sheet is cut at 5,000 rows, comments and notes are skipped, Basic macros and remote objects
   are findings, and encrypted files are refused.
+- RTF in `documents.extract_text` and `extractor_for` (#45), standard library only
+  (`RtfDocumentExtractor`): visible text, table cells and decoded characters; hidden (`\v`)
+  and tiny text left out and reported; an embedded OLE object is the new security finding
+  `document.embedded_object`, and a remote `INCLUDEPICTURE`/`INCLUDETEXT` field is
+  `document.external_reference`. RTF content named `.doc` is recognised.
 
 ### Changed
 

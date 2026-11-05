@@ -49,7 +49,7 @@ def test_unknown_document_types_are_rejected() -> None:
         extractor_for("resume.exe")
     except ValueError as exc:
         assert (
-            "PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP, HTML, CSV, TSV, TXT, Markdown, EML and MSG"
+            "PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP, RTF, HTML, CSV, TSV, TXT, Markdown, EML and MSG"
             in str(exc)
         )
     else:

@@ -1,7 +1,7 @@
 # Documents
 
 Read the text of a PDF, Word (DOCX), Excel (XLSX), PowerPoint (PPTX), OpenDocument (ODT, ODS,
-ODP), HTML, CSV, TSV, plain-text,
+ODP), RTF, HTML, CSV, TSV, plain-text,
 Markdown or email (EML, or Outlook MSG) document an agent received, for example an email attachment saved with `gmail.get_attachment`, or a file attached to the run. Parsing and inspection are this package's
 [document inspection](#document-inspection) (`algen_agent_tools.documents.inspection`, moved from
 the Runtime's `algen_agent_runtime.security` in 0.2.0a7); this connector reads the artifact for
@@ -41,7 +41,7 @@ the calling tenant, bounds the call and governs it as a tool.
 - `page_count` (pages, sheets or slides), `image_count`, and `text_withheld`.
 
 The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`,
-`.odp`, `.html`,
+`.odp`, `.rtf`, `.html`,
 `.htm`, `.csv`, `.tsv`, `.txt`, `.md`, `.eml` or `.msg`. Any other suffix is refused. When the
 content's own signature names another type, the content wins: a `scan.pdf` that is really a
 JPEG is read as an image (with OCR), a `.docx` renamed `.doc` as Word, a PDF named `.txt` as a
@@ -93,6 +93,16 @@ rows and columns and hidden slides. Spreadsheets come out sheet by sheet under
 `--- Sheet: <name> ---` with cells joined by ` | `, cut at 5,000 rows per sheet. Comments,
 tracked changes and speaker notes are not extracted. A Basic macro project, or an image or object
 loaded from a remote address, is a finding, and encrypted files are refused.
+
+## RTF
+
+RTF is read with a bounded tokenizer: paragraphs, tabs and table cells (joined with ` | `), with
+escaped and Unicode characters decoded. Font tables, styles, document information, headers,
+footers and footnotes are not text. Hidden text (`\v`) and text under 2 pt are left out and
+reported. An embedded OLE object, a common exploit carrier, is `document.embedded_object`
+(security), and a field that loads a remote file (`INCLUDEPICTURE`, `INCLUDETEXT`) is
+`document.external_reference`. Pictures are coverage findings. A Word file saved as RTF but named
+`.doc` is recognised by its content.
 
 ## Email
 
