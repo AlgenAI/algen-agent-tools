@@ -5,7 +5,11 @@ import zipfile
 
 import pytest
 
-from algen_agent_tools.documents.inspection.core import DocumentDisposition, extractor_for
+from algen_agent_tools.documents.inspection.core import (
+    DocumentDisposition,
+    UnreadContent,
+    extractor_for,
+)
 from algen_agent_tools.documents.inspection.docx import DocxDocumentExtractor
 
 _W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -134,12 +138,15 @@ def test_macros_and_remote_templates_are_quarantined() -> None:
     assert kinds.count("document.external_reference") == 1
 
 
-def test_image_only_document_needs_ocr_review() -> None:
+def test_an_image_only_document_was_not_read_and_is_not_a_security_concern() -> None:
     extracted = _extract(_docx("<w:p/>", extra={"word/media/image1.png": b"\x89PNG"}))
 
-    assert extracted.disposition == DocumentDisposition.REVIEW
+    assert extracted.disposition == DocumentDisposition.PASS
+    assert (extracted.coverage, extracted.needs_ocr) == ("none", True)
+    assert extracted.unread == (UnreadContent(kind="image"),)
     assert extracted.image_count == 1
-    assert [finding.kind for finding in extracted.findings] == ["document.ocr_required"]
+    [finding] = extracted.findings
+    assert (finding.kind, finding.category) == ("document.ocr_required", "coverage")
 
 
 def test_text_with_images_reports_the_excluded_images() -> None:
@@ -154,7 +161,8 @@ def test_text_with_images_reports_the_excluded_images() -> None:
 
     assert extracted.sanitized_text == "Please see the attached invoice."
     assert [finding.kind for finding in extracted.findings] == ["document.images_excluded"]
-    assert extracted.disposition == DocumentDisposition.REVIEW
+    assert extracted.disposition == DocumentDisposition.PASS
+    assert (extracted.coverage, extracted.needs_ocr) == ("partial", False)
 
 
 @pytest.mark.parametrize(

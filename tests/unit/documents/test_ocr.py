@@ -16,6 +16,7 @@ from algen_agent_tools.documents.inspection import (
     ImageDocumentExtractor,
     PdfDocumentExtractor,
     RecognizedText,
+    UnreadContent,
     extractor_for,
 )
 from algen_agent_tools.documents.inspection.image import image_size
@@ -116,7 +117,8 @@ def test_an_image_with_no_recognized_text_says_so() -> None:
 
     assert (extracted.spans, extracted.sanitized_text) == ((), "")
     assert kinds(extracted) == [("document.ocr_no_text", 1)]
-    assert extracted.disposition == DocumentDisposition.REVIEW
+    assert extracted.disposition == DocumentDisposition.PASS
+    assert (extracted.coverage, extracted.needs_ocr) == ("none", False)
 
 
 @pytest.mark.parametrize(
@@ -303,7 +305,12 @@ def test_pages_past_ocr_max_pages_are_reported_not_recognized() -> None:
     assert len(recognizer.calls) == 2
     assert [span.page for span in extracted.spans] == [1, 2]
     assert kinds(extracted) == [("document.ocr_required", 3), ("document.ocr_required", 4)]
-    assert extracted.disposition == DocumentDisposition.REVIEW
+    assert extracted.disposition == DocumentDisposition.PASS
+    assert (extracted.coverage, extracted.needs_ocr) == ("partial", True)
+    assert extracted.unread == (
+        UnreadContent(kind="page", page=3),
+        UnreadContent(kind="page", page=4),
+    )
 
 
 def test_rendering_follows_the_dpi_and_never_exceeds_the_pixel_cap() -> None:
@@ -339,6 +346,28 @@ def test_without_a_recognizer_pdfs_are_inspected_as_before() -> None:
     assert kinds(with_text) == [("document.images_excluded", None)]
     assert all(span.source == "text" for span in with_text.spans)
     assert extractor_for("mixed.pdf", ocr=None).extract(mixed, filename="mixed.pdf") == with_text
+
+
+def test_a_scan_without_a_recognizer_was_not_read_and_still_passes() -> None:
+    scan = extractor_for("scan.pdf").extract(pdf(None), filename="scan.pdf")
+    assert (scan.disposition, scan.coverage, scan.needs_ocr) == ("pass", "none", True)
+
+    cover_note = extractor_for("mixed.pdf").extract(pdf(COVER_NOTE, None), filename="mixed.pdf")
+    assert (cover_note.disposition, cover_note.coverage, cover_note.needs_ocr) == (
+        "pass",
+        "partial",
+        False,
+    )
+
+
+def test_hidden_text_over_a_scan_still_quarantines() -> None:
+    fitz = pytest.importorskip("fitz")
+    document = fitz.open(stream=pdf(None), filetype="pdf")
+    document[0].insert_text((72, 72), INJECTION, fontsize=1)
+    extracted = extractor_for("scan.pdf").extract(document.tobytes(), filename="scan.pdf")
+
+    assert extracted.disposition == DocumentDisposition.QUARANTINE
+    assert {f.category for f in extracted.findings} == {"security", "coverage"}
 
 
 # Toolkit
@@ -379,6 +408,18 @@ async def test_the_toolkit_withholds_a_scanned_page_carrying_an_injection() -> N
         "",
         True,
     )
+
+
+async def test_the_toolkit_reports_a_scan_it_could_not_read() -> None:
+    result = await run_tool(pdf(None), "scan.pdf", "application/pdf")
+    assert (result["disposition"], result["coverage"], result["needs_ocr"]) == (
+        "pass",
+        "none",
+        True,
+    )
+    assert [(f["kind"], f["category"]) for f in result["findings"]] == [
+        ("document.ocr_required", "coverage")
+    ]
 
 
 class MissingEngine:

@@ -29,12 +29,12 @@ the calling tenant, bounds the call and governs it as a tool.
   size or opacity). HTML scripts, styles and the head, PPTX speaker notes and Office comments are
   not extracted.
 - `truncated`: the text is incomplete, either cut to `max_chars` or cut by the inspection. An XLSX
-  sheet longer than 5,000 rows is read up to there and reported as a `document.truncated` finding
-  (medium, so the disposition is at least `review`).
+  sheet longer than 5,000 rows is read up to there and reported as a `document.truncated` finding.
 - `disposition`: `pass`, `review` or `quarantine`, and `findings` (kind, severity, message,
-  page) for hidden text, instructions aimed at the model and risky Office packaging (macros,
-  remote templates and other content loaded on open). The findings carry no excerpt of the
-  suspicious text. For XLSX `page` is the sheet number, for PPTX the slide number.
+  page, category) for hidden text, instructions aimed at the model and risky Office packaging
+  (macros, remote templates and other content loaded on open). The findings carry no excerpt of
+  the suspicious text. For XLSX `page` is the sheet number, for PPTX the slide number.
+- `coverage` and `needs_ocr`: how much was read. See [Unread content](#unread-content).
 - `page_count` (pages, sheets or slides), `image_count`, and `text_withheld`.
 
 The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.html`,
@@ -118,9 +118,32 @@ extracted = extractor_for("cv.docx").extract(data, filename="cv.docx")
 `classify_findings`, `sanitize_untrusted_text`, `prompt_injection_findings` and `redact_pii` are
 in `algen_agent_tools.documents.inspection`.
 
-PDF, DOCX and PPTX documents with text and embedded images report `document.images_excluded`
-(low): the images were not read, so a one-line cover note over a scanned invoice is `review`, not
-`pass`. A document with images and no text reports `document.ocr_required`.
+PDF, DOCX and PPTX documents with text and embedded images report `document.images_excluded`:
+the images were not read. A document with images and no text reports `document.ocr_required`.
+
+## Unread content
+
+Content the inspection did not read is reported separately from security findings, so a caller
+can tell "dangerous" from "not read":
+
+| Finding kind | Means |
+| --- | --- |
+| `document.ocr_required` | Images or scanned pages hold text only OCR can read (`needs_ocr`) |
+| `document.images_excluded` | Images next to text were not read |
+| `document.ocr_no_text` | OCR ran and found no text |
+| `document.truncated` | Rows past the sheet's row limit were not read |
+
+These findings have `category="coverage"`; all others have `category="security"`. Only security
+findings set the disposition, so a scanned ID card without OCR is `pass` with `coverage="none"`
+and `needs_ocr=true`, and a cover note over a scan is `pass` with `coverage="partial"`. Hidden
+text or an instruction aimed at the model still makes it `review` or `quarantine`.
+
+`coverage` is `full` (everything was read), `partial` (some text was read, some content was not)
+or `none` (content was found but no text could be read). `ExtractedDocument.unread` lists what
+was not read: `image`, `page` or `rows`, with the page, slide or sheet when known.
+
+`pass` with `coverage="none"` means nothing dangerous was found because nothing was read. The
+application decides what that warrants: run OCR, ask a person, or file the document unread.
 
 ## OCR
 
