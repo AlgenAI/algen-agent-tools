@@ -121,3 +121,46 @@ in `algen_agent_tools.documents.inspection`.
 PDF, DOCX and PPTX documents with text and embedded images report `document.images_excluded`
 (low): the images were not read, so a one-line cover note over a scanned invoice is `review`, not
 `pass`. A document with images and no text reports `document.ocr_required`.
+
+## OCR
+
+This package ships no OCR engine (a Tesseract extra is planned). A host that has one passes a
+recognizer, any object with a `recognize` method:
+
+```python
+from algen_agent_tools.documents import RecognizedText, documents_toolkit, extractor_for
+
+class MyRecognizer:
+    def recognize(self, image: bytes, *, media_type: str) -> RecognizedText:
+        text, confidence = my_engine.read(image)  # your OCR engine
+        return RecognizedText(text=text, confidence=confidence)
+
+documents = documents_toolkit(artifact_loader=load, ocr=MyRecognizer(), ocr_max_pages=3)
+extracted = extractor_for("scan.pdf", ocr=MyRecognizer()).extract(data, filename="scan.pdf")
+```
+
+With a recognizer:
+
+- Images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`, `.tif`, `.tiff`) are accepted. Before
+  the recognizer sees one, its content must match its suffix and the dimensions in its header
+  must be within 40 megapixels (`ImageDocumentExtractor(max_pixels=...)`). Every frame of a GIF
+  or TIFF counts toward that limit, and one with more than 64 frames is refused. The recognizer
+  gets the original bytes and the image's media type.
+- A PDF page that has images and fewer than 32 characters of text is rendered as a greyscale PNG
+  at 200 DPI, scaled down to at most 12 megapixels, and recognized, for at most `ocr_max_pages`
+  pages (default 3). Scanned pages past the limit report `document.ocr_required` with their page
+  number. Images on pages with enough text are not read and report `document.images_excluded`.
+  `PdfDocumentExtractor` takes `ocr_min_page_chars`, `ocr_dpi` and `ocr_max_pixels` to change
+  these. A recognized page keeps the little text it had (a stamp or a page number), so that text
+  can appear twice.
+- Recognized text is a span with `source="ocr"` and the recognizer's `confidence`. It passes the
+  same prompt-injection checks and sanitizing as any other text, so an instruction in a scanned
+  page quarantines the document. An image or page with no recognized text reports
+  `document.ocr_no_text` (low).
+- The tool's description tells the model that images are read.
+- The recognizer runs in the tool's worker thread, inside the tool's 120 s timeout. An exception
+  it raises fails the call, unchanged (a missing OCR package is not reported as the `documents`
+  extra).
+
+Without a recognizer (the default) nothing changes: images are refused and nothing is rendered.
+DOCX and PPTX images are not recognized yet.

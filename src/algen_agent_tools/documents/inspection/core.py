@@ -4,9 +4,14 @@ import re
 import unicodedata
 from enum import StrEnum
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from algen_agent_tools.documents.inspection.ocr import render_page_png, validate_ocr_options
+
+if TYPE_CHECKING:
+    from algen_agent_tools.documents.inspection.ocr import TextRecognizer
 
 
 class DocumentDisposition(StrEnum):
@@ -32,6 +37,10 @@ class DocumentSpan(BaseModel):
     opacity: float | None = None
     bbox: tuple[float, float, float, float] | None = None
     suspicious: bool = False
+    source: Literal["text", "ocr"] = "text"
+    """``ocr`` when the text was recognized from an image rather than read from the file."""
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    """The recognizer's confidence for an ``ocr`` span, when it reports one."""
 
 
 class DocumentSecurityFinding(BaseModel):
@@ -189,6 +198,35 @@ def classify_findings(
     return tuple(unique), DocumentDisposition.REVIEW if unique else DocumentDisposition.PASS
 
 
+def recognize_span(
+    ocr: TextRecognizer, image: bytes, *, media_type: str, page: int
+) -> tuple[DocumentSpan | None, tuple[DocumentSecurityFinding, ...]]:
+    """OCR one image into a ``source="ocr"`` span, checked for prompt injection like any text.
+
+    An image with no recognizable text gives no span and a ``document.ocr_no_text`` finding.
+    """
+    result = ocr.recognize(image, media_type=media_type)
+    text = normalize_document_text(result.text)
+    if not text:
+        return None, (
+            DocumentSecurityFinding(
+                kind="document.ocr_no_text",
+                severity=FindingSeverity.LOW,
+                message="OCR found no text in the image.",
+                page=page,
+            ),
+        )
+    injection = prompt_injection_findings(text, page=page)
+    span = DocumentSpan(
+        text=text,
+        page=page,
+        source="ocr",
+        confidence=result.confidence,
+        suspicious=bool(injection),
+    )
+    return span, injection
+
+
 class PlainTextDocumentExtractor:
     def __init__(self, *, max_bytes: int = 2_000_000, max_characters: int = 250_000) -> None:
         self._max_bytes = max_bytes
@@ -214,7 +252,12 @@ class PlainTextDocumentExtractor:
 
 
 class PdfDocumentExtractor:
-    """Inspect PDF text spans before producing downstream-safe plain text."""
+    """Inspect PDF text spans before producing downstream-safe plain text.
+
+    With an ``ocr`` recognizer, a page that has images and fewer than ``ocr_min_page_chars``
+    characters of text is rendered (``ocr_dpi``, at most ``ocr_max_pixels`` pixels) and
+    recognized, for at most ``ocr_max_pages`` pages. Without one, nothing is rendered.
+    """
 
     def __init__(
         self,
@@ -223,11 +266,27 @@ class PdfDocumentExtractor:
         max_pages: int = 50,
         max_characters: int = 250_000,
         tiny_font_points: float = 2.0,
+        ocr: TextRecognizer | None = None,
+        ocr_max_pages: int = 3,
+        ocr_min_page_chars: int = 32,
+        ocr_dpi: int = 200,
+        ocr_max_pixels: int = 12_000_000,
     ) -> None:
+        validate_ocr_options(
+            max_pages=ocr_max_pages,
+            min_page_chars=ocr_min_page_chars,
+            dpi=ocr_dpi,
+            max_pixels=ocr_max_pixels,
+        )
         self._max_bytes = max_bytes
         self._max_pages = max_pages
         self._max_characters = max_characters
         self._tiny_font_points = tiny_font_points
+        self._ocr = ocr
+        self._ocr_max_pages = ocr_max_pages
+        self._ocr_min_page_chars = ocr_min_page_chars
+        self._ocr_dpi = ocr_dpi
+        self._ocr_max_pixels = ocr_max_pixels
 
     def extract(self, data: bytes, *, filename: str) -> ExtractedDocument:
         del filename
@@ -238,15 +297,21 @@ class PdfDocumentExtractor:
         try:
             import fitz
         except ImportError as exc:
-            raise ImportError("install algen-agent-tools[documents] for PDF inspection") from exc
+            raise ImportError(
+                "install algen-agent-tools[documents] for PDF inspection", name="fitz"
+            ) from exc
         document = fitz.open(stream=data, filetype="pdf")
         if document.page_count < 1 or document.page_count > self._max_pages:
             raise ValueError(f"PDF page count must be between 1 and {self._max_pages}")
         spans: list[DocumentSpan] = []
         findings: list[DocumentSecurityFinding] = []
         image_count = 0
+        ocr_pages: list[int] = []
+        unread_image_pages: list[int] = []
         for page_index, page in enumerate(document, start=1):
-            image_count += len(page.get_images(full=True))
+            page_images = len(page.get_images(full=True))
+            image_count += page_images
+            first_span = len(spans)
             width, height = float(page.rect.width), float(page.rect.height)
             payload = page.get_text("dict")
             for block in payload.get("blocks", ()):
@@ -317,12 +382,47 @@ class PdfDocumentExtractor:
                                 )
                             )
                         findings.extend(injection)
+            if self._ocr is None or not page_images:
+                continue
+            page_chars = sum(len(span.text) for span in spans[first_span:])
+            if page_chars >= self._ocr_min_page_chars:
+                unread_image_pages.append(page_index)
+            elif len(ocr_pages) >= self._ocr_max_pages:
+                findings.append(
+                    DocumentSecurityFinding(
+                        kind="document.ocr_required",
+                        severity=FindingSeverity.MEDIUM,
+                        message="The page looks scanned and is past the OCR page limit.",
+                        page=page_index,
+                    )
+                )
+            else:
+                ocr_pages.append(page_index)
+                image = render_page_png(
+                    fitz, page, dpi=self._ocr_dpi, max_pixels=self._ocr_max_pixels
+                )
+                span, ocr_findings = recognize_span(
+                    self._ocr, image, media_type="image/png", page=page_index
+                )
+                if span is not None:
+                    spans.append(span)
+                findings.extend(ocr_findings)
         if sum(len(span.text) for span in spans) > self._max_characters:
             raise ValueError(f"PDF exceeds {self._max_characters} extracted character limit")
         visible = "\n".join(span.text for span in spans if not span.suspicious)
         sanitized, visible_findings = sanitize_untrusted_text(visible)
         findings.extend(visible_findings)
-        if not spans and image_count:
+        if self._ocr is not None:
+            if unread_image_pages:
+                findings.append(
+                    DocumentSecurityFinding(
+                        kind="document.images_excluded",
+                        severity=FindingSeverity.LOW,
+                        message="Embedded images on pages with text were not read.",
+                        page=unread_image_pages[0] if len(unread_image_pages) == 1 else None,
+                    )
+                )
+        elif not spans and image_count:
             findings.append(
                 DocumentSecurityFinding(
                     kind="document.ocr_required",
@@ -351,10 +451,28 @@ class PdfDocumentExtractor:
         )
 
 
-def extractor_for(filename: str) -> DocumentExtractor:
+def extractor_for(
+    filename: str, *, ocr: TextRecognizer | None = None, ocr_max_pages: int = 3
+) -> DocumentExtractor:
+    """The extractor for ``filename``'s suffix.
+
+    With an ``ocr`` recognizer, images (PNG, JPEG, WebP, GIF, BMP, TIFF) are accepted and
+    scanned PDF pages are recognized, up to ``ocr_max_pages`` pages per PDF. Without one,
+    images are refused and nothing is recognized.
+    """
     suffix = Path(filename).suffix.lower()
     if suffix == ".pdf":
-        return PdfDocumentExtractor()
+        if ocr is None:
+            return PdfDocumentExtractor()
+        return PdfDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages)
+    if ocr is not None:
+        from algen_agent_tools.documents.inspection.image import (
+            IMAGE_MEDIA_TYPES,
+            ImageDocumentExtractor,
+        )
+
+        if suffix in IMAGE_MEDIA_TYPES:
+            return ImageDocumentExtractor(ocr=ocr)
     if suffix == ".docx":
         from algen_agent_tools.documents.inspection.docx import DocxDocumentExtractor
 

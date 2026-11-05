@@ -6,6 +6,10 @@ and Markdown documents. Each returns an :class:`ExtractedDocument`: the full tex
 prompt-injection attempts, macros, remote content, content that was not read) and a
 disposition. PDF needs the ``documents`` extra (PyMuPDF); the other formats need nothing more.
 
+``extractor_for(filename, ocr=recognizer)`` also reads images and scanned PDF pages through a
+host-supplied :class:`TextRecognizer`; this package ships no OCR engine, and without a recognizer
+images are refused.
+
 Moved here from ``algen_agent_runtime.security`` (deprecated there in Runtime 0.1.0a19).
 """
 
@@ -26,6 +30,8 @@ from algen_agent_tools.documents.inspection.core import (
 )
 from algen_agent_tools.documents.inspection.docx import DocxDocumentExtractor
 from algen_agent_tools.documents.inspection.html import HtmlDocumentExtractor
+from algen_agent_tools.documents.inspection.image import ImageDocumentExtractor
+from algen_agent_tools.documents.inspection.ocr import RecognizedText, TextRecognizer
 from algen_agent_tools.documents.inspection.pptx import PptxDocumentExtractor
 from algen_agent_tools.documents.inspection.xlsx import XlsxDocumentExtractor
 
@@ -38,9 +44,12 @@ __all__ = [
     "ExtractedDocument",
     "FindingSeverity",
     "HtmlDocumentExtractor",
+    "ImageDocumentExtractor",
     "PdfDocumentExtractor",
     "PlainTextDocumentExtractor",
     "PptxDocumentExtractor",
+    "RecognizedText",
+    "TextRecognizer",
     "XlsxDocumentExtractor",
     "classify_findings",
     "extractor_for",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 from typing import Annotated, Literal
 
 from algen_agent_runtime.tools.authoring import Toolkit, read
@@ -10,9 +11,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from algen_agent_tools._env import missing_extra
 from algen_agent_tools.attachments import ArtifactLoader, AttachmentRef
 from algen_agent_tools.documents.inspection import ExtractedDocument, extractor_for
+from algen_agent_tools.documents.inspection.ocr import TextRecognizer
 
 MAX_CHARS = 100_000
 AUDIT_METADATA = {"content_capture": "disabled", "channel": "documents"}
+OCR_NOTE = "PNG, JPEG, WebP, GIF, BMP and TIFF images and scanned PDF pages are read by OCR."
 
 Disposition = Literal["pass", "review", "quarantine"]
 
@@ -53,12 +56,19 @@ class DocumentText(BaseModel):
     """The text was not returned because the document is quarantined."""
 
 
-def _inspect(data: bytes, filename: str) -> ExtractedDocument:
+def _inspect(
+    data: bytes, filename: str, ocr: TextRecognizer | None, ocr_max_pages: int
+) -> ExtractedDocument:
     # The extractors (documents.inspection) do the parsing and the hidden-text and
     # prompt-injection checks; this function bounds and governs the call.
     try:
-        return extractor_for(filename).extract(data, filename=filename)
-    except ImportError:
+        extractor = extractor_for(filename, ocr=ocr, ocr_max_pages=ocr_max_pages)
+        return extractor.extract(data, filename=filename)
+    except ImportError as exc:
+        # Only PyMuPDF is the documents extra; an ImportError from the host's recognizer is
+        # the recognizer's own and propagates unchanged.
+        if exc.name != "fitz":
+            raise
         raise missing_extra("PyMuPDF", "documents") from None
 
 
@@ -68,6 +78,8 @@ def documents_toolkit(
     artifact_loader: ArtifactLoader,
     max_bytes: int = 10_000_000,
     quarantine: Literal["withhold", "return"] = "withhold",
+    ocr: TextRecognizer | None = None,
+    ocr_max_pages: int = 3,
 ) -> Toolkit:
     """A toolkit with ``<name>.extract_text`` (read): the readable text of a PDF, Word (DOCX),
     Excel (XLSX), PowerPoint (PPTX), HTML, CSV, TSV, plain-text or Markdown artifact, inspected by
@@ -76,10 +88,16 @@ def documents_toolkit(
     ``artifact_loader`` reads an artifact's bytes for the calling tenant. Documents over
     ``max_bytes`` are refused before parsing. With ``quarantine="withhold"`` (the default) a
     quarantined document's findings are returned without its text.
+
+    ``ocr`` is an optional :class:`~algen_agent_tools.documents.inspection.ocr.TextRecognizer`.
+    With one, images (PNG, JPEG, WebP, GIF, BMP, TIFF) are read and scanned PDF pages are
+    recognized, up to ``ocr_max_pages`` pages per PDF; without one (the default), images are
+    refused and scanned pages are reported as ``document.ocr_required``.
     """
+    if ocr_max_pages < 0:
+        raise ValueError("ocr_max_pages must be 0 or more")
     toolkit = Toolkit(name)
 
-    @toolkit.tool(read(timeout=120), max_result_bytes=1_048_576, audit_metadata=AUDIT_METADATA)
     async def extract_text(
         document: AttachmentRef,
         context: ToolContext,
@@ -95,7 +113,9 @@ def documents_toolkit(
         if len(data) > max_bytes:
             raise DocumentRefused("document exceeds the configured size limit")
         try:
-            extracted = await asyncio.to_thread(_inspect, data, document.filename)
+            extracted = await asyncio.to_thread(
+                _inspect, data, document.filename, ocr, ocr_max_pages
+            )
         except ValueError as exc:
             raise DocumentRefused(str(exc)) from None
         disposition: Disposition = extracted.disposition.value
@@ -126,4 +146,12 @@ def documents_toolkit(
             text_withheld=withheld,
         )
 
+    toolkit.tool(
+        read(timeout=120),
+        max_result_bytes=1_048_576,
+        audit_metadata=AUDIT_METADATA,
+        # With a recognizer the model is told it may send images; without one the docstring is
+        # the description, unchanged.
+        description=None if ocr is None else f"{inspect.getdoc(extract_text)} {OCR_NOTE}",
+    )(extract_text)
     return toolkit
