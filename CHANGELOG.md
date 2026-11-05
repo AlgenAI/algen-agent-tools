@@ -8,6 +8,20 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a9] - 2026-11-05
+
+Mail reads: attachments in one call, whole threads, `.eml` files, IMAP search and folders.
+Requires `algen-agent-runtime>=0.1.0a23,<0.2`, as 0.2.0a8 did.
+
+### Upgrade notes
+
+- The mail plugins (Gmail, IMAP, Outlook) describe new read tools: `get_thread` on all three
+  and `list_folders` on IMAP. An agent that enables tools by name is unaffected; one that
+  enables a whole plugin now also gets these read tools.
+- On a plain IMAP server `thread_id` is no longer empty (see Changed).
+- The "unsupported document type" message now lists EML; match on the `DocumentRefused` type,
+  not its text.
+
 ### Added
 
 - `.eml` email files in `documents.extract_text` and `extractor_for` (#41): the headers and body,
