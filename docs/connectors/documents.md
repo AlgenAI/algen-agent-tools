@@ -1,7 +1,7 @@
 # Documents
 
 Read the text of a PDF, Word (DOCX), Excel (XLSX), PowerPoint (PPTX), HTML, CSV, TSV, plain-text,
-Markdown or email (EML) document an agent received, for example an email attachment saved with `gmail.get_attachment`, or a file attached to the run. Parsing and inspection are this package's
+Markdown or email (EML, or Outlook MSG) document an agent received, for example an email attachment saved with `gmail.get_attachment`, or a file attached to the run. Parsing and inspection are this package's
 [document inspection](#document-inspection) (`algen_agent_tools.documents.inspection`, moved from
 the Runtime's `algen_agent_runtime.security` in 0.2.0a7); this connector reads the artifact for
 the calling tenant, bounds the call and governs it as a tool.
@@ -9,7 +9,7 @@ the calling tenant, bounds the call and governs it as a tool.
 | | |
 | --- | --- |
 | Plugin | none yet: the toolkit needs the deployment's artifact loader, so it is built in code |
-| Extra | `pip install "algen-agent-tools[documents]"` for PDFs (installs PyMuPDF, licensed AGPL-3.0); every other format uses only the standard library and needs no extra. Optional `ocr` for Tesseract OCR (see [OCR](#ocr)) |
+| Extra | `pip install "algen-agent-tools[documents]"` for PDFs (installs PyMuPDF, licensed AGPL-3.0); every other format uses only the standard library and needs no extra. Optional `ocr` for Tesseract OCR (see [OCR](#ocr)) and `msg` for Outlook `.msg` files (olefile, BSD) |
 | Environment | none |
 | Owner | @saurav-samantray |
 
@@ -40,7 +40,7 @@ the calling tenant, bounds the call and governs it as a tool.
 - `page_count` (pages, sheets or slides), `image_count`, and `text_withheld`.
 
 The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.html`,
-`.htm`, `.csv`, `.tsv`, `.txt`, `.md` or `.eml`. Any other suffix is refused. XLSX cells are joined with
+`.htm`, `.csv`, `.tsv`, `.txt`, `.md`, `.eml` or `.msg`. Any other suffix is refused. XLSX cells are joined with
 ` | `, one line per row, under a `--- Sheet: <name> ---` heading; a formula gives its last
 calculated value and date or time cells come out in ISO form. CSV and TSV are read as plain text.
 
@@ -87,7 +87,13 @@ An attachment that is past a limit, of an unsupported type or unreadable is a co
 (`document.attachment_skipped` or `document.attachment_unread`, with the attachment in `part`),
 so the message is `pass` with `coverage="partial"`, not refused. In code,
 `EmailDocumentExtractor(max_depth=2, max_attachments=20, max_characters=250_000)` changes the
-limits. Outlook `.msg` files are not read yet.
+limits.
+
+An Outlook `.msg` file (with the `msg` extra, `pip install "algen-agent-tools[msg]"`) is read the
+same way: Tools reads its sender, recipients, date, subject, body and attachments from the file's
+OLE streams with olefile, rebuilds the equivalent email and inspects that, so the limits and
+findings are the same. Attached Outlook messages are read as attached emails. A message whose
+only body is RTF reports `document.body_unread` (coverage), since RTF bodies are not read.
 
 ## Known limitations
 
@@ -151,6 +157,7 @@ can tell "dangerous" from "not read":
 | `document.truncated` | Rows past the sheet's row limit were not read |
 | `document.attachment_skipped` | An email attachment past the attachment, depth or text limit was not read |
 | `document.attachment_unread` | An email attachment of an unsupported type, or one that could not be parsed, was not read |
+| `document.body_unread` | An Outlook message's body is RTF only and was not read |
 
 These findings have `category="coverage"`; all others have `category="security"`. Only security
 findings set the disposition, so a scanned ID card without OCR is `pass` with `coverage="none"`
@@ -159,7 +166,7 @@ text or an instruction aimed at the model still makes it `review` or `quarantine
 
 `coverage` is `full` (everything was read), `partial` (some text was read, some content was not)
 or `none` (content was found but no text could be read). `ExtractedDocument.unread` lists what
-was not read: `image`, `page`, `rows` or `attachment`, with the page, slide or sheet and the
+was not read: `image`, `page`, `rows`, `attachment` or `body`, with the page, slide or sheet and the
 email attachment (`part`) when known.
 
 `pass` with `coverage="none"` means nothing dangerous was found because nothing was read. The

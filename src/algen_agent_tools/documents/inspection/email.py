@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from algen_agent_tools.documents.inspection.ocr import TextRecognizer
 
 HEADERS = ("From", "To", "Cc", "Date", "Subject")
-_EMAIL_SUFFIXES = {".eml"}
+_EMAIL_SUFFIXES = {".eml", ".msg"}
 
 
 class _Budget:
@@ -61,6 +61,13 @@ def _filename(part: EmailMessage, index: int) -> str:
         if part.get_content_type() == "message/rfc822"
         else (f"attachment-{index}")
     )
+
+
+def _payload(attachment: EmailMessage) -> bytes:
+    payload = attachment.get_payload(decode=True)
+    if not isinstance(payload, bytes) or not payload:
+        raise ValueError("the attachment is empty")
+    return payload
 
 
 class EmailDocumentExtractor:
@@ -100,10 +107,19 @@ class EmailDocumentExtractor:
             f"{key}: {' '.join(str(message[key]).split())}" for key in HEADERS if key in message
         ]
         body = self._body(message)
+        unread_body = body is None and "X-Algen-Unread-Body" in message
         head = PlainTextDocumentExtractor().extract(
             "\n".join(header_lines).encode(), filename="headers.txt"
         )
         findings = [*head.findings, *(body.findings if body else ())]
+        if unread_body:
+            findings.append(
+                DocumentSecurityFinding(
+                    kind="document.body_unread",
+                    severity=FindingSeverity.LOW,
+                    message="The message body is RTF only and was not read.",
+                )
+            )
         texts = [head.text, body.text if body else ""]
         sanitized = [head.sanitized_text, body.sanitized_text if body else ""]
         spans: list[DocumentSpan] = [*head.spans, *(body.spans if body else ())]
@@ -201,20 +217,27 @@ class EmailDocumentExtractor:
             )
         try:
             if nested:
-                content = attachment.get_content()
-                data = content.as_bytes() if isinstance(content, EmailMessage) else bytes(content)
+                if attachment.get_content_type() == "message/rfc822":
+                    content = attachment.get_content()
+                    data = (
+                        content.as_bytes() if isinstance(content, EmailMessage) else bytes(content)
+                    )
+                else:
+                    data = _payload(attachment)
+                    if PurePath(name).suffix.lower() == ".msg":
+                        from algen_agent_tools.documents.inspection.msg import msg_to_email
+
+                        data = msg_to_email(data).as_bytes()
                 return self._extract(data, depth=depth + 1, budget=budget)
-            payload = attachment.get_payload(decode=True)
-            if not isinstance(payload, bytes) or not payload:
-                raise ValueError("the attachment is empty")
             extractor = extractor_for(name, ocr=self._ocr, ocr_max_pages=self._ocr_max_pages)
-            return extractor.extract(payload, filename=name)
+            return extractor.extract(_payload(attachment), filename=name)
         except ImportError as exc:
-            if exc.name != "fitz":
+            extra = {"fitz": "PDF needs the documents extra", "olefile": ".msg needs the msg extra"}
+            if exc.name not in extra:
                 raise
             return _unread(
                 "document.attachment_unread",
-                "The attachment was not read: PDF needs the documents extra.",
+                f"The attachment was not read: {extra[exc.name]}.",
                 name,
             )
         except (ValueError, LookupError) as exc:

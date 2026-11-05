@@ -8,6 +8,15 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Added
+
+- Outlook `.msg` files in `documents.extract_text` and `extractor_for` with the new `msg` extra
+  (olefile, BSD) (#41): Tools reads the sender, recipients, date, subject, body and attachments
+  from the OLE streams, rebuilds the email and inspects it as `.eml`, with the same limits;
+  attached Outlook messages are read as attached emails (`MsgDocumentExtractor`,
+  `msg_to_email`). An RTF-only body is the new coverage finding `document.body_unread`
+  (`UnreadContent(kind="body")`). The GPL `extract-msg` package is not used.
+
 ## [0.2.0a9] - 2026-11-05
 
 Mail reads: attachments in one call, whole threads, `.eml` files, IMAP search and folders.
