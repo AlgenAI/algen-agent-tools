@@ -14,6 +14,7 @@ moved into this package in 0.2.0a7, so the `documents` extra installs PyMuPDF di
 
 | algen-agent-tools | Supported algen-agent-runtime |
 | --- | --- |
+| 0.2.0a8 | `>=0.1.0a20,<0.2` (tested on 0.1.0a20 and 0.1.0a23) |
 | 0.2.0a7 | `>=0.1.0a20,<0.2` (tested on 0.1.0a20) |
 | 0.2.0a6 | `>=0.1.0a18,<0.2` (tested on 0.1.0a18) |
 | 0.2.0a5 | `>=0.1.0a12,<0.2` (tested on 0.1.0a12 and 0.1.0a13) |

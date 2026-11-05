@@ -8,6 +8,10 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a8] - 2026-11-05
+
+Needs `algen-agent-runtime>=0.1.0a20` (unchanged).
+
 ### Upgrade notes
 
 - Content that was not read no longer makes a document `review`
@@ -25,7 +29,6 @@ A tool's name, input schema, side effect and permission are part of the public c
   `needs_ocr` on `ExtractedDocument`; `category` (`security` or `coverage`) on
   `DocumentSecurityFinding`. `documents.extract_text` results gain `coverage`, `needs_ocr` and
   each finding's `category` (#40).
-
 - An OCR hook for document inspection
   ([#39](https://github.com/AlgenAI/algen-agent-tools/issues/39), step 1). A host passes a
   `TextRecognizer` (any object with `recognize(image, *, media_type) -> RecognizedText`) as
@@ -46,6 +49,17 @@ A tool's name, input schema, side effect and permission are part of the public c
 - `DocumentSpan.source` (`"text"` or `"ocr"`, default `"text"`) and `DocumentSpan.confidence`.
 - With a recognizer, `documents.extract_text`'s description says images and scanned pages are
   read by OCR. Without one it is unchanged.
+
+### Known limitations
+
+- Images inside DOCX and PPTX files are not recognized; they still report
+  `document.ocr_required` or `document.images_excluded`.
+- A recognizer still running when the tool's 120 s timeout fires keeps running in its worker
+  thread until it returns; `TesseractRecognizer(timeout=...)` bounds each frame.
+- A recognized PDF page keeps the little text it had (a stamp or a page number), so that text
+  can appear twice.
+- The `documents` extra stays on PyMuPDF 1.x: 2.x also installs onnxruntime and layout packages
+  that declare no license.
 
 ## [0.2.0a7] - 2026-10-31
 
