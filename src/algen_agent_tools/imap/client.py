@@ -36,6 +36,7 @@ from algen_agent_tools.imap.protocol import (
     decode_transfer,
     fetch_responses,
     internaldate_ms,
+    parse_value,
     quote,
     search_date,
     section,
@@ -69,6 +70,13 @@ _FOLDER_ID = re.compile(r"^([0-9]{1,10})\.([0-9]{1,10})\.([A-Za-z0-9_-]{1,400})$
 _PAGE_TOKEN = re.compile(r"^([0-9]{1,10})\.([0-9]{1,10})$")
 _SECTION = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){0,9}$")
 _THREAD_ROOT = re.compile(r"^r\.([A-Za-z0-9_-]{4,1400})$")
+SPECIAL_USE = ("\\All", "\\Archive", "\\Drafts", "\\Flagged", "\\Junk", "\\Sent", "\\Trash")
+"""RFC 6154 special-use folders a ``folders`` setting may name instead of a folder."""
+
+
+def special_use(name: str) -> str | None:
+    """The canonical special-use flag ``name`` stands for (``\\sent`` is ``\\Sent``)."""
+    return next((flag for flag in SPECIAL_USE if flag.casefold() == name.casefold()), None)
 
 
 class ImapSettings(BaseModel):
@@ -80,7 +88,9 @@ class ImapSettings(BaseModel):
     username: str = Field(min_length=1, max_length=320)
     password: SecretStr
     folders: tuple[str, ...] = Field(default=("INBOX",), min_length=1, max_length=50)
-    """The folders tools may read; the first is the default."""
+    """The folders tools may read; the first is the default. A special-use name (``\\Sent``,
+    ``\\All``, ``\\Archive``, ``\\Drafts``, ``\\Junk``, ``\\Trash``, ``\\Flagged``) stands
+    for the server's folder with that flag, found when the connection opens."""
     authserv_id: str | None = Field(default=None, max_length=253)
     """The receiving server's name in its Authentication-Results headers. Unset: Gmail's on a
     Gmail server, otherwise ``sender_auth`` stays ``unknown``."""
@@ -94,9 +104,26 @@ class ImapSettings(BaseModel):
             quote(value)  # printable ASCII only
         if any(not folder or len(folder) > 200 for folder in self.folders):
             raise ValueError("IMAP folder names must be 1 to 200 characters")
+        unknown = [f for f in self.folders if f.startswith("\\") and special_use(f) is None]
+        if unknown:
+            raise ValueError(f"IMAP special-use folders must be one of {list(SPECIAL_USE)}")
         if len({folder.casefold() for folder in self.folders}) != len(self.folders):
             raise ValueError("IMAP folders must be unique")
         return self
+
+
+class ImapFolder(BaseModel):
+    """One folder the mailbox's tools may read."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    name: str
+    special_use: str | None = None
+    """The folder's RFC 6154 flag, such as ``\\Sent``, when the server marks it."""
+
+
+class ImapFolderList(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    folders: tuple[ImapFolder, ...] = ()
 
 
 class ImapMailboxPage(BaseModel):
@@ -181,6 +208,8 @@ class ImapMailboxClient:
         self._factory = imap_factory or _open_tls
         self._connection: Any = None
         self._gmail = False
+        self._folders: tuple[str, ...] | None = None
+        self._flags: dict[str, str] = {}
         self._lock = asyncio.Lock()
 
     # Connection
@@ -223,8 +252,55 @@ class ImapMailboxClient:
                 connection.shutdown()
             raise
         self._gmail = GMAIL_CAPABILITY in tuple(getattr(connection, "capabilities", ()))
+        if any(special_use(folder) for folder in self._settings.folders):
+            try:
+                self._resolve(connection)
+            except BaseException:
+                with contextlib.suppress(Exception):
+                    connection.logout()
+                raise
         self._connection = connection
         return connection
+
+    @staticmethod
+    def _special_folders(connection: Any) -> dict[str, str]:
+        """Each special-use flag the server marks a folder with, and that folder's name."""
+        status, data = connection.list()
+        if status != "OK":
+            raise EmailDeliveryError("IMAP LIST failed")
+        found: dict[str, str] = {}
+        for line in data or ():
+            if isinstance(line, tuple) and len(line) == 2:
+                # A name sent as a literal: imaplib gives (b'(flags) "/" {n}', b'name').
+                head, literal = (bytes(item) for item in line)
+                escaped = literal.replace(b"\\", b"\\\\").replace(b'"', b'\\"')
+                raw = re.sub(rb"\{\d+\+?\}\s*$", b"", head) + b'"' + escaped + b'"'
+            elif isinstance(line, bytes):
+                raw = line
+            else:
+                continue
+            parsed = parse_value(b"(" + raw + b")")
+            if not isinstance(parsed, list) or len(parsed) < 3 or not isinstance(parsed[0], list):
+                continue
+            name = text(parsed[2])
+            for flag in strings(parsed[0]):
+                canonical = special_use(flag)
+                if canonical and name:
+                    found.setdefault(canonical, name)
+        return found
+
+    def _resolve(self, connection: Any) -> None:
+        """Replace special-use names in the folders setting with the server's folders. One the
+        server does not have is left out."""
+        flags = self._special_folders(connection)
+        folders: list[str] = []
+        for folder in self._settings.folders:
+            canonical = special_use(folder)
+            name = flags.get(canonical) if canonical else folder
+            if name and name.casefold() not in {item.casefold() for item in folders}:
+                folders.append(name)
+        self._folders = tuple(folders)
+        self._flags = {name: flag for flag, name in flags.items()}
 
     def _drop(self) -> None:
         connection, self._connection = self._connection, None
@@ -244,16 +320,25 @@ class ImapMailboxClient:
             return self._settings.authserv_id
         return GMAIL_AUTHSERV_ID if self._gmail else None
 
+    @property
+    def _readable(self) -> tuple[str, ...]:
+        """The folders tools may read, with special-use names resolved once connected."""
+        return self._folders if self._folders is not None else self._settings.folders
+
     def _folder(self, folder: str) -> str:
-        """The configured folder ``folder`` names (INBOX in any case)."""
-        for configured in self._settings.folders:
+        """The configured folder ``folder`` names (INBOX in any case, or a special-use name)."""
+        canonical = special_use(folder)
+        if canonical is not None:
+            for name, flag in self._flags.items():
+                if flag == canonical and name in self._readable:
+                    return name
+        for configured in self._readable:
             if folder == configured or (
                 folder.upper() == "INBOX" and configured.upper() == "INBOX"
             ):
                 return configured
         raise PolicyDeniedError(
-            f"folder {folder!r} is not one this mailbox reads; use one of "
-            f"{list(self._settings.folders)}"
+            f"folder {folder!r} is not one this mailbox reads; use one of {list(self._readable)}"
         )
 
     @staticmethod
@@ -288,7 +373,7 @@ class ImapMailboxClient:
                 )
             return folder, validity, int(found.group(2))
         if self._gmail and _GMAIL_ID.fullmatch(message_id):
-            for folder in self._settings.folders:
+            for folder in self._readable:
                 validity = self._examine(connection, folder)
                 data = self._uid(connection, "SEARCH", "X-GM-MSGID", str(int(message_id, 16)))
                 uids = b" ".join(item for item in data if isinstance(item, bytes)).split()
@@ -395,13 +480,18 @@ class ImapMailboxClient:
         since: date | None = None,
         before: date | None = None,
         unread_only: bool = False,
+        text_contains: str | None = None,
+        gmail_query: str | None = None,
         max_results: int = 25,
         page_token: str | None = None,
     ) -> ImapMailboxPage:
-        """Messages in ``folder`` that match every filter given, newest first."""
+        """Messages in ``folder`` that match every filter given, newest first.
+
+        ``text_contains`` is text the headers or body contain (IMAP ``TEXT``); ``gmail_query``
+        is a Gmail search (``X-GM-RAW``), only on a Gmail server.
+        """
         if not 1 <= max_results <= 100:
             raise ValueError("max_results must be between 1 and 100")
-        name = self._folder(folder)
         criteria: list[str] = []
         if from_address:
             criteria += ["FROM", quote(from_address)]
@@ -413,11 +503,18 @@ class ImapMailboxClient:
             criteria += ["BEFORE", search_date(before)]
         if unread_only:
             criteria.append("UNSEEN")
+        if text_contains:
+            criteria += ["TEXT", quote(text_contains)]
+        if gmail_query:
+            criteria += ["X-GM-RAW", quote(gmail_query)]
         cursor = _PAGE_TOKEN.fullmatch(page_token) if page_token else None
         if page_token and cursor is None:
             raise EmailDeliveryError("IMAP page token is not valid")
 
         def work(connection: Any) -> ImapMailboxPage:
+            if gmail_query and not self._gmail:
+                raise PolicyDeniedError("gmail_query needs a Gmail server; use text_contains")
+            name = self._folder(folder)
             validity = self._examine(connection, name)
             search = list(criteria)
             if cursor is not None:
@@ -455,6 +552,20 @@ class ImapMailboxClient:
             )
 
         return await self._run("inbox read", work)
+
+    async def list_folders(self) -> ImapFolderList:
+        """The folders tools may read, each with its special-use flag when the server marks
+        one."""
+
+        def work(connection: Any) -> ImapFolderList:
+            flags = {name: flag for flag, name in self._special_folders(connection).items()}
+            return ImapFolderList(
+                folders=tuple(
+                    ImapFolder(name=name, special_use=flags.get(name)) for name in self._readable
+                )
+            )
+
+        return await self._run("folder list", work)
 
     async def get_message(
         self, provider_message_id: str, *, max_chars: int = 20_000
@@ -516,7 +627,7 @@ class ImapMailboxClient:
                 raise EmailDeliveryError("IMAP thread id is not valid for this mailbox")
             details: dict[str, InboundEmailDetail] = {}
             more = False
-            for folder in self._settings.folders:
+            for folder in self._readable:
                 validity = self._examine(connection, folder)
                 data = self._uid(connection, "SEARCH", *criteria)
                 found = b" ".join(item for item in data if isinstance(item, bytes)).split()

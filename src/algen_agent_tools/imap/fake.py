@@ -8,6 +8,7 @@ check that nothing was written and nothing was marked as seen.
 
 from __future__ import annotations
 
+import builtins
 import email
 import imaplib
 from collections.abc import Callable, Sequence
@@ -51,6 +52,8 @@ class FakeImapServer:
     gmail: bool = False
     folders: dict[str, list[FakeImapMessage]] = field(default_factory=lambda: {"INBOX": []})
     uidvalidity: dict[str, int] = field(default_factory=dict)
+    special_use: dict[str, str] = field(default_factory=dict)
+    """Folder name to its RFC 6154 flag (``\\Sent``), as LIST reports it."""
     commands: list[str] = field(default_factory=list)
     """Every command received, as ``NAME args``; a test checks it holds no write."""
     connections: int = 0
@@ -131,10 +134,20 @@ class FakeImapConnection:
         self._responses = {"UIDVALIDITY": [str(validity).encode()]}
         return "OK", [str(len(self._server.folders[name])).encode()]
 
-    def response(self, code: str) -> tuple[str, list[bytes | None]]:
+    def list(self, directory: str = '""', pattern: str = "*") -> tuple[str, builtins.list[bytes]]:
+        self._record(f"LIST {directory} {pattern}")
+        if not self._authenticated:
+            raise imaplib.IMAP4.error("command illegal in this state")
+        lines = []
+        for name in self._server.folders:
+            flags = " ".join(("\\HasNoChildren", self._server.special_use.get(name, ""))).strip()
+            lines.append(f'({flags}) "/" {quote(name)}'.encode())
+        return "OK", lines
+
+    def response(self, code: str) -> tuple[str, builtins.list[bytes | None]]:
         return code, list(self._responses.pop(code, [None]))
 
-    def uid(self, command: str, *args: str) -> tuple[str, list[Any]]:
+    def uid(self, command: str, *args: str) -> tuple[str, builtins.list[Any]]:
         self._record(f"UID {command} {' '.join(args)}")
         if self._folder is None:
             raise imaplib.IMAP4.error("command illegal in this state")
@@ -145,7 +158,7 @@ class FakeImapConnection:
         if command == "FETCH":
             wanted = _uid_set(args[0])
             items = _items(args[1])
-            data: list[Any] = []
+            data: builtins.list[Any] = []
             for sequence, item in enumerate(messages, 1):
                 if item.uid in wanted:
                     data.extend(_fetch(sequence, item, items))
@@ -155,7 +168,7 @@ class FakeImapConnection:
     def shutdown(self) -> None:
         pass
 
-    def logout(self) -> tuple[str, list[bytes]]:
+    def logout(self) -> tuple[str, builtins.list[bytes]]:
         self._server.logged_out += 1
         return "BYE", [b"logging out"]
 
@@ -202,6 +215,14 @@ def _key(item: FakeImapMessage, criteria: list[str], index: int) -> tuple[bool, 
     if key in ("FROM", "SUBJECT"):
         wanted = unquote(criteria[index + 1]).casefold()
         return wanted in str(message.get(key.title(), "")).casefold(), index + 2
+    if key == "TEXT":
+        wanted = unquote(criteria[index + 1]).casefold()
+        return wanted in item.raw.decode("utf-8", "replace").casefold(), index + 2
+    if key == "X-GM-RAW":
+        # Enough of Gmail search for tests: every word must appear in the message.
+        words = unquote(criteria[index + 1]).casefold().split()
+        content = item.raw.decode("utf-8", "replace").casefold()
+        return all(word in content for word in words), index + 2
     if key == "HEADER":
         name, wanted = criteria[index + 1], unquote(criteria[index + 2]).casefold()
         return wanted in str(message.get(name, "")).casefold(), index + 3

@@ -4415,6 +4415,7 @@
         "enabled_tools": [
           "imap.get_message",
           "imap.get_thread",
+          "imap.list_folders",
           "imap.list_messages"
         ],
         "security": {
@@ -4979,7 +4980,59 @@
           "version": "1.0.0"
         },
         {
-          "description": "List messages in one mailbox folder, newest first: sender, recipients, subject, a\nshort snippet, flags and attachments. Every filter given must match: from_address and\nsubject are text the From and Subject headers contain (ASCII), since and before are\ndates (YYYY-MM-DD; since includes the day, before excludes it), unread_only keeps\nunseen mail. Reading never marks a message as seen. Use next_page_token to continue.",
+          "description": "List the folders this mailbox's tools may read, with each one's special use (\\Sent,\n\\All, \\Archive, \\Drafts, \\Junk, \\Trash) when the server marks it.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {},
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "imap.list_folders",
+          "output_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "folders": {
+                "default": [],
+                "items": {
+                  "additionalProperties": false,
+                  "description": "One folder the mailbox's tools may read.",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "special_use": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
+          "permissions": [
+            "imap.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 60.0,
+          "version": "1.0.0"
+        },
+        {
+          "description": "List messages in one mailbox folder, newest first: sender, recipients, subject, a\nshort snippet, flags and attachments. Every filter given must match: from_address and\nsubject are text the From and Subject headers contain (ASCII), since and before are\ndates (YYYY-MM-DD; since includes the day, before excludes it), unread_only keeps\nunseen mail, text_contains is text anywhere in the headers or body (ASCII), and\ngmail_query is a Gmail search such as \"has:attachment newer_than:7d\" (Gmail servers\nonly). folder is a name from list_folders or a special-use name such as \\Sent. Reading\nnever marks a message as seen. Use next_page_token to continue.",
           "idempotency": "idempotent",
           "input_schema": {
             "additionalProperties": false,
@@ -5006,6 +5059,19 @@
                 "anyOf": [
                   {
                     "maxLength": 320,
+                    "pattern": "^[ -~]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "gmail_query": {
+                "anyOf": [
+                  {
+                    "maxLength": 500,
                     "pattern": "^[ -~]*$",
                     "type": "string"
                   },
@@ -5046,6 +5112,19 @@
                 "default": null
               },
               "subject": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "pattern": "^[ -~]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "text_contains": {
                 "anyOf": [
                   {
                     "maxLength": 200,
