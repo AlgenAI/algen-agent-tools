@@ -118,6 +118,7 @@ def test_the_plugin_describes_its_tools_and_settings() -> None:
     tools = plugin_tools("algen_agent_tools.outlook")
     assert {name: tool.side_effect for name, tool in tools.items()} == {
         "outlook.get_message": SideEffect.READ,
+        "outlook.get_thread": SideEffect.READ,
         "outlook.list_messages": SideEffect.READ,
         "outlook.send_email": SideEffect.EXTERNAL,
     }

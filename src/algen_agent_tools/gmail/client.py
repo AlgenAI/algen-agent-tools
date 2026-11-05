@@ -19,11 +19,14 @@ from algen_agent_tools._core.errors import failure, not_attempted, rejected
 from algen_agent_tools._core.http import HostLockedClient
 from algen_agent_tools.attachments.models import AttachmentUpload
 from algen_agent_tools.mail.inbound import (
+    EmailThread,
     InboundEmailAttachment,
     InboundEmailDetail,
     InboundEmailSummary,
     bounded_body,
     html_to_text,
+    thread_headers,
+    thread_of,
 )
 from algen_agent_tools.mail.models import (
     DOMAIN,
@@ -139,6 +142,22 @@ def _summary_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
             GMAIL_AUTHSERV_ID,
         ),
     }
+
+
+def _detail(payload: Mapping[str, Any], max_chars: int) -> InboundEmailDetail:
+    email_headers = _headers(payload)
+    text, truncated = bounded_body(_body_text(payload.get("payload", {})), max_chars)
+    return InboundEmailDetail(
+        **_summary_fields(payload),
+        cc=email_headers.get("cc", ""),
+        text_body=text,
+        body_truncated=truncated,
+        **thread_headers(
+            email_headers.get("message-id", ""),
+            email_headers.get("in-reply-to", ""),
+            email_headers.get("references", ""),
+        ),
+    )
 
 
 def _segment(value: str) -> str:
@@ -294,16 +313,30 @@ class GmailMailboxClient:
     ) -> InboundEmailDetail:
         """One message with its body as plain text, cut to ``max_chars``."""
         try:
-            payload = await self._message(provider_message_id)
-            text, truncated = bounded_body(_body_text(payload.get("payload", {})), max_chars)
-            return InboundEmailDetail(
-                **_summary_fields(payload),
-                cc=_headers(payload).get("cc", ""),
-                text_body=text,
-                body_truncated=truncated,
-            )
+            return _detail(await self._message(provider_message_id), max_chars)
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
             raise EmailDeliveryError(failure("Gmail", "message read", exc)) from exc
+
+    async def get_thread(
+        self, thread_id: str, *, max_messages: int = 20, max_chars: int = 4_000
+    ) -> EmailThread:
+        """The thread's messages oldest first, the newest ``max_messages`` of them, each body
+        cut to ``max_chars``."""
+        if not thread_id or len(thread_id) > 2_000:
+            raise ValueError("thread_id is invalid")
+        try:
+            token = await self._token()
+            response = await self._http.get(
+                self._http.url(f"users/me/threads/{_segment(thread_id)}"),
+                headers={"Authorization": f"Bearer {token}"},
+                params={"format": "full"},
+            )
+            response.raise_for_status()
+            messages = response.json().get("messages", [])
+            details = [_detail(payload, max_chars) for payload in messages[-max_messages:]]
+            return thread_of(thread_id, details, max_messages, more=len(messages) > max_messages)
+        except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+            raise EmailDeliveryError(failure("Gmail", "thread read", exc)) from exc
 
     async def get_attachment(self, provider_message_id: str, attachment: str) -> AttachmentUpload:
         """One attachment, named by its part id (stable) or attachment id, with the file name

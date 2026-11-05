@@ -177,42 +177,45 @@ def _date(value: str) -> date:
 
 
 def _matches(item: FakeImapMessage, criteria: list[str]) -> bool:
+    index = 0
+    while index < len(criteria):
+        matched, index = _key(item, criteria, index)
+        if not matched:
+            return False
+    return True
+
+
+def _key(item: FakeImapMessage, criteria: list[str], index: int) -> tuple[bool, int]:
+    """Whether the search key at ``index`` matches, and the index after it."""
     message = item.message
     received = internaldate_ms(item.internaldate.encode())
     day = datetime.fromtimestamp(received / 1000, UTC).date()
-    index = 0
-    while index < len(criteria):
-        key = criteria[index].upper()
-        if key == "ALL":
-            index += 1
-        elif key == "UNSEEN":
-            if "\\Seen" in item.flags:
-                return False
-            index += 1
-        elif key in ("FROM", "SUBJECT"):
-            wanted = unquote(criteria[index + 1]).casefold()
-            if wanted not in str(message.get(key.title(), "")).casefold():
-                return False
-            index += 2
-        elif key == "SINCE":
-            if day < _date(criteria[index + 1]):
-                return False
-            index += 2
-        elif key == "BEFORE":
-            if day >= _date(criteria[index + 1]):
-                return False
-            index += 2
-        elif key == "UID":
-            if item.uid not in _uid_set(criteria[index + 1]):
-                return False
-            index += 2
-        elif key == "X-GM-MSGID":
-            if item.gmail_id != int(criteria[index + 1]):
-                return False
-            index += 2
-        else:
-            raise imaplib.IMAP4.error(f"the fake does not support SEARCH {key}")
-    return True
+    key = criteria[index].upper()
+    if key == "ALL":
+        return True, index + 1
+    if key == "UNSEEN":
+        return "\\Seen" not in item.flags, index + 1
+    if key == "OR":
+        left, after = _key(item, criteria, index + 1)
+        right, after = _key(item, criteria, after)
+        return left or right, after
+    if key in ("FROM", "SUBJECT"):
+        wanted = unquote(criteria[index + 1]).casefold()
+        return wanted in str(message.get(key.title(), "")).casefold(), index + 2
+    if key == "HEADER":
+        name, wanted = criteria[index + 1], unquote(criteria[index + 2]).casefold()
+        return wanted in str(message.get(name, "")).casefold(), index + 3
+    if key == "SINCE":
+        return day >= _date(criteria[index + 1]), index + 2
+    if key == "BEFORE":
+        return day < _date(criteria[index + 1]), index + 2
+    if key == "UID":
+        return item.uid in _uid_set(criteria[index + 1]), index + 2
+    if key == "X-GM-MSGID":
+        return item.gmail_id == int(criteria[index + 1]), index + 2
+    if key == "X-GM-THRID":
+        return item.gmail_thread_id == int(criteria[index + 1]), index + 2
+    raise imaplib.IMAP4.error(f"the fake does not support SEARCH {key}")
 
 
 # FETCH

@@ -17,6 +17,7 @@ deleted or marked as seen. Send replies with [`smtp.send_email`](smtp.md).
 | --- | --- | --- | --- | --- | --- |
 | `imap.list_messages` | read | `imap.read` | 120 s | Runtime default | agent policy |
 | `imap.get_message` | read | `imap.read` | 60 s | Runtime default | agent policy |
+| `imap.get_thread` | read | `imap.read` | 120 s | Runtime default | agent policy |
 | `imap.get_attachment` (with `artifact_sink`) | read | `imap.read` | 120 s | Runtime default | agent policy |
 | `imap.read_attachment` (with `documents`) | read | `imap.read` | 120 s | Runtime default | agent policy |
 
@@ -45,7 +46,17 @@ deleted or marked as seen. Send replies with [`smtp.send_email`](smtp.md).
 - **On Gmail** (the server advertises `X-GM-EXT-1`) `provider_message_id` and `thread_id` are
   Gmail's own ids in hexadecimal, the same ids the Gmail API and the [Gmail connector](gmail.md)
   return, and they stay valid when a message moves between folders.
-- **Elsewhere** the id is `<UIDVALIDITY>.<UID>.<folder>`. An IMAP UID is unique only within one
+- **Elsewhere** the id is `<UIDVALIDITY>.<UID>.<folder>`, and `thread_id` is
+  `r.<base64url>` of the thread's first Message-ID: the first one in References, else
+  In-Reply-To, else the message's own. `imap.get_thread` returns every message in the
+  configured folders whose Message-ID, In-Reply-To or References names it, so add the Sent
+  folder to `ALGEN_TOOLS_IMAP_FOLDERS` to see the mailbox's own replies. A reply that sets only
+  In-Reply-To starts its own thread id.
+- On Gmail `imap.get_thread` searches by `X-GM-THRID` in each configured folder and counts a
+  message shown under several labels once.
+- In every case a folder contributes its newest `max_messages` matches, and the thread keeps
+  the newest `max_messages` overall (`truncated` says so).
+- An IMAP UID is unique only within one
   folder and only until the server rebuilds that folder (a new UIDVALIDITY). A stale id is an
   error ("list the messages again"), never a different message. Page tokens carry the
   UIDVALIDITY the same way.

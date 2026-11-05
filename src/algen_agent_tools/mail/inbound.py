@@ -11,6 +11,8 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 MAX_BODY_CHARS = 100_000
+MAX_THREAD_MESSAGES = 50
+_MESSAGE_ID = re.compile(r"<[^<>\s]{1,995}>")
 
 
 class InboundEmailAttachment(BaseModel):
@@ -95,6 +97,49 @@ class InboundEmailDetail(InboundEmailSummary):
     """The cc'd addresses alone, read from ``cc``."""
     text_body: str = Field(default="", max_length=MAX_BODY_CHARS)
     body_truncated: bool = False
+    message_id_header: str | None = Field(default=None, max_length=998)
+    """The message's own Message-ID header (``<id@host>``), when it has one."""
+    in_reply_to: str | None = Field(default=None, max_length=998)
+    """The Message-ID this message replies to."""
+    references: tuple[str, ...] = Field(default=(), max_length=100)
+    """The Message-IDs of the thread so far, oldest first, from the References header."""
+
+
+class EmailThread(BaseModel):
+    """The messages of one thread, oldest first."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    thread_id: str
+    messages: tuple[InboundEmailDetail, ...] = Field(default=(), max_length=MAX_THREAD_MESSAGES)
+    truncated: bool = False
+    """The thread has more messages than were returned; the newest are kept."""
+
+
+def message_ids(header: str) -> tuple[str, ...]:
+    """The ``<id@host>`` Message-IDs in a header value, in order, at most 100."""
+    return tuple(_MESSAGE_ID.findall(header or ""))[:100]
+
+
+def thread_headers(message_id: str, in_reply_to: str, references: str) -> dict[str, Any]:
+    """The threading fields of an :class:`InboundEmailDetail` from its raw header values."""
+    own, parent = message_ids(message_id), message_ids(in_reply_to)
+    return {
+        "message_id_header": own[0] if own else None,
+        "in_reply_to": parent[0] if parent else None,
+        "references": message_ids(references),
+    }
+
+
+def thread_of(
+    thread_id: str, details: list[InboundEmailDetail], max_messages: int, *, more: bool = False
+) -> EmailThread:
+    """``details`` oldest first, keeping the newest ``max_messages``; ``more`` says the
+    connector already left some out."""
+    ordered = sorted(details, key=lambda detail: detail.received_at_ms)
+    kept = ordered[-max_messages:]
+    return EmailThread(
+        thread_id=thread_id, messages=tuple(kept), truncated=more or len(kept) < len(ordered)
+    )
 
 
 _BLOCK = frozenset(

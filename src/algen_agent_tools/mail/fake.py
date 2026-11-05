@@ -7,7 +7,12 @@ from typing import Any
 
 from algen_agent_tools._env import SecretResolver
 from algen_agent_tools.attachments.models import AttachmentUpload
-from algen_agent_tools.mail.inbound import InboundEmailDetail, bounded_body
+from algen_agent_tools.mail.inbound import (
+    EmailThread,
+    InboundEmailDetail,
+    bounded_body,
+    thread_of,
+)
 from algen_agent_tools.mail.models import (
     EmailAddress,
     EmailDeliveryError,
@@ -82,11 +87,16 @@ class FakeMailbox:
     ) -> InboundEmailDetail:
         for row in self.inbox:
             if row.provider_message_id == provider_message_id:
-                fields = row.model_dump()
-                text, truncated = bounded_body(fields.pop("text_body", ""), max_chars)
-                fields.pop("body_truncated", None)
-                return InboundEmailDetail(**fields, text_body=text, body_truncated=truncated)
+                return _detail(row, max_chars)
         raise EmailDeliveryError("Gmail message read failed (HTTPStatusError)")
+
+    async def get_thread(
+        self, thread_id: str, *, max_messages: int = 20, max_chars: int = 4_000
+    ) -> EmailThread:
+        rows = [_detail(row, max_chars) for row in self.inbox if row.thread_id == thread_id]
+        if not rows:
+            raise EmailDeliveryError("Gmail thread read failed (HTTPStatusError)")
+        return thread_of(thread_id, rows, max_messages)
 
     async def get_attachment(self, provider_message_id: str, attachment: str) -> AttachmentUpload:
         try:
@@ -96,3 +106,10 @@ class FakeMailbox:
 
     async def aclose(self) -> None:
         self.closed = True
+
+
+def _detail(row: Any, max_chars: int) -> InboundEmailDetail:
+    fields = row.model_dump()
+    text, truncated = bounded_body(fields.pop("text_body", ""), max_chars)
+    fields.pop("body_truncated", None)
+    return InboundEmailDetail(**fields, text_body=text, body_truncated=truncated)

@@ -23,6 +23,18 @@ A tool's name, input schema, side effect and permission are part of the public c
   `documents.extract_text` result plus `artifact`), so the file never passes through the model.
   A quarantined attachment's text is withheld; with an `artifact_sink` the file is also saved.
   `DocumentReader` is the read behind `documents.extract_text`, now public.
+- `<mailbox>.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)` (read) on the
+  Gmail, IMAP and Outlook toolkits and plugins (#42): a thread's messages oldest first, at most
+  50, keeping the newest (`EmailThread`, with `truncated`). Gmail uses `threads.get`, Outlook
+  the `conversationId`, IMAP on Gmail `X-GM-THRID`, and plain IMAP the References chain across
+  the configured folders. `get_message` results gain `message_id_header`, `in_reply_to` and
+  `references`. Quoted history is not split off yet.
+
+### Changed
+
+- On a plain (non-Gmail) IMAP server, `thread_id` was always empty; it is now `r.<base64url>`
+  of the thread's first Message-ID, which `imap.get_thread` takes. The IMAP connector fetches
+  the Message-ID, In-Reply-To and References headers with each message's metadata.
 
 ## [0.2.0a8] - 2026-11-05
 

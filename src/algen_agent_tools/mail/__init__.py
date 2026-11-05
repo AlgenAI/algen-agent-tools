@@ -3,6 +3,7 @@ bounded summaries of inbound mail."""
 
 from algen_agent_tools.mail.fake import FakeMailbox
 from algen_agent_tools.mail.inbound import (
+    EmailThread,
     InboundEmailAttachment,
     InboundEmailDetail,
     InboundEmailSummary,
@@ -49,6 +50,7 @@ __all__ = [
     "EmailDeliveryStatus",
     "EmailMessage",
     "EmailSender",
+    "EmailThread",
     "FakeMailbox",
     "InboundEmailAttachment",
     "InboundEmailDetail",

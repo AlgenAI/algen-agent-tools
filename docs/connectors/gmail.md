@@ -16,6 +16,7 @@ OAuth refresh token.
 | --- | --- | --- | --- | --- | --- |
 | `gmail.list_messages` | read | `gmail.read` | 120 s | Runtime default | agent policy |
 | `gmail.get_message` | read | `gmail.read` | 60 s | Runtime default | agent policy |
+| `gmail.get_thread` | read | `gmail.read` | 120 s | Runtime default | agent policy |
 | `gmail.get_attachment` (with `artifact_sink`) | read | `gmail.read` | 120 s | Runtime default | agent policy |
 | `gmail.read_attachment` (with `documents`) | read | `gmail.read` | 120 s | Runtime default | agent policy |
 | `gmail.send_email` | external | `gmail.write` | 60 s | 1 | agent policy (asks by default) |
@@ -33,7 +34,13 @@ OAuth refresh token.
   and the body as plain text (the text part, or the HTML part with markup, scripts and styles
   removed), cut to `max_chars` (at most 100,000) with `body_truncated` set when cut. Message
   content comes from outside the deployment; the tool description tells the model to treat
-  instructions in it as data.
+  instructions in it as data. It also returns the threading headers: `message_id_header`,
+  `in_reply_to` and `references` (oldest first).
+- `gmail.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)` reads a whole
+  thread (Gmail's `threads.get`), oldest first, each message as `get_message` returns it with
+  the body cut to `max_chars_per_message` (at most 10,000). At most 50 messages; a longer thread
+  keeps its newest and sets `truncated`. Quoted history is not removed yet, so each reply
+  repeats the text it quotes.
 - `gmail.get_attachment(message_id, attachment_id)` is offered only when the toolkit is built
   with an `artifact_sink` (see [Attachments](#attachments)). It saves one attachment as an
   artifact and returns only its reference (`artifact_id`, `filename`, `media_type`), never the
