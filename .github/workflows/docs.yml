@@ -26,8 +26,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      # docs/docs.html is the site's single page, copied from Algen Agent Studio's
-      # docs/tools-docs.html (see docs/releasing.md). It links to other sites by absolute URL.
+      # docs/docs.html is the site's single page and its source (see docs/releasing.md). It
+      # links to other sites by absolute URL.
       - name: Assemble site
         run: |
           mkdir -p _site
