@@ -22,7 +22,7 @@ Algen Agent Studio lists each tool with its side effect, permissions and environ
 from `algen-agent-runtime describe`, without running project code.
 
 > [!IMPORTANT]
-> `0.2.0a9` is a pre-release. Tool contracts may change between alpha releases; every change is
+> `0.2.0a10` is a pre-release. Tool contracts may change between alpha releases; every change is
 > recorded in [CHANGELOG.md](CHANGELOG.md) with an upgrade note. Review the
 > [security policy](SECURITY.md) and each connector's guarantees before deployment. What must be
 > true before the beta and 1.0 is tracked in [beta and GA criteria](docs/ga-criteria.md).
@@ -112,7 +112,7 @@ class AcmeTools:
 | Telegram | `algen_agent_tools.telegram` | `telegram` | `telegram.list_messages` (read), `telegram.send_message` (external) | [telegram](docs/connectors/telegram.md) |
 | GitHub | `algen_agent_tools.github` | `github` | 37 reviewed tools from GitHub's MCP server: 22 read, 15 write (5 need approval) | [github](docs/connectors/github.md) |
 | Discord | `algen_agent_tools.discord` | `discord` | `discord.list_conversations`, `discord.list_messages` (read), `discord.send_message` (external) | [discord](docs/connectors/discord.md) |
-| Documents | none: built in code with an artifact loader | `documents` | `documents.extract_text` (read) | [documents](docs/connectors/documents.md) |
+| Documents | none: built in code with an artifact loader | `documents` (PDF), `ocr`, `msg` | `documents.extract_text` (read): PDF, Office, OpenDocument, RTF, HTML, text, EML and MSG | [documents](docs/connectors/documents.md) |
 | Webhook | none: built in code with typed targets | `webhook` | one `webhook.<action>` (external) per target | [webhook](docs/connectors/webhook.md) |
 | Sample | `algen_agent_tools.sample` | none | `sample.echo` (read) | [sample](docs/connectors/sample.md) |
 

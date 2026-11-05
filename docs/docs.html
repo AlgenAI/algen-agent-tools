@@ -746,11 +746,11 @@ mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); co
       <!-- ═══════════════ GET STARTED ═══════════════ -->
       <section class="doc" id="welcome" style="padding-top:0">
         <div class="hero">
-          <span class="eyebrow">Algen Agent Tools · v0.2.0a9</span>
+          <span class="eyebrow">Algen Agent Tools · v0.2.0a10</span>
           <h1>Typed tools for agents. <span class="accent">Governed by default.</span></h1>
           <p class="lead">Curated connectors for agents built on Algen Agent Runtime. Each connector is a set of narrow, typed actions with a declared side effect, permission and approval rule, registered as a Runtime plugin so Studio can list it before anything runs.</p>
           <div class="hero-meta">
-            <span class="pill brand"><span class="dot"></span>0.2.0a9 · pre-alpha</span>
+            <span class="pill brand"><span class="dot"></span>0.2.0a10 · pre-alpha</span>
             <span class="pill">Python 3.12 &amp; 3.13</span>
             <span class="pill">Runtime &gt;=0.1.0a23,&lt;0.2</span>
             <span class="pill">Apache-2.0</span>
@@ -785,7 +785,7 @@ mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); co
           <a class="card feature" href="#mcp-overlays"><span class="section-icon"><svg class="i"><use href="#i-plug"/></svg></span><h4>MCP, reviewed</h4><p>A governance overlay turns a remote MCP server into declared, schema-pinned tools; anything undeclared is never exposed.</p></a>
           <a class="card feature" href="#connector-policy"><span class="section-icon"><svg class="i"><use href="#i-user-check"/></svg></span><h4>Curated and owned</h4><p>Each connector has an owner, a security review and its own release cadence, so the Runtime core stays small.</p></a>
         </div>
-        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Pre-release.</strong> <code>0.2.0a9</code> is an alpha. A tool's name, input schema, side effect and permission are public contract; any change ships with a CHANGELOG entry and an upgrade note.</p></div>
+        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Pre-release.</strong> <code>0.2.0a10</code> is an alpha. A tool's name, input schema, side effect and permission are public contract; any change ships with a CHANGELOG entry and an upgrade note.</p></div>
       </section>
 
       <section class="doc" id="install">
@@ -824,6 +824,7 @@ mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); co
             <tr><td><code>discord</code></td><td>Discord</td><td>nothing extra (uses the Runtime's HTTP client)</td></tr>
             <tr><td><code>github</code></td><td>GitHub (MCP overlay)</td><td>the Runtime's <code>mcp</code> extra</td></tr>
             <tr><td><code>documents</code></td><td>Documents</td><td>PyMuPDF 1.x, for PDFs (AGPL-3.0); every other format needs nothing</td></tr>
+            <tr><td><code>msg</code></td><td>Documents (Outlook <code>.msg</code>)</td><td><code>olefile</code> (BSD), for Outlook <code>.msg</code> files; Tools parses the message itself</td></tr>
             <tr><td><code>ocr</code></td><td>Documents (OCR)</td><td><code>pytesseract</code> and <code>Pillow</code>, for <code>TesseractRecognizer</code>; the host installs the Tesseract program and its languages</td></tr>
             <tr><td><code>webhook</code></td><td>Webhook</td><td>nothing extra (uses the Runtime's HTTP client)</td></tr>
             <tr><td><code>mcp</code></td><td>MCP overlays</td><td>the Runtime's <code>mcp</code> extra</td></tr>
@@ -892,6 +893,16 @@ security:
       <section class="doc" id="releases">
         <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-history"/></svg></span>Get started</div>
         <h2>What's new<a class="anchor" href="#releases" aria-label="Link to this section">#</a></h2>
+        <h3 id="release-0-2-0a10">0.2.0a10 · 5 November 2026<a class="anchor" href="#release-0-2-0a10" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>Outlook <code>.msg</code> files.</strong> With the new <code>msg</code> extra (olefile), <code>documents.extract_text</code> reads <code>.msg</code> files like <code>.eml</code>, with the same limits; a message whose only body is RTF reports <code>document.body_unread</code>. See <a href="#documents-email">Email files</a>.</li>
+          <li><strong>Quoted history.</strong> <code>include="latest"</code> on <code>get_message</code> and <code>get_thread</code> (Gmail, Outlook and IMAP) returns the sender's own text without the quoted history or signature, and sets <code>quoted_text_removed</code>. Gmail and IMAP bodies join every inline text part (at most five). See <a href="#gmail-quoted-history">Quoted history</a>.</li>
+          <li><strong>Content over names.</strong> A file whose content names another type is read as what it is: a JPEG named <code>.pdf</code>, a <code>.docx</code> renamed <code>.doc</code>. Text, CSV, TSV, Markdown and HTML fall back from UTF-8 to Windows-1252, and read UTF-16 with a byte-order mark.</li>
+          <li><strong>OpenDocument and RTF.</strong> ODT, ODS and ODP, and RTF, with the Office rules for hidden content. An embedded OLE object in RTF is the new security finding <code>document.embedded_object</code>. See <a href="#documents-opendocument">OpenDocument</a> and <a href="#documents-rtf">RTF</a>.</li>
+          <li><strong>Changed: <code>get_thread</code> defaults to <code>include="latest"</code>.</strong> Each message's body is the sender's own text; pass <code>include="full"</code> for whole bodies, as 0.2.0a9 returned.</li>
+          <li><strong>Changed: long PDFs are read, not refused.</strong> A PDF over 50 pages is read up to page 50 and reports <code>document.pages_skipped</code>; the result is <code>partial</code> and <code>truncated</code>.</li>
+          <li>Requires <code>algen-agent-runtime&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23).</li>
+        </ul>
         <h3 id="release-0-2-0a9">0.2.0a9 · 5 November 2026<a class="anchor" href="#release-0-2-0a9" aria-label="Link to this section">#</a></h3>
         <ul>
           <li><strong>Whole threads.</strong> <code>get_thread</code> on Gmail, Outlook and IMAP returns a thread's messages oldest first, at most 50, keeping the newest. <code>get_message</code> results gain <code>message_id_header</code>, <code>in_reply_to</code> and <code>references</code>.</li>
@@ -1146,12 +1157,21 @@ billing.query(
         <ul>
           <li><code>gmail.list_messages(query="is:unread", max_results=25, page_token=None)</code> takes a Gmail search query and returns message metadata: sender, recipients, subject, a snippet, labels, attachments with their <code>part_id</code>, and <code>sender_auth</code>, at most 100 per page. Bodies and attachment bytes are not returned. The query reaches every folder: <code>in:sent</code> lists sent mail, <code>in:anywhere</code> includes archived mail, spam and trash.</li>
           <li><code>sender_auth</code> is Gmail's own SPF, DKIM and DMARC verdict on the sender (<code>pass</code>, <code>fail</code> or <code>unknown</code>), read only from the <code>Authentication-Results</code> header Gmail stamped. Use it to keep a spoofed From out of trusted workflows; <code>unknown</code> is not a failure.</li>
-          <li><code>gmail.get_message(message_id, max_chars=20000)</code> reads one message with its body as plain text (HTML without markup, scripts or styles), with <code>body_truncated</code> set when cut. The tool tells the model to treat instructions in the message as data. Results carry <code>message_id_header</code>, <code>in_reply_to</code> and <code>references</code>.</li>
-          <li><code>gmail.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)</code> reads a whole thread, oldest first, each message as <code>get_message</code> returns it with the body cut to <code>max_chars_per_message</code> (at most 10,000). At most 50 messages; a longer thread keeps its newest and sets <code>truncated</code>. Quoted history is not removed yet, so each reply repeats the text it quotes.</li>
+          <li><code>gmail.get_message(message_id, max_chars=20000, include="full")</code> reads one message with its body as plain text (HTML without markup, scripts or styles; <code>include="latest"</code> keeps only the sender's own text), with <code>body_truncated</code> set when cut. The tool tells the model to treat instructions in the message as data. Results carry <code>message_id_header</code>, <code>in_reply_to</code> and <code>references</code>.</li>
+          <li><code>gmail.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)</code> reads a whole thread, oldest first, each message as <code>get_message</code> returns it with the body cut to <code>max_chars_per_message</code> (at most 10,000). At most 50 messages; a longer thread keeps its newest and sets <code>truncated</code>. By default (<code>include="latest"</code>) each body is the sender's own text; see <a href="#gmail-quoted-history">Quoted history</a>.</li>
           <li><code>gmail.get_attachment(message_id, attachment_id)</code> is offered only when the toolkit is built in code with an <code>artifact_sink</code>. It saves one attachment as an artifact, within the <code>attachment_policy</code> size and type checks, and returns only its reference. Pass the stable <code>part_id</code> from the listing.</li>
           <li><code>gmail.read_attachment(message_id, attachment_id, max_chars=50000)</code> is offered only when the toolkit is built with <code>documents</code>; see <a href="#gmail-reading-attachments">Reading attachments</a>.</li>
           <li><code>gmail.send_email</code> takes the same input as <a href="#smtp"><code>smtp.send_email</code></a>, sends from <code>ALGEN_TOOLS_GMAIL_SENDER</code>, and delivers Bcc recipients without exposing them to other recipients.</li>
         </ul>
+        <h3 id="gmail-quoted-history">Quoted history<a class="anchor" href="#gmail-quoted-history" aria-label="Link to this section">#</a></h3>
+        <p>From 0.2.0a10, <code>include="latest"</code> on <code>get_message</code> (default <code>"full"</code>) and <code>get_thread</code> (default <code>"latest"</code>) returns only what the sender wrote: the history the reply quotes and the signature are removed, and <code>quoted_text_removed</code> is set. The rules are deterministic and conservative, so text is removed only after a line that clearly starts quoted history:</p>
+        <ul>
+          <li>an attribution line, <code>On &lt;date&gt;, &lt;name&gt; wrote:</code>, also wrapped over two lines and in French, German, Spanish, Italian and Dutch;</li>
+          <li>an Outlook header block (<code>From:</code> then <code>Sent:</code>/<code>Date:</code> and <code>To:</code>/<code>Subject:</code>), or <code>-----Original Message-----</code>;</li>
+          <li>a run of <code>&gt;</code> lines with nothing but blank lines after it (inline answers between quoted lines are kept);</li>
+          <li>a signature after the standard <code>-- </code> line, or a final <code>Sent from my …</code> line.</li>
+        </ul>
+        <p>A forwarded message is new content and is always kept, and a message that is only a quote is returned whole. Gmail and IMAP bodies join every inline text part (at most five), so text a client split around inline images is not lost. The same applies to the Outlook and IMAP toolkits.</p>
         <h3 id="gmail-credentials">Credentials<a class="anchor" href="#gmail-credentials" aria-label="Link to this section">#</a></h3>
         <p>Create an OAuth client in Google Cloud, authorise the mailbox once to obtain a refresh token, and grant only the scopes the agent needs: <code>gmail.readonly</code> for <code>list_messages</code>, <code>get_message</code>, <code>get_thread</code>, <code>get_attachment</code> and <code>read_attachment</code>, <code>gmail.send</code> for <code>send_email</code>. The access token is refreshed in memory and never leaves the client; token and API errors name only the failure type.</p>
         <h3 id="gmail-reading-attachments">Reading attachments<a class="anchor" href="#gmail-reading-attachments" aria-label="Link to this section">#</a></h3>
@@ -1176,8 +1196,8 @@ gmail = gmail_toolkit(documents=DocumentReader())  <span class="t-c"># adds gmai
         </table></div>
         <ul>
           <li><code>outlook.list_messages(folder="inbox", search=None, unread_only=False, max_results=25, page_token=None)</code> lists one folder (<code>inbox</code>, <code>sentitems</code>, <code>drafts</code>, <code>archive</code>, <code>junkemail</code>), newest first, at most 50 per page. The page token is opaque and never a URL; the connector rebuilds each request for its own mailbox.</li>
-          <li><code>get_message</code> and <code>get_attachment</code> are the same shared tools as Gmail's. Only file attachments can be saved.</li>
-          <li><code>outlook.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)</code> reads a conversation (<code>conversationId</code>) across the mailbox's folders, as for <a href="#gmail">Gmail</a>. Graph returns at most 50 of its messages in one call; <code>truncated</code> says when there were more. In-Reply-To and References come from the message's internet headers, which Graph keeps only for received mail.</li>
+          <li><code>get_message</code> and <code>get_attachment</code> are the same shared tools as Gmail's, including <code>include="full"|"latest"</code> on <code>get_message</code>. Only file attachments can be saved.</li>
+          <li><code>outlook.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)</code> reads a conversation (<code>conversationId</code>) across the mailbox's folders, as for <a href="#gmail">Gmail</a>, with each body the sender's own text unless <code>include="full"</code> (see <a href="#gmail-quoted-history">Quoted history</a>). Graph returns at most 50 of its messages in one call; <code>truncated</code> says when there were more. In-Reply-To and References come from the message's internet headers, which Graph keeps only for received mail.</li>
           <li><code>outlook.read_attachment(message_id, attachment_id, max_chars=50000)</code>, with <code>documents=DocumentReader()</code>, is the shared tool: an attachment's inspected text in one call; see <a href="#gmail-reading-attachments">Reading attachments</a>.</li>
           <li><code>outlook.send_email</code> takes the same input as <a href="#smtp"><code>smtp.send_email</code></a> and saves a copy in Sent Items. Attachments travel inline, at most 3 MB in all.</li>
           <li><strong>Delegated access</strong> (a refresh token is set) acts as the signed-in user. <strong>Application access</strong> uses the app's own credentials on <code>ALGEN_TOOLS_OUTLOOK_MAILBOX</code>.</li>
@@ -1204,6 +1224,7 @@ gmail = gmail_toolkit(documents=DocumentReader())  <span class="t-c"># adds gmai
           <li><code>imap.list_folders()</code> lists the folders the tools may read, each with its special use when the server marks one, never a folder outside <code>ALGEN_TOOLS_IMAP_FOLDERS</code>.</li>
           <li>On Gmail, message and thread ids are Gmail's own, the same ones the Gmail API returns. Elsewhere an id carries the folder's UIDVALIDITY, so a stale id is an error rather than another message, and <code>thread_id</code> (empty before 0.2.0a9) is <code>r.&lt;base64url&gt;</code> of the thread's first Message-ID.</li>
           <li><code>imap.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)</code> reads a thread across the configured folders: by <code>X-GM-THRID</code> on Gmail, by the References chain elsewhere. Add <code>\Sent</code> to the folders to see the mailbox's own replies.</li>
+          <li><code>imap.get_message</code> and <code>imap.get_thread</code> take <code>include</code> as on Gmail: <code>"full"</code> by default for <code>get_message</code>, <code>"latest"</code> for <code>get_thread</code>. Bodies join every inline text part (at most five); see <a href="#gmail-quoted-history">Quoted history</a>.</li>
           <li><code>imap.read_attachment(message_id, attachment_id, max_chars=50000)</code>, with <code>documents=DocumentReader()</code>, returns an attachment's inspected text in one call; see <a href="#gmail-reading-attachments">Reading attachments</a>.</li>
           <li><code>sender_auth</code> trusts the topmost <code>Authentication-Results</code> header only from <code>mx.google.com</code> on Gmail, or from the server named in <code>ALGEN_TOOLS_IMAP_AUTHSERV_ID</code>; otherwise it is <code>unknown</code>.</li>
           <li>TLS on port 993 is always on, with the certificate and host name verified. The password is sent only in <code>LOGIN</code>.</li>
@@ -1279,16 +1300,18 @@ gmail = gmail_toolkit(documents=DocumentReader())  <span class="t-c"># adds gmai
         <h2>Documents<a class="anchor" href="#documents" aria-label="Link to this section">#</a></h2>
         <p>Read the text of a document an agent received, for example an email attachment saved with <code>gmail.get_attachment</code>. Parsing and inspection are the untrusted-document checks in <code>algen_agent_tools.documents</code> (moved from the Runtime in 0.2.0a7); the connector reads the artifact for the calling tenant, bounds the call and governs it as a tool.</p>
         <div class="table-wrap"><table>
-          <tbody><tr><td>Module</td><td><code>algen_agent_tools.documents</code> (built in code; it needs an artifact loader, the deployment&#39;s or <code>runtime_attachment_loader</code> for the run&#39;s attachments, so there is no plugin yet)</td></tr><tr><td>Extra</td><td><code>documents</code> for PDFs (PyMuPDF, AGPL-3.0); every other format needs nothing. Optional <code>ocr</code> for Tesseract OCR</td></tr><tr><td>Environment</td><td>none</td></tr></tbody>
+          <tbody><tr><td>Module</td><td><code>algen_agent_tools.documents</code> (built in code; it needs an artifact loader, the deployment&#39;s or <code>runtime_attachment_loader</code> for the run&#39;s attachments, so there is no plugin yet)</td></tr><tr><td>Extra</td><td><code>documents</code> for PDFs (PyMuPDF, AGPL-3.0); every other format needs nothing. Optional <code>ocr</code> for Tesseract OCR and <code>msg</code> for Outlook <code>.msg</code> files (olefile, BSD)</td></tr><tr><td>Environment</td><td>none</td></tr></tbody>
         </table></div>
         <div class="table-wrap"><table>
           <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
           <tbody><tr><td><code>documents.extract_text</code></td><td>read</td><td><code>documents.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr></tbody>
         </table></div>
         <ul>
-          <li><strong>Formats</strong> come from the file name: <code>.pdf</code>, <code>.docx</code>, <code>.xlsx</code>, <code>.pptx</code>, <code>.html</code>, <code>.htm</code>, <code>.csv</code>, <code>.tsv</code>, <code>.txt</code>, <code>.md</code> and <code>.eml</code>, and images with a recognizer (see <a href="#documents-ocr">OCR</a>). Any other suffix, or content that doesn't match its name, is refused.</li>
+          <li><strong>Formats</strong> come from the file name: <code>.pdf</code>, <code>.docx</code>, <code>.xlsx</code>, <code>.pptx</code>, <code>.odt</code>, <code>.ods</code>, <code>.odp</code>, <code>.rtf</code>, <code>.html</code>, <code>.htm</code>, <code>.csv</code>, <code>.tsv</code>, <code>.txt</code>, <code>.md</code>, <code>.eml</code> and <code>.msg</code>, and images with a recognizer (see <a href="#documents-ocr">OCR</a>). Any other suffix, or content that doesn't match its name (a renamed executable), is refused.</li>
+          <li><strong>Content wins over the name.</strong> From 0.2.0a10, when the content's own signature names another supported type, it is read as that type: a <code>scan.pdf</code> that is really a JPEG as an image (with OCR), a <code>.docx</code> renamed <code>.doc</code> as Word, a PDF named <code>.txt</code> as a PDF. Text formats have no signature and go by their name; text, CSV, TSV, Markdown and HTML are read as UTF-8, as UTF-16 when they start with its byte-order mark, and otherwise as Windows-1252, the encoding Excel uses for CSV exports.</li>
+          <li><strong>Long PDFs</strong> are read up to page 50 and report <code>document.pages_skipped</code>, so the result is <code>partial</code> and <code>truncated</code>; before 0.2.0a10 they were refused.</li>
           <li><strong>Only visible text</strong> is returned, cut to <code>max_chars</code> (at most 100,000). Hidden PDF text, hidden DOCX runs, hidden XLSX sheets, rows and columns, hidden PPTX slides and shapes, and HTML hidden by attribute or inline style are reported as findings instead.</li>
-          <li><strong>A disposition</strong> (<code>pass</code>, <code>review</code> or <code>quarantine</code>) and <strong>findings</strong> cover hidden text, instructions aimed at the model and risky Office packaging (macros, remote templates). A quarantined document's text is withheld unless the toolkit is built with <code>quarantine="return"</code>.</li>
+          <li><strong>A disposition</strong> (<code>pass</code>, <code>review</code> or <code>quarantine</code>) and <strong>findings</strong> cover hidden text, instructions aimed at the model and risky packaging (macros, remote templates and objects, and an embedded OLE object in RTF, <code>document.embedded_object</code>). A quarantined document's text is withheld unless the toolkit is built with <code>quarantine="return"</code>.</li>
           <li><code>truncated</code> is true when the text was cut, by <code>max_chars</code> or by the inspection (an XLSX sheet past 5,000 rows).</li>
           <li><strong>Images are not read without OCR.</strong> A PDF, DOCX or PPTX with text and embedded images reports <code>document.images_excluded</code> as a coverage finding. Pass a recognizer (<a href="#documents-ocr">OCR</a>), or attach the file to the run when a vision model should see it.</li>
           <li><strong>Inspection without the tool.</strong> <code>from algen_agent_tools.documents import extractor_for</code> gives the extractors directly. They replace <code>algen_agent_runtime.security.documents</code>, deprecated in Runtime 0.1.0a19.</li>
@@ -1305,7 +1328,7 @@ documents = documents_toolkit(artifact_loader=runtime_attachment_loader)</span><
         <p>From 0.2.0a8, content the inspection did not read is reported apart from security findings, so a caller can tell "dangerous" from "not read":</p>
         <ul>
           <li><strong><code>coverage</code></strong> is <code>full</code> (everything was read), <code>partial</code> (some content was not) or <code>none</code> (content was found but no text could be read). <strong><code>needs_ocr</code></strong> is true when images or scanned pages hold text only OCR can read.</li>
-          <li><strong>Each finding has a <code>category</code></strong>, <code>security</code> or <code>coverage</code>. <code>document.ocr_required</code>, <code>document.images_excluded</code>, <code>document.ocr_no_text</code>, <code>document.truncated</code>, <code>document.attachment_skipped</code> and <code>document.attachment_unread</code> are coverage findings; only security findings set the disposition.</li>
+          <li><strong>Each finding has a <code>category</code></strong>, <code>security</code> or <code>coverage</code>. <code>document.ocr_required</code>, <code>document.images_excluded</code>, <code>document.ocr_no_text</code>, <code>document.truncated</code>, <code>document.attachment_skipped</code>, <code>document.attachment_unread</code>, <code>document.body_unread</code> (an Outlook message whose only body is RTF) and <code>document.pages_skipped</code> (PDF pages past page 50) are coverage findings; only security findings set the disposition.</li>
           <li><strong>A scanned ID card without OCR</strong> is <code>pass</code> with <code>coverage="none"</code> and <code>needs_ocr=true</code>; a cover note over a scan is <code>pass</code> with <code>coverage="partial"</code>. Hidden text or an instruction aimed at the model still makes it <code>review</code> or <code>quarantine</code>.</li>
         </ul>
         <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><code>pass</code> with <code>coverage="none"</code> means nothing dangerous was found because nothing was read. Before 0.2.0a8 such documents were <code>review</code>; code that used <code>review</code> to mean "not fully read" checks <code>coverage != "full"</code> instead.</p></div>
@@ -1325,12 +1348,27 @@ documents = documents_toolkit(
           <li><code>TesseractRecognizer</code> fails when it is built, naming the fix, if the extra, the program or a language is missing. It is never the default.</li>
           <li>The recognizer runs inside the tool's 120 s timeout. Images inside DOCX and PPTX are not recognized yet.</li>
         </ul>
+        <h3 id="documents-opendocument">OpenDocument<a class="anchor" href="#documents-opendocument" aria-label="Link to this section">#</a></h3>
+        <p>From 0.2.0a10, ODT, ODS and ODP files (LibreOffice, Google Docs exports) are read with the standard library, with the rules of their Office counterparts.</p>
+        <ul>
+          <li><strong>Hidden content is left out and reported:</strong> text a style or <code>text:display="none"</code> hides, hidden text fields and paragraphs, text under 2 pt, hidden sheets, rows and columns, and hidden slides.</li>
+          <li><strong>Spreadsheets</strong> come out sheet by sheet under <code>--- Sheet: &lt;name&gt; ---</code>, cells joined by <code> | </code>, cut at 5,000 rows per sheet. Comments, tracked changes and speaker notes are not extracted.</li>
+          <li><strong>A Basic macro project</strong>, or an image or object loaded from a remote address, is a finding; encrypted files are refused.</li>
+        </ul>
+        <h3 id="documents-rtf">RTF<a class="anchor" href="#documents-rtf" aria-label="Link to this section">#</a></h3>
+        <p>From 0.2.0a10, RTF is read with a bounded tokenizer from the standard library: paragraphs, tabs and table cells (joined with <code> | </code>), with escaped and Unicode characters decoded. Font tables, styles, document information, headers, footers and footnotes are not text.</p>
+        <ul>
+          <li><strong>Hidden text</strong> (<code>\v</code>) and text under 2 pt are left out and reported.</li>
+          <li><strong>An embedded OLE object</strong>, a common exploit carrier, is the security finding <code>document.embedded_object</code>; a field that loads a remote file (<code>INCLUDEPICTURE</code>, <code>INCLUDETEXT</code>) is <code>document.external_reference</code>. Pictures are coverage findings.</li>
+          <li><strong>A Word file saved as RTF but named <code>.doc</code></strong> is recognised by its content.</li>
+        </ul>
         <h3 id="documents-email">Email files<a class="anchor" href="#documents-email" aria-label="Link to this section">#</a></h3>
         <p>From 0.2.0a9 an <code>.eml</code> file is read as its headers (From, To, Cc, Date, Subject) and body, then each attachment's text under an <code>[Attachment: &lt;name&gt;]</code> line, read by the extractor for its type. Attached emails are read at most two levels deep, and at most 20 attachments in the whole message.</p>
         <ul>
           <li><strong><code>attachments</code></strong> lists the attachments that were read (file name, media type, disposition, coverage).</li>
           <li><strong>An attachment's findings are the message's.</strong> Hidden text or an instruction in an attachment quarantines the message, and the finding names the attachment in <code>part</code>.</li>
-          <li><strong>Skipped is not refused.</strong> An attachment past a limit, of an unsupported type or unreadable is a coverage finding (<code>document.attachment_skipped</code> or <code>document.attachment_unread</code>), so the message is <code>pass</code> with <code>coverage="partial"</code>. Outlook <code>.msg</code> files are not read yet.</li>
+          <li><strong>Skipped is not refused.</strong> An attachment past a limit, of an unsupported type or unreadable is a coverage finding (<code>document.attachment_skipped</code> or <code>document.attachment_unread</code>), so the message is <code>pass</code> with <code>coverage="partial"</code>.</li>
+          <li><strong>Outlook <code>.msg</code> files</strong> (from 0.2.0a10, with the <code>msg</code> extra, <code>pip install "algen-agent-tools[msg]"</code>) are read the same way: Tools reads the sender, recipients, date, subject, body and attachments from the file's OLE streams with olefile, rebuilds the equivalent email and inspects that, with the same limits and findings. Attached Outlook messages are read as attached emails. A message whose only body is RTF reports <code>document.body_unread</code> (coverage), since RTF bodies are not read.</li>
         </ul>
       </section>
 
@@ -1636,7 +1674,7 @@ notices = smtp_toolkit(
         <h2>Runtime compatibility<a class="anchor" href="#compatibility" aria-label="Link to this section">#</a></h2>
         <div class="table-wrap"><table>
           <thead><tr><th>algen-agent-tools</th><th>Supported algen-agent-runtime</th></tr></thead>
-          <tbody><tr><td>0.2.0a9</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a8</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a7</td><td><code>&gt;=0.1.0a20,&lt;0.2</code> (tested on 0.1.0a20 and 0.1.0a21)</td></tr><tr><td>0.2.0a6</td><td><code>&gt;=0.1.0a18,&lt;0.2</code></td></tr><tr><td>0.2.0a1 to 0.2.0a5</td><td><code>&gt;=0.1.0a12,&lt;0.2</code> (tested on 0.1.0a12 and 0.1.0a13)</td></tr><tr><td>0.1.0a2</td><td><code>&gt;=0.1.0a12,&lt;0.2</code></td></tr><tr><td>0.1.0a1</td><td><code>&gt;=0.1.0a11,&lt;0.2</code></td></tr></tbody>
+          <tbody><tr><td>0.2.0a10</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a9</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a8</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a7</td><td><code>&gt;=0.1.0a20,&lt;0.2</code> (tested on 0.1.0a20 and 0.1.0a21)</td></tr><tr><td>0.2.0a6</td><td><code>&gt;=0.1.0a18,&lt;0.2</code></td></tr><tr><td>0.2.0a1 to 0.2.0a5</td><td><code>&gt;=0.1.0a12,&lt;0.2</code> (tested on 0.1.0a12 and 0.1.0a13)</td></tr><tr><td>0.1.0a2</td><td><code>&gt;=0.1.0a12,&lt;0.2</code></td></tr><tr><td>0.1.0a1</td><td><code>&gt;=0.1.0a11,&lt;0.2</code></td></tr></tbody>
         </table></div>
         <p>The package is built on the Runtime's tool authoring API (<code>@tool</code>, presets, <code>Toolkit</code>), declared plugins and <code>describe</code>, all introduced in Runtime 0.1.0a11. From 0.1.0a2 it needs Runtime 0.1.0a12, whose <code>pii</code> guardrail leaves fields declared <code>format: email</code> alone. From 0.2.0a6 it needs Runtime 0.1.0a18: 0.1.0a14's document inspection reads XLSX, PPTX, HTML, CSV and TSV, and 0.1.0a18's <code>cache_context</code> keys cached SQL results on the values <code>context_params</code> binds. From 0.2.0a7 it needs Runtime 0.1.0a20, which records refusals as not attempted, keeps declared <code>format: email</code> result fields out of <code>pii</code> redaction and gives tools the run's attachments. From 0.2.0a8 it needs Runtime 0.1.0a23: 0.1.0a22 and 0.1.0a23 fix two ways an approval-required workflow tool step could run without its approval, and run synchronous tools in a worker thread within their timeout. CI runs the full suite against the lowest supported Runtime and the newest release inside the range; a Runtime release that breaks a connector lowers the upper bound until it is fixed. Every plugin targets plugin core API version <code>1</code>.</p>
       </section>
@@ -1687,7 +1725,7 @@ notices = smtp_toolkit(
 
       <div class="no-results" id="noResults">No sections match your search. Try a different term.</div>
       <footer class="page-foot">
-        <span>Algen Agent Tools · Apache-2.0 · Documentation for package version 0.2.0a9</span>
+        <span>Algen Agent Tools · Apache-2.0 · Documentation for package version 0.2.0a10</span>
         <span>© AlgenAI</span>
       </footer>
     </div>
