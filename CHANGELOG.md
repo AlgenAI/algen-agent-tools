@@ -24,9 +24,17 @@ A tool's name, input schema, side effect and permission are part of the public c
   (`algen_agent_tools.mail.quotes.latest_text`).
 - Gmail and IMAP message bodies join every inline text part (at most five) instead of only the
   first, so text a client split around inline images is not lost.
+- Documents (#45): `extractor_for(filename, data=...)` and `documents.extract_text` go by the
+  content's signature when it names another type than the file name (`sniff_suffix`): a
+  misnamed JPEG, a renamed `.docx`, a PDF named `.txt`. Text, CSV, TSV, Markdown and HTML fall
+  back from UTF-8 to Windows-1252 (and read UTF-16 with a byte-order mark) instead of replacing
+  accented letters (`decode_text`). A PDF over the page limit is read up to it with the new
+  coverage finding `document.pages_skipped` (`PdfDocumentExtractor(on_excess="truncate")`).
 
 ### Changed
 
+- A PDF over 50 pages is no longer refused by `documents.extract_text`: its first 50 pages are
+  read and the result is `partial` and `truncated`.
 - `get_thread` now defaults to `include="latest"`: each message's body is the sender's own
   text. Pass `include="full"` for whole bodies, as 0.2.0a9 returned.
 

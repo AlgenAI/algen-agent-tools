@@ -51,6 +51,7 @@ COVERAGE_KINDS = frozenset(
         "document.images_excluded",
         "document.ocr_no_text",
         "document.ocr_required",
+        "document.pages_skipped",
         "document.truncated",
     }
 )
@@ -102,7 +103,9 @@ def _unread_content(findings: tuple[DocumentSecurityFinding, ...]) -> tuple[Unre
             kind = "attachment"
         elif finding.kind == "document.body_unread":
             kind = "body"
-        elif finding.kind == "document.ocr_required" and finding.page is not None:
+        elif finding.kind == "document.pages_skipped" or (
+            finding.kind == "document.ocr_required" and finding.page is not None
+        ):
             kind = "page"
         elif finding.kind in COVERAGE_KINDS:
             kind = "image"
@@ -328,6 +331,17 @@ def recognize_span(
     return span, injection
 
 
+def decode_text(data: bytes) -> str:
+    """Text from bytes of an unknown encoding: UTF-8 (with or without a BOM), UTF-16 with a BOM,
+    else Windows-1252, the encoding of Excel's CSV exports, so accented letters survive."""
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return data.decode("utf-16", errors="replace")
+    try:
+        return data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return data.decode("cp1252", errors="replace")
+
+
 class PlainTextDocumentExtractor:
     def __init__(self, *, max_bytes: int = 2_000_000, max_characters: int = 250_000) -> None:
         self._max_bytes = max_bytes
@@ -337,7 +351,7 @@ class PlainTextDocumentExtractor:
         del filename
         if len(data) > self._max_bytes:
             raise ValueError(f"document exceeds {self._max_bytes} byte limit")
-        text = data.decode("utf-8", errors="replace")
+        text = decode_text(data)
         if len(text) > self._max_characters:
             raise ValueError(f"document exceeds {self._max_characters} character limit")
         sanitized, findings = sanitize_untrusted_text(text)
@@ -355,6 +369,9 @@ class PlainTextDocumentExtractor:
 class PdfDocumentExtractor:
     """Inspect PDF text spans before producing downstream-safe plain text.
 
+    A PDF longer than ``max_pages`` is refused, or with ``on_excess="truncate"`` read up to
+    there and reported as a ``document.pages_skipped`` coverage finding.
+
     With an ``ocr`` recognizer, a page that has images and fewer than ``ocr_min_page_chars``
     characters of text is rendered (``ocr_dpi``, at most ``ocr_max_pixels`` pixels) and
     recognized, for at most ``ocr_max_pages`` pages. Without one, nothing is rendered.
@@ -365,6 +382,7 @@ class PdfDocumentExtractor:
         *,
         max_bytes: int = 10_000_000,
         max_pages: int = 50,
+        on_excess: Literal["refuse", "truncate"] = "refuse",
         max_characters: int = 250_000,
         tiny_font_points: float = 2.0,
         ocr: TextRecognizer | None = None,
@@ -381,6 +399,7 @@ class PdfDocumentExtractor:
         )
         self._max_bytes = max_bytes
         self._max_pages = max_pages
+        self._on_excess = on_excess
         self._max_characters = max_characters
         self._tiny_font_points = tiny_font_points
         self._ocr = ocr
@@ -402,14 +421,26 @@ class PdfDocumentExtractor:
                 "install algen-agent-tools[documents] for PDF inspection", name="fitz"
             ) from exc
         document = fitz.open(stream=data, filetype="pdf")
-        if document.page_count < 1 or document.page_count > self._max_pages:
+        excess = document.page_count > self._max_pages
+        if document.page_count < 1 or (excess and self._on_excess == "refuse"):
             raise ValueError(f"PDF page count must be between 1 and {self._max_pages}")
         spans: list[DocumentSpan] = []
         findings: list[DocumentSecurityFinding] = []
         image_count = 0
         ocr_pages: list[int] = []
         unread_image_pages: list[int] = []
+        if excess:
+            findings.append(
+                DocumentSecurityFinding(
+                    kind="document.pages_skipped",
+                    severity=FindingSeverity.LOW,
+                    message=f"Pages after page {self._max_pages} were not read.",
+                    page=self._max_pages + 1,
+                )
+            )
         for page_index, page in enumerate(document, start=1):
+            if page_index > self._max_pages:
+                break
             page_images = len(page.get_images(full=True))
             image_count += page_images
             first_span = len(spans)
@@ -552,21 +583,74 @@ class PdfDocumentExtractor:
         )
 
 
+_ZIP_MEMBERS = (
+    ("word/document.xml", ".docx"),
+    ("xl/workbook.xml", ".xlsx"),
+    ("ppt/presentation.xml", ".pptx"),
+)
+_ODF_TYPES = {
+    "application/vnd.oasis.opendocument.text": ".odt",
+    "application/vnd.oasis.opendocument.spreadsheet": ".ods",
+    "application/vnd.oasis.opendocument.presentation": ".odp",
+}
+_SAME = {".jpg": ".jpeg", ".tif": ".tiff", ".htm": ".html"}
+
+
+def sniff_suffix(data: bytes) -> str | None:
+    """The file suffix the content's own signature declares (``.pdf``, an image, or an Office
+    or OpenDocument package), or ``None`` when the content has no signature this package
+    knows: text formats are told apart by their name only."""
+    if data.startswith(b"%PDF-"):
+        return ".pdf"
+    from algen_agent_tools.documents.inspection.image import image_media_type
+
+    media_type = image_media_type(data)
+    if media_type is not None:
+        return {"image/jpeg": ".jpg", "image/tiff": ".tif"}.get(
+            media_type, "." + media_type.partition("/")[2]
+        )
+    if not data.startswith(b"PK\x03\x04"):
+        return None
+    import io
+    import zipfile
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            names = set(archive.namelist()[:10_000])
+            if "mimetype" in names and archive.getinfo("mimetype").file_size < 200:
+                found = _ODF_TYPES.get(archive.read("mimetype").decode("ascii", "replace").strip())
+                if found:
+                    return found
+            return next((suffix for member, suffix in _ZIP_MEMBERS if member in names), None)
+    except (zipfile.BadZipFile, OSError, KeyError, ValueError):
+        return None
+
+
 def extractor_for(
-    filename: str, *, ocr: TextRecognizer | None = None, ocr_max_pages: int = 3
+    filename: str,
+    *,
+    data: bytes | None = None,
+    ocr: TextRecognizer | None = None,
+    ocr_max_pages: int = 3,
 ) -> DocumentExtractor:
-    """The extractor for ``filename``'s suffix. An email (``.eml``, or Outlook ``.msg`` with the
-    ``msg`` extra) has its attachments read by the extractors for their own file names.
+    """The extractor for ``filename``'s suffix, or with ``data``, for the type the content's
+    signature declares when it has one (a ``scan.pdf`` that is really a JPEG is read as an
+    image, a renamed ``.docx`` as Word). An email (``.eml``, or Outlook ``.msg`` with the
+    ``msg`` extra) has its attachments read by the extractors for their own file names. A PDF
+    longer than its page limit is read up to the limit (``document.pages_skipped``).
 
     With an ``ocr`` recognizer, images (PNG, JPEG, WebP, GIF, BMP, TIFF) are accepted and
     scanned PDF pages are recognized, up to ``ocr_max_pages`` pages per PDF. Without one,
     images are refused and nothing is recognized.
     """
     suffix = Path(filename).suffix.lower()
+    sniffed = sniff_suffix(data) if data is not None else None
+    if sniffed is not None and _SAME.get(sniffed, sniffed) != _SAME.get(suffix, suffix):
+        suffix = sniffed
     if suffix == ".pdf":
         if ocr is None:
-            return PdfDocumentExtractor()
-        return PdfDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages)
+            return PdfDocumentExtractor(on_excess="truncate")
+        return PdfDocumentExtractor(on_excess="truncate", ocr=ocr, ocr_max_pages=ocr_max_pages)
     if ocr is not None:
         from algen_agent_tools.documents.inspection.image import (
             IMAGE_MEDIA_TYPES,

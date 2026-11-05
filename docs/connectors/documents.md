@@ -40,7 +40,15 @@ the calling tenant, bounds the call and governs it as a tool.
 - `page_count` (pages, sheets or slides), `image_count`, and `text_withheld`.
 
 The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.html`,
-`.htm`, `.csv`, `.tsv`, `.txt`, `.md`, `.eml` or `.msg`. Any other suffix is refused. XLSX cells are joined with
+`.htm`, `.csv`, `.tsv`, `.txt`, `.md`, `.eml` or `.msg`. Any other suffix is refused. When the
+content's own signature names another type, the content wins: a `scan.pdf` that is really a
+JPEG is read as an image (with OCR), a `.docx` renamed `.doc` as Word, a PDF named `.txt` as a
+PDF. Text formats have no signature, so they go by their name. Text, CSV, TSV, Markdown and HTML
+are read as UTF-8 (a byte-order mark is dropped), as UTF-16 when they start with its byte-order
+mark, and otherwise as Windows-1252, the encoding Excel uses for CSV exports.
+
+A PDF longer than 50 pages is read up to page 50 and reports `document.pages_skipped` (coverage),
+so the result is `partial` and `truncated` rather than refused. XLSX cells are joined with
 ` | `, one line per row, under a `--- Sheet: <name> ---` heading; a formula gives its last
 calculated value and date or time cells come out in ISO form. CSV and TSV are read as plain text.
 
@@ -158,6 +166,7 @@ can tell "dangerous" from "not read":
 | `document.attachment_skipped` | An email attachment past the attachment, depth or text limit was not read |
 | `document.attachment_unread` | An email attachment of an unsupported type, or one that could not be parsed, was not read |
 | `document.body_unread` | An Outlook message's body is RTF only and was not read |
+| `document.pages_skipped` | Pages past the PDF page limit were not read |
 
 These findings have `category="coverage"`; all others have `category="security"`. Only security
 findings set the disposition, so a scanned ID card without OCR is `pass` with `coverage="none"`
