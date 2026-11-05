@@ -17,6 +17,7 @@ OAuth refresh token.
 | `gmail.list_messages` | read | `gmail.read` | 120 s | Runtime default | agent policy |
 | `gmail.get_message` | read | `gmail.read` | 60 s | Runtime default | agent policy |
 | `gmail.get_attachment` (with `artifact_sink`) | read | `gmail.read` | 120 s | Runtime default | agent policy |
+| `gmail.read_attachment` (with `documents`) | read | `gmail.read` | 120 s | Runtime default | agent policy |
 | `gmail.send_email` | external | `gmail.write` | 60 s | 1 | agent policy (asks by default) |
 
 - `gmail.list_messages(query="is:unread", max_results=25, page_token=None)` takes a Gmail search
@@ -38,6 +39,9 @@ OAuth refresh token.
   artifact and returns only its reference (`artifact_id`, `filename`, `media_type`), never the
   bytes. Pass the attachment's `part_id` from the listing: Gmail issues a new attachment id on
   every read, while the part id is stable.
+- `gmail.read_attachment(message_id, attachment_id, max_chars=50000)` is offered only when the
+  toolkit is built with `documents` (see [Reading attachments](#reading-attachments)). It
+  returns the attachment's text in one call, without the file reaching the model.
 - `gmail.send_email` takes the same input as [`smtp.send_email`](smtp.md) and sends from
   `ALGEN_TOOLS_GMAIL_SENDER`.
 
@@ -78,6 +82,24 @@ boundaries.
 Keep the agent's approval policy on (the default asks before every external call), and use
 `allowed_domains` (or the `ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS` setting, comma-separated) to bound
 who it can write to.
+
+## Reading attachments
+
+`documents=DocumentReader()` adds `read_attachment`: it downloads one attachment, checks it
+against `attachment_policy`, and reads it with the [documents](documents.md) inspection, so the
+model gets the attachment's text in one call instead of `get_attachment` then
+`documents.extract_text`. The result is the same as `documents.extract_text` (`text`,
+`disposition`, `findings`, `coverage`, `attachments` for an attached email, and so on); a
+quarantined attachment's text is withheld. With an `artifact_sink` as well, the file is also
+saved and its reference returned in `artifact`, for example so a person can review a quarantined
+file. `DocumentReader(max_bytes=..., quarantine=..., ocr=...)` takes the documents toolkit's
+options. The same option exists on the IMAP and Outlook toolkits.
+
+```python
+from algen_agent_tools.documents import DocumentReader
+
+toolkit = gmail_toolkit(documents=DocumentReader())  # PDFs need the documents extra
+```
 
 ## Attachments
 

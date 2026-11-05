@@ -24,6 +24,7 @@ from algen_agent_tools.documents.inspection import (
 from algen_agent_tools.documents.toolkit import (
     DocumentAttachmentText,
     DocumentFinding,
+    DocumentReader,
     DocumentRefused,
     DocumentText,
     documents_toolkit,
@@ -34,6 +35,7 @@ __all__ = [
     "DocumentDisposition",
     "DocumentFinding",
     "DocumentPart",
+    "DocumentReader",
     "DocumentRefused",
     "DocumentSecurityFinding",
     "DocumentSpan",

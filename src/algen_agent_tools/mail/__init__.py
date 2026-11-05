@@ -26,17 +26,20 @@ from algen_agent_tools.mail.sender_auth import (
     topmost_verdict,
 )
 from algen_agent_tools.mail.tool import (
+    AttachmentText,
     ContextualArtifactLoader,
     MailClient,
     OutgoingEmail,
     OutgoingEmailWithAttachments,
     add_mailbox_read_tools,
+    add_read_attachment_tool,
     add_send_tool,
     bind_artifact_loader,
 )
 
 __all__ = [
     "GMAIL_AUTHSERV_ID",
+    "AttachmentText",
     "ContextualArtifactLoader",
     "EmailAddress",
     "EmailArtifactLoader",
@@ -55,6 +58,7 @@ __all__ = [
     "OutgoingEmailWithAttachments",
     "SenderAuth",
     "add_mailbox_read_tools",
+    "add_read_attachment_tool",
     "add_send_tool",
     "authentication_verdict",
     "bind_artifact_loader",

@@ -7,6 +7,7 @@ from pydantic import Field, SecretStr
 
 from algen_agent_tools._env import SecretResolver, env_names, resolve_optional
 from algen_agent_tools.attachments import ArtifactSink, AttachmentPolicy
+from algen_agent_tools.documents.toolkit import DocumentReader
 from algen_agent_tools.gmail.client import GmailMailboxClient, GmailMailboxPage, GmailOAuthSettings
 from algen_agent_tools.mail.models import EmailAddress, EmailArtifactLoader
 from algen_agent_tools.mail.tool import (
@@ -42,12 +43,16 @@ def gmail_toolkit(
     artifact_loader: ContextualArtifactLoader | None = None,
     artifact_sink: ArtifactSink | None = None,
     attachment_policy: AttachmentPolicy | None = None,
+    documents: DocumentReader | None = None,
     client: Any = None,
 ) -> Toolkit:
     """A toolkit for one Gmail or Google Workspace mailbox: ``<name>.list_messages`` and
     ``<name>.get_message`` (read) and ``<name>.send_email`` (external). With an
     ``artifact_sink``, ``<name>.get_attachment`` (read) saves an attachment as an artifact,
     within ``attachment_policy`` (default: 20 MB, any type whose content matches it).
+    With ``documents`` (a :class:`~algen_agent_tools.documents.DocumentReader`),
+    ``<name>.read_attachment`` (read) returns an attachment's inspected text in one call, without
+    the file reaching the model; with an ``artifact_sink`` too, the file is also saved.
 
     The OAuth client and refresh token are ``env://`` references resolved when the client
     opens. ``sender`` is the mailbox's address (or a verified alias). Recipients are limited to
@@ -94,6 +99,7 @@ def gmail_toolkit(
         provider="Gmail",
         artifact_sink=artifact_sink,
         attachment_policy=attachment_policy,
+        documents=documents,
     )
 
     add_send_tool(

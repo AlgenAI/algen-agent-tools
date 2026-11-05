@@ -17,6 +17,12 @@ A tool's name, input schema, side effect and permission are part of the public c
   gain `attachments` (`ExtractedDocument.parts`), and attachments that are skipped or unreadable
   are new coverage findings, `document.attachment_skipped` and `document.attachment_unread`
   (`UnreadContent(kind="attachment")`). Standard library only; `.msg` is not read yet.
+- `<mailbox>.read_attachment(message_id, attachment_id)` (read) on the Gmail, IMAP and Outlook
+  toolkits built with `documents=DocumentReader()` (#44): one call downloads an attachment,
+  checks it against `attachment_policy` and returns its inspected text (`AttachmentText`, the
+  `documents.extract_text` result plus `artifact`), so the file never passes through the model.
+  A quarantined attachment's text is withheld; with an `artifact_sink` the file is also saved.
+  `DocumentReader` is the read behind `documents.extract_text`, now public.
 
 ## [0.2.0a8] - 2026-11-05
 

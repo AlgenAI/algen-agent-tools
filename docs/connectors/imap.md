@@ -18,6 +18,7 @@ deleted or marked as seen. Send replies with [`smtp.send_email`](smtp.md).
 | `imap.list_messages` | read | `imap.read` | 120 s | Runtime default | agent policy |
 | `imap.get_message` | read | `imap.read` | 60 s | Runtime default | agent policy |
 | `imap.get_attachment` (with `artifact_sink`) | read | `imap.read` | 120 s | Runtime default | agent policy |
+| `imap.read_attachment` (with `documents`) | read | `imap.read` | 120 s | Runtime default | agent policy |
 
 - `imap.list_messages(folder="INBOX", from_address=None, subject=None, since=None, before=None,
   unread_only=False, max_results=25, page_token=None)` lists one folder, newest first, at most
@@ -35,6 +36,9 @@ deleted or marked as seen. Send replies with [`smtp.send_email`](smtp.md).
 - `imap.get_attachment(message_id, attachment_id)` is offered only when the toolkit is built
   with an `artifact_sink`, as for [Gmail](gmail.md#attachments). Pass the attachment's
   `part_id`. The part's size is checked against the limit (20 MB) before it is downloaded.
+- `imap.read_attachment(message_id, attachment_id, max_chars=50000)` is offered only when the
+  toolkit is built with `documents`, as for [Gmail](gmail.md#reading-attachments): the
+  attachment's inspected text in one call.
 
 ## Message ids
 
