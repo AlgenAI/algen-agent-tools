@@ -47,6 +47,7 @@ COVERAGE_KINDS = frozenset(
     {
         "document.attachment_skipped",
         "document.attachment_unread",
+        "document.body_unread",
         "document.images_excluded",
         "document.ocr_no_text",
         "document.ocr_required",
@@ -85,7 +86,7 @@ class UnreadContent(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    kind: Literal["image", "page", "rows", "attachment"]
+    kind: Literal["image", "page", "rows", "attachment", "body"]
     page: int | None = None
     """The page, slide or sheet, when known."""
     part: str | None = None
@@ -96,9 +97,11 @@ def _unread_content(findings: tuple[DocumentSecurityFinding, ...]) -> tuple[Unre
     unread: list[UnreadContent] = []
     for finding in findings:
         if finding.kind == "document.truncated":
-            kind: Literal["image", "page", "rows", "attachment"] = "rows"
+            kind: Literal["image", "page", "rows", "attachment", "body"] = "rows"
         elif finding.kind in {"document.attachment_skipped", "document.attachment_unread"}:
             kind = "attachment"
+        elif finding.kind == "document.body_unread":
+            kind = "body"
         elif finding.kind == "document.ocr_required" and finding.page is not None:
             kind = "page"
         elif finding.kind in COVERAGE_KINDS:
@@ -552,8 +555,8 @@ class PdfDocumentExtractor:
 def extractor_for(
     filename: str, *, ocr: TextRecognizer | None = None, ocr_max_pages: int = 3
 ) -> DocumentExtractor:
-    """The extractor for ``filename``'s suffix. An email (``.eml``) has its attachments read by
-    the extractors for their own file names.
+    """The extractor for ``filename``'s suffix. An email (``.eml``, or Outlook ``.msg`` with the
+    ``msg`` extra) has its attachments read by the extractors for their own file names.
 
     With an ``ocr`` recognizer, images (PNG, JPEG, WebP, GIF, BMP, TIFF) are accepted and
     scanned PDF pages are recognized, up to ``ocr_max_pages`` pages per PDF. Without one,
@@ -594,6 +597,11 @@ def extractor_for(
         from algen_agent_tools.documents.inspection.email import EmailDocumentExtractor
 
         return EmailDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages)
+    if suffix == ".msg":
+        from algen_agent_tools.documents.inspection.msg import MsgDocumentExtractor
+
+        return MsgDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages)
     raise ValueError(
-        "only PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, TXT, Markdown and EML documents are supported"
+        "only PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, TXT, Markdown, EML and MSG documents are "
+        "supported"
     )
