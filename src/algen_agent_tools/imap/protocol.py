@@ -331,6 +331,16 @@ def text_part(parts: Sequence[BodyPart]) -> BodyPart | None:
     return None
 
 
+def text_parts(parts: Sequence[BodyPart], limit: int = 5) -> list[BodyPart]:
+    """The parts that hold the message's text: its inline text/plain parts in order (at most
+    ``limit``), else its first inline text/html part."""
+    inline = [part for part in parts if part.filename is None and part.disposition != "attachment"]
+    plain = [part for part in inline if part.media_type == "text/plain"]
+    if plain:
+        return plain[:limit]
+    return [part for part in inline if part.media_type == "text/html"][:1]
+
+
 def attachment_parts(parts: Sequence[BodyPart]) -> list[BodyPart]:
     return [part for part in parts if part.is_attachment]
 

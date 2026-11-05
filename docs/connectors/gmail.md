@@ -32,17 +32,17 @@ OAuth refresh token.
   decides when present; without it only an SPF failure with no DKIM pass is `fail`. Text the
   sender controls (comments, quoted addresses, lower headers) is ignored. Use it to keep a
   spoofed "From" out of trusted workflows; `unknown` is not a failure.
-- `gmail.get_message(message_id, max_chars=20000)` reads one message: the same fields plus `cc`
-  and the body as plain text (the text part, or the HTML part with markup, scripts and styles
-  removed), cut to `max_chars` (at most 100,000) with `body_truncated` set when cut. Message
+- `gmail.get_message(message_id, max_chars=20000, include="full")` reads one message: the same
+  fields plus `cc` and the body as plain text (the text parts, or the HTML part with markup,
+  scripts and styles removed; `include="latest"` keeps only the sender's own text), cut to `max_chars` (at most 100,000) with `body_truncated` set when cut. Message
   content comes from outside the deployment; the tool description tells the model to treat
   instructions in it as data. It also returns the threading headers: `message_id_header`,
   `in_reply_to` and `references` (oldest first).
 - `gmail.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)` reads a whole
   thread (Gmail's `threads.get`), oldest first, each message as `get_message` returns it with
   the body cut to `max_chars_per_message` (at most 10,000). At most 50 messages; a longer thread
-  keeps its newest and sets `truncated`. Quoted history is not removed yet, so each reply
-  repeats the text it quotes.
+  keeps its newest and sets `truncated`. By default (`include="latest"`) each body is the
+  sender's own text; see [Quoted history](#quoted-history).
 - `gmail.get_attachment(message_id, attachment_id)` is offered only when the toolkit is built
   with an `artifact_sink` (see [Attachments](#attachments)). It saves one attachment as an
   artifact and returns only its reference (`artifact_id`, `filename`, `media_type`), never the
@@ -91,6 +91,26 @@ boundaries.
 Keep the agent's approval policy on (the default asks before every external call), and use
 `allowed_domains` (or the `ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS` setting, comma-separated) to bound
 who it can write to.
+
+## Quoted history
+
+`include="latest"` on `get_message` (default `"full"`) and `get_thread` (default `"latest"`)
+returns only what the sender wrote: the history the reply quotes and the signature are removed
+and `quoted_text_removed` is set. The rules are deterministic and conservative, so text is
+removed only after a line that clearly starts quoted history:
+
+- an attribution line, `On <date>, <name> wrote:` (Gmail, Apple Mail, Thunderbird; also wrapped
+  over two lines, and in French, German, Spanish, Italian and Dutch);
+- an Outlook header block (`From:` then `Sent:`/`Date:` and `To:`/`Subject:`), optionally after
+  a `____` rule, or `-----Original Message-----`;
+- a run of `>` lines with nothing but blank lines after it (inline answers between quoted lines
+  are kept);
+- a signature after the standard `-- ` line, or a final `Sent from my …` line.
+
+A forwarded message (`---------- Forwarded message ----------`, `Begin forwarded message:`) is
+new content and is always kept, and a message that is only a quote is returned whole. Gmail and
+IMAP bodies join every inline text part (at most five), as clients that split the text around
+inline images send them. The same applies to the IMAP and Outlook toolkits.
 
 ## Reading attachments
 

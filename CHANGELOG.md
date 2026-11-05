@@ -16,6 +16,19 @@ A tool's name, input schema, side effect and permission are part of the public c
   attached Outlook messages are read as attached emails (`MsgDocumentExtractor`,
   `msg_to_email`). An RTF-only body is the new coverage finding `document.body_unread`
   (`UnreadContent(kind="body")`). The GPL `extract-msg` package is not used.
+- Quoted history (#42): `get_message(..., include="latest")` and `get_thread(..., include=...)`
+  on Gmail, IMAP and Outlook return the sender's own text, without the history the reply quotes
+  or its signature, and set the new `quoted_text_removed`. The rules are deterministic and
+  conservative (attribution lines in six languages, Outlook header blocks, trailing `>` runs,
+  `-- ` signatures); forwarded messages and inline replies are kept
+  (`algen_agent_tools.mail.quotes.latest_text`).
+- Gmail and IMAP message bodies join every inline text part (at most five) instead of only the
+  first, so text a client split around inline images is not lost.
+
+### Changed
+
+- `get_thread` now defaults to `include="latest"`: each message's body is the sender's own
+  text. Pass `include="full"` for whole bodies, as 0.2.0a9 returned.
 
 ## [0.2.0a9] - 2026-11-05
 

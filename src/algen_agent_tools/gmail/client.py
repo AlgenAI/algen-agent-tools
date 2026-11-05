@@ -101,17 +101,22 @@ def _decode(data: str) -> bytes:
     return base64.urlsafe_b64decode(data + "=" * (-len(data) % 4))
 
 
+MAX_TEXT_PARTS = 5
+
+
 def _body_text(payload: Mapping[str, Any]) -> str:
-    """The message's text: its first inline text/plain part, else its first text/html part."""
-    found: dict[str, str] = {}
+    """The message's text: its inline text/plain parts in order (at most five, as a client that
+    splits the text around inline images sends them), else its first text/html part."""
+    found: dict[str, list[str]] = {"text/plain": [], "text/html": []}
     for part in _parts(payload):
         media_type = str(part.get("mimeType") or "").casefold()
         data = (part.get("body") or {}).get("data")
-        if media_type in ("text/plain", "text/html") and data and not _filename(part):
-            found.setdefault(media_type, _decode(str(data)).decode("utf-8", errors="replace"))
-    if "text/plain" in found:
-        return found["text/plain"].replace("\r\n", "\n").strip()
-    return html_to_text(found.get("text/html", ""))
+        if media_type in found and data and not _filename(part):
+            found[media_type].append(_decode(str(data)).decode("utf-8", errors="replace"))
+    plain = [text.replace("\r\n", "\n").strip() for text in found["text/plain"][:MAX_TEXT_PARTS]]
+    if any(plain):
+        return "\n\n".join(text for text in plain if text)
+    return html_to_text(found["text/html"][0]) if found["text/html"] else ""
 
 
 def _headers(payload: Mapping[str, Any]) -> dict[str, str]:
