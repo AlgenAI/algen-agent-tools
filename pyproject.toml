@@ -94,7 +94,7 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/AlgenAI/algen-agent-tools"
 Source = "https://github.com/AlgenAI/algen-agent-tools"
-Documentation = "https://github.com/AlgenAI/algen-agent-tools#readme"
+Documentation = "https://algenai.github.io/algen-agent-tools/"
 Issues = "https://github.com/AlgenAI/algen-agent-tools/issues"
 Changelog = "https://github.com/AlgenAI/algen-agent-tools/blob/main/CHANGELOG.md"
 

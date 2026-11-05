@@ -1,0 +1,57 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/docs.html"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs/docs.html"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # docs/docs.html is the site's single page, copied from Algen Agent Studio's
+      # docs/tools-docs.html (see docs/releasing.md). It links to other sites by absolute URL.
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp docs/docs.html _site/index.html
+          touch _site/.nojekyll
+          # Studio's copy links to its own routes (/runtime/, /guide/); those do not exist here.
+          if grep -nE '(href|src)="(/[^/"]|[^":#/])[^":]*"' _site/index.html; then
+            echo "::error::docs/docs.html has relative or root-relative links, which do not resolve on the site"
+            exit 1
+          fi
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
