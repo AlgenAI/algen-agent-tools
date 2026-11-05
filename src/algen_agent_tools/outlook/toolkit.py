@@ -7,6 +7,7 @@ from pydantic import Field, SecretStr
 
 from algen_agent_tools._env import SecretResolver, env_names, resolve_optional
 from algen_agent_tools.attachments import ArtifactSink, AttachmentPolicy
+from algen_agent_tools.documents.toolkit import DocumentReader
 from algen_agent_tools.mail.models import EmailAddress, EmailArtifactLoader
 from algen_agent_tools.mail.tool import (
     AUDIT_METADATA,
@@ -54,11 +55,15 @@ def outlook_toolkit(
     artifact_loader: ContextualArtifactLoader | None = None,
     artifact_sink: ArtifactSink | None = None,
     attachment_policy: AttachmentPolicy | None = None,
+    documents: DocumentReader | None = None,
     client: Any = None,
 ) -> Toolkit:
     """A toolkit for one Outlook (Microsoft 365) mailbox through Microsoft Graph:
     ``<name>.list_messages`` and ``<name>.get_message`` (read), ``<name>.send_email``
     (external) and, with an ``artifact_sink``, ``<name>.get_attachment`` (read).
+    With ``documents`` (a :class:`~algen_agent_tools.documents.DocumentReader`),
+    ``<name>.read_attachment`` (read) returns an attachment's inspected text in one call, without
+    the file reaching the model; with an ``artifact_sink`` too, the file is also saved.
 
     With ``refresh_token`` set the connector acts as the signed-in user; unset, it uses the app's
     own credentials on ``mailbox``. ``mailbox`` is also the address mail is sent from. Recipients
@@ -117,6 +122,7 @@ def outlook_toolkit(
         id_pattern=OUTLOOK_ID_PATTERN,
         artifact_sink=artifact_sink,
         attachment_policy=attachment_policy,
+        documents=documents,
     )
     add_send_tool(
         toolkit,

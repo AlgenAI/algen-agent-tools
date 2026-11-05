@@ -17,6 +17,7 @@ registration.
 | `outlook.list_messages` | read | `outlook.read` | 120 s | Runtime default | agent policy |
 | `outlook.get_message` | read | `outlook.read` | 60 s | Runtime default | agent policy |
 | `outlook.get_attachment` (with `artifact_sink`) | read | `outlook.read` | 120 s | Runtime default | agent policy |
+| `outlook.read_attachment` (with `documents`) | read | `outlook.read` | 120 s | Runtime default | agent policy |
 | `outlook.send_email` | external | `outlook.write` | 60 s | 1 | agent policy (asks by default) |
 
 - `outlook.list_messages(folder="inbox", search=None, unread_only=False, max_results=25,
@@ -29,6 +30,9 @@ registration.
   attachment_id)` behave as their [Gmail](gmail.md#tools) counterparts; they are the same shared
   tools. Graph returns the body as text on request; an HTML body is converted. Only file
   attachments can be saved (not attached Outlook items or cloud links).
+- `outlook.read_attachment(message_id, attachment_id, max_chars=50000)`, with `documents`, is
+  the shared [Gmail](gmail.md#reading-attachments) tool: an attachment's inspected text in one
+  call.
 - `outlook.send_email` takes the same input as [`smtp.send_email`](smtp.md) and sends from the
   mailbox, saving a copy in Sent Items. Attachments travel inline, so they total at most 3 MB
   (`max_attachment_bytes`).

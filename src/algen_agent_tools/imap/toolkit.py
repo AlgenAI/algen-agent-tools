@@ -10,6 +10,7 @@ from pydantic import Field, SecretStr, ValidationError
 
 from algen_agent_tools._env import SecretResolver, env_names, resolve_optional, split_list
 from algen_agent_tools.attachments import ArtifactSink, AttachmentPolicy
+from algen_agent_tools.documents.toolkit import DocumentReader
 from algen_agent_tools.imap.client import (
     ImapFactory,
     ImapMailboxClient,
@@ -55,11 +56,15 @@ def imap_toolkit(
     authserv_id: str | None = AUTHSERV_ID,
     artifact_sink: ArtifactSink | None = None,
     attachment_policy: AttachmentPolicy | None = None,
+    documents: DocumentReader | None = None,
     imap_factory: ImapFactory | None = None,
     client: Any = None,
 ) -> Toolkit:
     """A read-only toolkit for one IMAP mailbox: ``<name>.list_messages`` and
     ``<name>.get_message`` and, with an ``artifact_sink``, ``<name>.get_attachment`` (all read).
+    With ``documents`` (a :class:`~algen_agent_tools.documents.DocumentReader`),
+    ``<name>.read_attachment`` (read) returns an attachment's inspected text in one call, without
+    the file reaching the model; with an ``artifact_sink`` too, the file is also saved.
 
     Every setting is an ``env://`` reference resolved when the client opens. ``host``,
     ``username`` and ``password`` (an app password) are required; ``port`` defaults to 993 and
@@ -125,5 +130,6 @@ def imap_toolkit(
         provider="IMAP",
         artifact_sink=artifact_sink,
         attachment_policy=attachment_policy,
+        documents=documents,
     )
     return toolkit
