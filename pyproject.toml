@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-  "algen-agent-tools[discord,documents,github,gmail,imap,mcp,mysql,outlook,postgres,smtp,sqlite,telegram,webhook]",
+  "algen-agent-tools[discord,documents,github,gmail,imap,mcp,mysql,ocr,outlook,postgres,smtp,sqlite,telegram,webhook]",
 ]
 # Discord uses httpx, already installed with the Runtime.
 discord = []
@@ -48,6 +48,9 @@ discord = []
 # PDFs are read with PyMuPDF (AGPL-3.0). DOCX, XLSX, PPTX, HTML, CSV, TSV, text and Markdown
 # need only the standard library.
 documents = ["PyMuPDF>=1.24,<3"]
+# OCR for documents with Tesseract (Apache-2.0), never the default: the host installs the
+# tesseract program and builds a TesseractRecognizer.
+ocr = ["pytesseract>=0.3.10,<0.4", "Pillow>=10,<14"]
 # GitHub is an MCP overlay, so it needs the Runtime's MCP client.
 github = ["algen-agent-runtime[mcp]>=0.1.0a20,<0.2"]
 gmail = []
@@ -136,5 +139,5 @@ strict = true
 packages = ["algen_agent_tools"]
 
 [[tool.mypy.overrides]]
-module = ["aiomysql", "aiomysql.*", "asyncpg", "asyncpg.*", "fitz", "jsonschema", "mcp", "mcp.*", "yaml"]
+module = ["aiomysql", "aiomysql.*", "asyncpg", "asyncpg.*", "fitz", "jsonschema", "mcp", "mcp.*", "PIL", "PIL.*", "pytesseract", "yaml"]
 ignore_missing_imports = true
