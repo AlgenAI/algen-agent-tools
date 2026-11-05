@@ -19,11 +19,15 @@ from algen_agent_tools._core.errors import failure, not_attempted, rejected
 from algen_agent_tools._core.http import HostLockedClient
 from algen_agent_tools.attachments.models import AttachmentUpload
 from algen_agent_tools.mail.inbound import (
+    MAX_THREAD_MESSAGES,
+    EmailThread,
     InboundEmailAttachment,
     InboundEmailDetail,
     InboundEmailSummary,
     bounded_body,
     html_to_text,
+    thread_headers,
+    thread_of,
 )
 from algen_agent_tools.mail.models import (
     EmailAddress,
@@ -42,6 +46,8 @@ _SUMMARY_FIELDS = (
     "id,conversationId,from,toRecipients,subject,receivedDateTime,bodyPreview,hasAttachments,"
     "categories"
 )
+_DETAIL_FIELDS = f"{_SUMMARY_FIELDS},ccRecipients,body,internetMessageId,internetMessageHeaders"
+_TEXT_BODY = 'outlook.body-content-type="text"'
 
 
 class OutlookSettings(BaseModel):
@@ -328,6 +334,29 @@ class OutlookMailboxClient:
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
             raise EmailDeliveryError(failure("Outlook", "inbox read", exc)) from exc
 
+    async def _detail(self, item: Mapping[str, Any], max_chars: int) -> InboundEmailDetail:
+        body = item.get("body") or {}
+        content = str(body.get("content") or "")
+        if str(body.get("contentType") or "").casefold() == "html":
+            content = html_to_text(content)
+        text, truncated = bounded_body(content.replace("\r\n", "\n").strip(), max_chars)
+        # Graph gives In-Reply-To and References only among the message's internet headers.
+        headers = {
+            str(header.get("name") or "").casefold(): str(header.get("value") or "")
+            for header in item.get("internetMessageHeaders") or ()
+        }
+        return InboundEmailDetail(
+            **await self._summary(item),
+            cc=_addresses(item.get("ccRecipients")),
+            text_body=text,
+            body_truncated=truncated,
+            **thread_headers(
+                str(item.get("internetMessageId") or headers.get("message-id", "")),
+                headers.get("in-reply-to", ""),
+                headers.get("references", ""),
+            ),
+        )
+
     async def get_message(
         self, provider_message_id: str, *, max_chars: int = 20_000
     ) -> InboundEmailDetail:
@@ -335,24 +364,46 @@ class OutlookMailboxClient:
         try:
             response = await self._http.get(
                 self._url(f"messages/{_segment(provider_message_id)}"),
-                headers=await self._headers(Prefer='outlook.body-content-type="text"'),
-                params={"$select": f"{_SUMMARY_FIELDS},ccRecipients,body"},
+                headers=await self._headers(Prefer=_TEXT_BODY),
+                params={"$select": _DETAIL_FIELDS},
             )
             response.raise_for_status()
-            item = response.json()
-            body = item.get("body") or {}
-            content = str(body.get("content") or "")
-            if str(body.get("contentType") or "").casefold() == "html":
-                content = html_to_text(content)
-            text, truncated = bounded_body(content.replace("\r\n", "\n").strip(), max_chars)
-            return InboundEmailDetail(
-                **await self._summary(item),
-                cc=_addresses(item.get("ccRecipients")),
-                text_body=text,
-                body_truncated=truncated,
-            )
+            return await self._detail(response.json(), max_chars)
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
             raise EmailDeliveryError(failure("Outlook", "message read", exc)) from exc
+
+    async def get_thread(
+        self, thread_id: str, *, max_messages: int = 20, max_chars: int = 4_000
+    ) -> EmailThread:
+        """The conversation's messages oldest first, the newest ``max_messages`` of the first
+        50 Graph returns, each body cut to ``max_chars``."""
+        if not thread_id or len(thread_id) > 2_000 or "'" in thread_id:
+            raise ValueError("thread_id is invalid")
+        try:
+            # Graph refuses to order a conversationId filter, so the messages are sorted here.
+            response = await self._http.get(
+                self._url("messages"),
+                headers=await self._headers(Prefer=_TEXT_BODY),
+                params={
+                    "$filter": f"conversationId eq '{thread_id}'",
+                    "$select": _DETAIL_FIELDS,
+                    "$top": str(MAX_THREAD_MESSAGES),
+                },
+            )
+            response.raise_for_status()
+            listing = response.json()
+            items = sorted(
+                listing["value"], key=lambda item: _received_ms(item.get("receivedDateTime"))
+            )
+            if not items:
+                raise EmailDeliveryError("Outlook conversation has no messages in this mailbox")
+            details = [await self._detail(item, max_chars) for item in items[-max_messages:]]
+            more = len(items) > max_messages or bool(listing.get("@odata.nextLink"))
+            return thread_of(thread_id, details, max_messages, more=more)
+        except EmailDeliveryError:
+            raise
+        except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+            raise EmailDeliveryError(failure("Outlook", "thread read", exc)) from exc
 
     async def get_attachment(self, provider_message_id: str, attachment: str) -> AttachmentUpload:
         """One file attachment, with the name and type the message declares for it."""

@@ -16,6 +16,7 @@ registration.
 | --- | --- | --- | --- | --- | --- |
 | `outlook.list_messages` | read | `outlook.read` | 120 s | Runtime default | agent policy |
 | `outlook.get_message` | read | `outlook.read` | 60 s | Runtime default | agent policy |
+| `outlook.get_thread` | read | `outlook.read` | 120 s | Runtime default | agent policy |
 | `outlook.get_attachment` (with `artifact_sink`) | read | `outlook.read` | 120 s | Runtime default | agent policy |
 | `outlook.read_attachment` (with `documents`) | read | `outlook.read` | 120 s | Runtime default | agent policy |
 | `outlook.send_email` | external | `outlook.write` | 60 s | 1 | agent policy (asks by default) |
@@ -30,6 +31,11 @@ registration.
   attachment_id)` behave as their [Gmail](gmail.md#tools) counterparts; they are the same shared
   tools. Graph returns the body as text on request; an HTML body is converted. Only file
   attachments can be saved (not attached Outlook items or cloud links).
+- `outlook.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)` reads a
+  conversation (`conversationId`) across the mailbox's folders, as for
+  [Gmail](gmail.md#tools). Graph returns at most 50 of its messages in one call; `truncated`
+  says when there were more. In-Reply-To and References come from the message's internet
+  headers, which Graph keeps only for received mail.
 - `outlook.read_attachment(message_id, attachment_id, max_chars=50000)`, with `documents`, is
   the shared [Gmail](gmail.md#reading-attachments) tool: an attachment's inspected text in one
   call.

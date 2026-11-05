@@ -181,6 +181,7 @@ def test_the_plugin_describes_read_only_tools_and_its_settings() -> None:
     tools = plugin_tools("algen_agent_tools.imap")
     assert {name: tool.side_effect for name, tool in tools.items()} == {
         "imap.get_message": SideEffect.READ,
+        "imap.get_thread": SideEffect.READ,
         "imap.list_messages": SideEffect.READ,
     }
     assert {

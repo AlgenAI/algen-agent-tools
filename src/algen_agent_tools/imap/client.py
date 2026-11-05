@@ -44,18 +44,21 @@ from algen_agent_tools.imap.protocol import (
     text_part,
 )
 from algen_agent_tools.mail.inbound import (
+    EmailThread,
     InboundEmailAttachment,
     InboundEmailDetail,
     InboundEmailSummary,
     bounded_body,
     html_to_text,
+    thread_headers,
+    thread_of,
 )
 from algen_agent_tools.mail.models import EmailDeliveryError, reject_header_injection
 from algen_agent_tools.mail.sender_auth import GMAIL_AUTHSERV_ID, topmost_verdict
 
 T = TypeVar("T")
 
-HEADER_FIELDS = "FROM TO CC SUBJECT DATE AUTHENTICATION-RESULTS"
+HEADER_FIELDS = "FROM TO CC SUBJECT DATE AUTHENTICATION-RESULTS MESSAGE-ID IN-REPLY-TO REFERENCES"
 SNIPPET_BYTES = 4_096
 SNIPPET_CHARS = 200
 MAX_BODY_FETCH_BYTES = 1_000_000
@@ -65,6 +68,7 @@ _GMAIL_ID = re.compile(r"^[0-9a-f]{1,16}$")
 _FOLDER_ID = re.compile(r"^([0-9]{1,10})\.([0-9]{1,10})\.([A-Za-z0-9_-]{1,400})$")
 _PAGE_TOKEN = re.compile(r"^([0-9]{1,10})\.([0-9]{1,10})$")
 _SECTION = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){0,9}$")
+_THREAD_ROOT = re.compile(r"^r\.([A-Za-z0-9_-]{4,1400})$")
 
 
 class ImapSettings(BaseModel):
@@ -137,6 +141,24 @@ def _header(headers: Message, name: str) -> str:
         return "" if value is None else str(value)[:MAX_HEADER_CHARS]
     except (ValueError, TypeError, IndexError, AttributeError, LookupError):
         return ""
+
+
+def thread_key(ids: dict[str, Any]) -> str | None:
+    """A plain IMAP thread id: the thread's first Message-ID (References, else In-Reply-To,
+    else the message's own), as ``r.<base64url>``."""
+    references: tuple[str, ...] = ids["references"]
+    root = references[0] if references else ids["in_reply_to"] or ids["message_id_header"]
+    if root is None:
+        return None
+    return "r." + base64.urlsafe_b64encode(root.encode()).decode().rstrip("=")
+
+
+def _thread_root(thread_id: str) -> str | None:
+    found = _THREAD_ROOT.fullmatch(thread_id)
+    if found is None:
+        return None
+    root = _folder_from_token(found.group(1))
+    return root if root.startswith("<") and root.endswith(">") else None
 
 
 def _auth_results(headers: Message) -> list[str]:
@@ -322,11 +344,16 @@ class ImapMailboxClient:
         thread_id = text(response.get("X-GM-THRID"))
         trusted = self._trusted_server
         parts = body_parts(response.get("BODYSTRUCTURE"))
+        ids = thread_headers(
+            _header(headers, "Message-ID"),
+            _header(headers, "In-Reply-To"),
+            _header(headers, "References"),
+        )
         return {
             "provider_message_id": format(int(gmail_id), "x")
             if gmail_id.isdigit()
             else f"{validity}.{uid}.{folder_token(folder)}",
-            "thread_id": format(int(thread_id), "x") if thread_id.isdigit() else None,
+            "thread_id": format(int(thread_id), "x") if thread_id.isdigit() else thread_key(ids),
             "sender": _header(headers, "From"),
             "recipients": _header(headers, "To"),
             "subject": _header(headers, "Subject"),
@@ -354,6 +381,7 @@ class ImapMailboxClient:
             else "unknown",
             "_cc": _header(headers, "Cc"),
             "_parts": parts,
+            "_ids": ids,
         }
 
     # Operations
@@ -415,6 +443,7 @@ class ImapMailboxClient:
                 fields = self._summary(response, name, validity, uid)
                 body = text_part(fields.pop("_parts"))
                 fields.pop("_cc")
+                fields.pop("_ids")
                 if body is not None:
                     content, _ = self._text(connection, uid, body, SNIPPET_BYTES)
                     fields["snippet"] = " ".join(content.split())[:SNIPPET_CHARS]
@@ -431,24 +460,84 @@ class ImapMailboxClient:
         self, provider_message_id: str, *, max_chars: int = 20_000
     ) -> InboundEmailDetail:
         """One message with its body as plain text, cut to ``max_chars``."""
-        limit = min(max_chars * 6 + 4_096, MAX_BODY_FETCH_BYTES)
 
         def work(connection: Any) -> InboundEmailDetail:
             folder, validity, uid = self._locate(connection, provider_message_id)
             response = self._metadata(connection, [uid]).get(uid)
             if response is None:
                 raise EmailDeliveryError("IMAP message was not found")
-            fields = self._summary(response, folder, validity, uid)
-            body = text_part(fields.pop("_parts"))
-            cc = fields.pop("_cc")
-            content, cut = self._text(connection, uid, body, limit) if body else ("", False)
-            bounded, truncated = bounded_body(content, max_chars)
-            fields["snippet"] = " ".join(bounded.split())[:SNIPPET_CHARS]
-            return InboundEmailDetail(
-                **fields, cc=cc, text_body=bounded, body_truncated=truncated or cut
-            )
+            return self._detail(connection, response, folder, validity, uid, max_chars)
 
         return await self._run("message read", work)
+
+    def _detail(
+        self,
+        connection: Any,
+        response: Mapping[str, Value],
+        folder: str,
+        validity: int,
+        uid: int,
+        max_chars: int,
+    ) -> InboundEmailDetail:
+        """One message from its metadata, with the body fetched as plain text."""
+        limit = min(max_chars * 6 + 4_096, MAX_BODY_FETCH_BYTES)
+        fields = self._summary(response, folder, validity, uid)
+        body = text_part(fields.pop("_parts"))
+        cc = fields.pop("_cc")
+        ids = fields.pop("_ids")
+        content, cut = self._text(connection, uid, body, limit) if body else ("", False)
+        bounded, truncated = bounded_body(content, max_chars)
+        fields["snippet"] = " ".join(bounded.split())[:SNIPPET_CHARS]
+        return InboundEmailDetail(
+            **fields, **ids, cc=cc, text_body=bounded, body_truncated=truncated or cut
+        )
+
+    async def get_thread(
+        self, thread_id: str, *, max_messages: int = 20, max_chars: int = 4_000
+    ) -> EmailThread:
+        """The thread's messages in the configured folders, oldest first, the newest
+        ``max_messages`` of them.
+
+        On Gmail the thread is Gmail's own (``X-GM-THRID``). Elsewhere it is every message whose
+        Message-ID, In-Reply-To or References names the thread's first message.
+        """
+        root = _thread_root(thread_id)
+
+        def work(connection: Any) -> EmailThread:
+            if root is not None:
+                quoted = quote(root)
+                criteria = [
+                    "OR", "OR", "HEADER", "Message-ID", quoted, "HEADER", "References", quoted,
+                    "HEADER", "In-Reply-To", quoted,
+                ]  # fmt: skip
+            elif self._gmail and _GMAIL_ID.fullmatch(thread_id):
+                criteria = ["X-GM-THRID", str(int(thread_id, 16))]
+            else:
+                raise EmailDeliveryError("IMAP thread id is not valid for this mailbox")
+            details: dict[str, InboundEmailDetail] = {}
+            more = False
+            for folder in self._settings.folders:
+                validity = self._examine(connection, folder)
+                data = self._uid(connection, "SEARCH", *criteria)
+                found = b" ".join(item for item in data if isinstance(item, bytes)).split()
+                uids = sorted({int(item) for item in found if item.isdigit()})
+                # The newest messages of each folder; a folder's UIDs grow with arrival.
+                more = more or len(uids) > max_messages
+                page = uids[-max_messages:]
+                metadata = self._metadata(connection, page) if page else {}
+                for uid in page:
+                    response = metadata.get(uid)
+                    if response is None:
+                        continue
+                    detail = self._detail(connection, response, folder, validity, uid, max_chars)
+                    # Gmail shows one message in several folders (labels); count it once.
+                    key = detail.message_id_header or detail.provider_message_id
+                    details.setdefault(key, detail)
+            if not details:
+                raise EmailDeliveryError("IMAP thread was not found in the configured folders")
+            return thread_of(thread_id, list(details.values()), max_messages, more=more)
+
+        return await self._run("thread read", work)
 
     async def get_attachment(self, provider_message_id: str, attachment: str) -> AttachmentUpload:
         """One attachment by its part id, with the file name and type the message declares."""
