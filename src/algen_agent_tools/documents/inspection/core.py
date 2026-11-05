@@ -602,6 +602,8 @@ def sniff_suffix(data: bytes) -> str | None:
     knows: text formats are told apart by their name only."""
     if data.startswith(b"%PDF-"):
         return ".pdf"
+    if data.lstrip()[:5] == b"{\\rtf":
+        return ".rtf"
     from algen_agent_tools.documents.inspection.image import image_media_type
 
     media_type = image_media_type(data)
@@ -675,6 +677,10 @@ def extractor_for(
         from algen_agent_tools.documents.inspection.odf import OdfDocumentExtractor
 
         return OdfDocumentExtractor()
+    if suffix == ".rtf":
+        from algen_agent_tools.documents.inspection.rtf import RtfDocumentExtractor
+
+        return RtfDocumentExtractor()
     if suffix in {".html", ".htm"}:
         from algen_agent_tools.documents.inspection.html import HtmlDocumentExtractor
 
@@ -690,6 +696,6 @@ def extractor_for(
 
         return MsgDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages)
     raise ValueError(
-        "only PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP, HTML, CSV, TSV, TXT, Markdown, EML and MSG "
-        "documents are supported"
+        "only PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP, RTF, HTML, CSV, TSV, TXT, Markdown, EML and "
+        "MSG documents are supported"
     )

@@ -37,6 +37,7 @@ from algen_agent_tools.documents.inspection.image import ImageDocumentExtractor
 from algen_agent_tools.documents.inspection.ocr import RecognizedText, TextRecognizer
 from algen_agent_tools.documents.inspection.odf import OdfDocumentExtractor
 from algen_agent_tools.documents.inspection.pptx import PptxDocumentExtractor
+from algen_agent_tools.documents.inspection.rtf import RtfDocumentExtractor
 from algen_agent_tools.documents.inspection.tesseract import TesseractRecognizer
 from algen_agent_tools.documents.inspection.xlsx import XlsxDocumentExtractor
 
@@ -57,6 +58,7 @@ __all__ = [
     "PlainTextDocumentExtractor",
     "PptxDocumentExtractor",
     "RecognizedText",
+    "RtfDocumentExtractor",
     "TesseractRecognizer",
     "TextRecognizer",
     "UnreadContent",
