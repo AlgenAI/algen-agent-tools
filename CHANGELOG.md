@@ -10,9 +10,16 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [0.2.0a8] - 2026-11-05
 
-Needs `algen-agent-runtime>=0.1.0a20` (unchanged).
+Needs `algen-agent-runtime>=0.1.0a23`.
 
 ### Upgrade notes
+
+- The supported Runtime range is now `>=0.1.0a23,<0.2`. 0.1.0a22 and 0.1.0a23 fix two ways an
+  approval-required workflow tool step could run without its approval (security fixes), run
+  synchronous tools in a worker thread within their timeout, and keep a timed-out synchronous
+  tool's concurrency slot until its thread ends. 0.1.0a21 retries a model's malformed tool call
+  instead of failing the run. Every Tools tool is `async` except the sample `echo`, which is
+  thread-safe, so no tool changes are needed.
 
 - Content that was not read no longer makes a document `review`
   ([#40](https://github.com/AlgenAI/algen-agent-tools/issues/40)). `document.ocr_required`,
