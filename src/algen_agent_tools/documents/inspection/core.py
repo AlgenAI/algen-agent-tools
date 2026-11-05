@@ -45,6 +45,8 @@ class DocumentSpan(BaseModel):
 
 COVERAGE_KINDS = frozenset(
     {
+        "document.attachment_skipped",
+        "document.attachment_unread",
         "document.images_excluded",
         "document.ocr_no_text",
         "document.ocr_required",
@@ -62,6 +64,8 @@ class DocumentSecurityFinding(BaseModel):
     message: str
     page: int | None = None
     evidence: str | None = Field(default=None, max_length=300)
+    part: str | None = Field(default=None, max_length=255)
+    """The attachment the finding is in, for an email; ``None`` for the document itself."""
     category: Literal["security", "coverage"] = "security"
     """``coverage`` when the finding reports content that was not read (images, scanned pages,
     rows past a limit); it does not affect the disposition. Set from ``kind`` when omitted."""
@@ -76,25 +80,44 @@ class DocumentSecurityFinding(BaseModel):
 
 
 class UnreadContent(BaseModel):
-    """Content the inspection did not read: images, scanned pages or rows past a limit."""
+    """Content the inspection did not read: images, scanned pages, rows past a limit or email
+    attachments."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    kind: Literal["image", "page", "rows"]
+    kind: Literal["image", "page", "rows", "attachment"]
     page: int | None = None
     """The page, slide or sheet, when known."""
+    part: str | None = None
+    """The email attachment it is in, or the attachment itself for ``attachment``."""
 
 
 def _unread_content(findings: tuple[DocumentSecurityFinding, ...]) -> tuple[UnreadContent, ...]:
     unread: list[UnreadContent] = []
     for finding in findings:
         if finding.kind == "document.truncated":
-            unread.append(UnreadContent(kind="rows", page=finding.page))
+            kind: Literal["image", "page", "rows", "attachment"] = "rows"
+        elif finding.kind in {"document.attachment_skipped", "document.attachment_unread"}:
+            kind = "attachment"
         elif finding.kind == "document.ocr_required" and finding.page is not None:
-            unread.append(UnreadContent(kind="page", page=finding.page))
+            kind = "page"
         elif finding.kind in COVERAGE_KINDS:
-            unread.append(UnreadContent(kind="image", page=finding.page))
+            kind = "image"
+        else:
+            continue
+        unread.append(UnreadContent(kind=kind, page=finding.page, part=finding.part))
     return tuple(unread)
+
+
+class DocumentPart(BaseModel):
+    """One attachment of an email that was read, with what its own inspection found."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    filename: str = Field(max_length=255)
+    media_type: str = Field(max_length=255)
+    disposition: DocumentDisposition
+    coverage: Literal["full", "partial", "none"]
 
 
 class ExtractedDocument(BaseModel):
@@ -116,6 +139,8 @@ class ExtractedDocument(BaseModel):
     """What was not read. Derived from the coverage findings when omitted."""
     needs_ocr: bool = False
     """Images or scanned pages hold text that only OCR can read. Derived when omitted."""
+    parts: tuple[DocumentPart, ...] = ()
+    """The attachments of an email that were read; their text follows the body's."""
 
     @model_validator(mode="before")
     @classmethod
@@ -255,12 +280,12 @@ def redact_pii(text: str, *, entities: tuple[str, ...] = ()) -> str:
 def classify_findings(
     findings: list[DocumentSecurityFinding],
 ) -> tuple[tuple[DocumentSecurityFinding, ...], DocumentDisposition]:
-    """Keep one finding per kind and page, and derive the document's disposition from the
+    """Keep one finding per kind, page and part, and derive the document's disposition from the
     security findings: coverage findings (content not read) never make a document ``review``."""
     unique: list[DocumentSecurityFinding] = []
-    seen: set[tuple[str, int | None]] = set()
+    seen: set[tuple[str, int | None, str | None]] = set()
     for finding in findings:
-        key = (finding.kind, finding.page)
+        key = (finding.kind, finding.page, finding.part)
         if key not in seen:
             seen.add(key)
             unique.append(finding)
@@ -527,7 +552,8 @@ class PdfDocumentExtractor:
 def extractor_for(
     filename: str, *, ocr: TextRecognizer | None = None, ocr_max_pages: int = 3
 ) -> DocumentExtractor:
-    """The extractor for ``filename``'s suffix.
+    """The extractor for ``filename``'s suffix. An email (``.eml``) has its attachments read by
+    the extractors for their own file names.
 
     With an ``ocr`` recognizer, images (PNG, JPEG, WebP, GIF, BMP, TIFF) are accepted and
     scanned PDF pages are recognized, up to ``ocr_max_pages`` pages per PDF. Without one,
@@ -564,6 +590,10 @@ def extractor_for(
         return HtmlDocumentExtractor()
     if suffix in {".txt", ".md", ".csv", ".tsv"}:
         return PlainTextDocumentExtractor()
+    if suffix == ".eml":
+        from algen_agent_tools.documents.inspection.email import EmailDocumentExtractor
+
+        return EmailDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages)
     raise ValueError(
-        "only PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, TXT, and Markdown documents are supported"
+        "only PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, TXT, Markdown and EML documents are supported"
     )

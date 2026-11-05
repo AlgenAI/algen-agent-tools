@@ -8,6 +8,16 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Added
+
+- `.eml` email files in `documents.extract_text` and `extractor_for` (#41): the headers and body,
+  then each attachment read by the extractor for its type, with attached emails read at most two
+  levels deep and at most 20 attachments per message (`EmailDocumentExtractor`). A finding in an
+  attachment quarantines the message and names the attachment in the new `part` field. Results
+  gain `attachments` (`ExtractedDocument.parts`), and attachments that are skipped or unreadable
+  are new coverage findings, `document.attachment_skipped` and `document.attachment_unread`
+  (`UnreadContent(kind="attachment")`). Standard library only; `.msg` is not read yet.
+
 ## [0.2.0a8] - 2026-11-05
 
 Needs `algen-agent-runtime>=0.1.0a23`.

@@ -1,7 +1,7 @@
 """Untrusted document inspection: the text a reader would see, and what was hidden from them.
 
-``extractor_for(filename)`` returns an extractor for PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, text
-and Markdown documents. Each returns an :class:`ExtractedDocument`: the full text, the
+``extractor_for(filename)`` returns an extractor for PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, text,
+Markdown and email (``.eml``) documents. Each returns an :class:`ExtractedDocument`: the full text, the
 ``sanitized_text`` a reader would see, per-span evidence, security findings (hidden text,
 prompt-injection attempts, macros, remote content, content that was not read) and a
 disposition. PDF needs the ``documents`` extra (PyMuPDF); the other formats need nothing more.
@@ -16,6 +16,7 @@ Moved here from ``algen_agent_runtime.security`` (deprecated there in Runtime 0.
 from algen_agent_tools.documents.inspection.core import (
     DocumentDisposition,
     DocumentExtractor,
+    DocumentPart,
     DocumentSecurityFinding,
     DocumentSpan,
     ExtractedDocument,
@@ -30,6 +31,7 @@ from algen_agent_tools.documents.inspection.core import (
     sanitize_untrusted_text,
 )
 from algen_agent_tools.documents.inspection.docx import DocxDocumentExtractor
+from algen_agent_tools.documents.inspection.email import EmailDocumentExtractor
 from algen_agent_tools.documents.inspection.html import HtmlDocumentExtractor
 from algen_agent_tools.documents.inspection.image import ImageDocumentExtractor
 from algen_agent_tools.documents.inspection.ocr import RecognizedText, TextRecognizer
@@ -40,9 +42,11 @@ from algen_agent_tools.documents.inspection.xlsx import XlsxDocumentExtractor
 __all__ = [
     "DocumentDisposition",
     "DocumentExtractor",
+    "DocumentPart",
     "DocumentSecurityFinding",
     "DocumentSpan",
     "DocxDocumentExtractor",
+    "EmailDocumentExtractor",
     "ExtractedDocument",
     "FindingSeverity",
     "HtmlDocumentExtractor",

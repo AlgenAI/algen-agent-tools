@@ -1,7 +1,7 @@
 # Documents
 
-Read the text of a PDF, Word (DOCX), Excel (XLSX), PowerPoint (PPTX), HTML, CSV, TSV, plain-text
-or Markdown document an agent received, for example an email attachment saved with `gmail.get_attachment`, or a file attached to the run. Parsing and inspection are this package's
+Read the text of a PDF, Word (DOCX), Excel (XLSX), PowerPoint (PPTX), HTML, CSV, TSV, plain-text,
+Markdown or email (EML) document an agent received, for example an email attachment saved with `gmail.get_attachment`, or a file attached to the run. Parsing and inspection are this package's
 [document inspection](#document-inspection) (`algen_agent_tools.documents.inspection`, moved from
 the Runtime's `algen_agent_runtime.security` in 0.2.0a7); this connector reads the artifact for
 the calling tenant, bounds the call and governs it as a tool.
@@ -35,10 +35,12 @@ the calling tenant, bounds the call and governs it as a tool.
   (macros, remote templates and other content loaded on open). The findings carry no excerpt of
   the suspicious text. For XLSX `page` is the sheet number, for PPTX the slide number.
 - `coverage` and `needs_ocr`: how much was read. See [Unread content](#unread-content).
+- `attachments`: for an email, the attachments that were read (file name, media type,
+  disposition, coverage). A finding in an attachment names it in `part`. See [Email](#email).
 - `page_count` (pages, sheets or slides), `image_count`, and `text_withheld`.
 
 The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.html`,
-`.htm`, `.csv`, `.tsv`, `.txt` or `.md`. Any other suffix is refused. XLSX cells are joined with
+`.htm`, `.csv`, `.tsv`, `.txt`, `.md` or `.eml`. Any other suffix is refused. XLSX cells are joined with
 ` | `, one line per row, under a `--- Sheet: <name> ---` heading; a formula gives its last
 calculated value and date or time cells come out in ISO form. CSV and TSV are read as plain text.
 
@@ -71,6 +73,21 @@ Register it from your project's plugin with `documents.register(context)`, and e
 - A file whose content does not match its name (a renamed executable as `.pdf`) is refused.
 - Errors name the rule that refused the document, never its content.
 - Parsing runs in a worker thread, so a large document does not block other calls.
+
+## Email
+
+An `.eml` file is read as a header block (From, To, Cc, Date, Subject) and its body, followed by
+each attachment's text under an `[Attachment: <name>]` line. The body is the plain-text part, or
+the HTML part (inspected like an HTML document) when there is none. Each attachment is read by the
+extractor for its file name; an attached email is read the same way, at most two levels deep, and
+at most 20 attachments are read in the whole message. An attachment's findings are the message's,
+so hidden text or an instruction in an attachment quarantines the message.
+
+An attachment that is past a limit, of an unsupported type or unreadable is a coverage finding
+(`document.attachment_skipped` or `document.attachment_unread`, with the attachment in `part`),
+so the message is `pass` with `coverage="partial"`, not refused. In code,
+`EmailDocumentExtractor(max_depth=2, max_attachments=20, max_characters=250_000)` changes the
+limits. Outlook `.msg` files are not read yet.
 
 ## Known limitations
 
@@ -132,6 +149,8 @@ can tell "dangerous" from "not read":
 | `document.images_excluded` | Images next to text were not read |
 | `document.ocr_no_text` | OCR ran and found no text |
 | `document.truncated` | Rows past the sheet's row limit were not read |
+| `document.attachment_skipped` | An email attachment past the attachment, depth or text limit was not read |
+| `document.attachment_unread` | An email attachment of an unsupported type, or one that could not be parsed, was not read |
 
 These findings have `category="coverage"`; all others have `category="security"`. Only security
 findings set the disposition, so a scanned ID card without OCR is `pass` with `coverage="none"`
@@ -140,7 +159,8 @@ text or an instruction aimed at the model still makes it `review` or `quarantine
 
 `coverage` is `full` (everything was read), `partial` (some text was read, some content was not)
 or `none` (content was found but no text could be read). `ExtractedDocument.unread` lists what
-was not read: `image`, `page` or `rows`, with the page, slide or sheet when known.
+was not read: `image`, `page`, `rows` or `attachment`, with the page, slide or sheet and the
+email attachment (`part`) when known.
 
 `pass` with `coverage="none"` means nothing dangerous was found because nothing was read. The
 application decides what that warrants: run OCR, ask a person, or file the document unread.

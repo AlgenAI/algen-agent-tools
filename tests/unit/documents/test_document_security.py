@@ -48,7 +48,7 @@ def test_unknown_document_types_are_rejected() -> None:
     try:
         extractor_for("resume.exe")
     except ValueError as exc:
-        assert "PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, TXT, and Markdown" in str(exc)
+        assert "PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, TXT, Markdown and EML" in str(exc)
     else:
         raise AssertionError("unsupported document type was accepted")
 
