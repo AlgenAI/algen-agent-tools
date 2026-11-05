@@ -33,6 +33,12 @@ from `algen-agent-runtime describe`, without running project code.
 - Connectors get their own release cadence, owners and security review.
 - Every connector is a plugin, so Studio sees it with no extra work.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/AlgenAI/algen-agent-tools/refs/heads/main/docs/assets/layers-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/AlgenAI/algen-agent-tools/refs/heads/main/docs/assets/layers-light.svg">
+  <img alt="Where code belongs: domain packs (product-specific tools such as candidate screening or text-to-SQL) build on algen-agent-tools (generic connectors such as Gmail, IMAP, Postgres and documents), which builds on algen-agent-runtime (contracts, approvals, policies, audit)." src="https://raw.githubusercontent.com/AlgenAI/algen-agent-tools/refs/heads/main/docs/assets/layers-light.svg">
+</picture>
+
 | Layer | Package | Contains |
 | --- | --- | --- |
 | Core | `algen-agent-runtime` | Contracts, `@tool`, presets, `Toolkit`, plugins, `describe`, MCP and HTTP adapters |
