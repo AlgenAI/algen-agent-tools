@@ -1,0 +1,1813 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Official documentation for Algen Agent Tools: curated, governed connectors for agents built on Algen Agent Runtime.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://algenai.github.io/algen-agent-tools/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Algen Agent Tools Documentation">
+<meta property="og:description" content="Official documentation for Algen Agent Tools: curated, governed connectors for agents built on Algen Agent Runtime.">
+<meta property="og:url" content="https://algenai.github.io/algen-agent-tools/">
+<meta property="og:site_name" content="Algen Agent Tools">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Algen Agent Tools Documentation">
+<meta name="twitter:description" content="Official documentation for Algen Agent Tools: curated, governed connectors for agents built on Algen Agent Runtime.">
+<title>Algen Agent Tools Documentation</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='20 20 160 160'%3E%3Crect x='20' y='20' width='160' height='160' rx='42' fill='%231A1813'/%3E%3Cpath d='M100 100 66 66M100 100l34-34M100 100l-34 34M100 100l34 34' stroke='%23D4A017' stroke-width='9' stroke-linecap='round'/%3E%3Cg fill='%231A1813' stroke='%23D4A017' stroke-width='8'%3E%3Crect x='45' y='45' width='30' height='30' rx='9'/%3E%3Crect x='125' y='45' width='30' height='30' rx='9'/%3E%3Crect x='45' y='125' width='30' height='30' rx='9'/%3E%3Crect x='125' y='125' width='30' height='30' rx='9'/%3E%3Ccircle cx='100' cy='100' r='16'/%3E%3C/g%3E%3Ccircle cx='100' cy='100' r='7' fill='%23E9C86D'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tokens mirror Algen Agent Studio so Runtime and Studio docs read as one family. */
+:root {
+  color-scheme: light;
+  --page: #f8f6f2; --paper: #fdfcf9; --surface-2: #f2f0e9; --surface-3: #e7e6de;
+  --ink: #1e1f19; --ink-2: #3d3f35; --muted: #5f6255; --divider: #e3e1d7; --border-strong: #d2d3c5;
+  --brand: #755c0a; --brand-dark: #5d4908; --brand-pale: #f3ecd8; --brand-ring: rgba(210, 157, 25, .32);
+  --gold: #d29d19; --gold-light: #e9c86d; --gold-dark: #956e18;
+  --brand-gradient: linear-gradient(135deg, #e9c86d 0%, #d29d19 50%, #956e18 100%);
+  --brand-rule: linear-gradient(90deg, #d29d19, transparent);
+  --hero-gradient: radial-gradient(120% 80% at 50% -10%, #fdfdfc 0%, #f8f6f2 60%);
+  --success: #2e7a4f; --success-pale: #e6f1ea; --warning: #b35a14; --warning-pale: #fbeede;
+  --error: #c14933; --error-pale: #fae9e5; --info: #325886; --info-pale: #e8eef6;
+  --console-bg: #17160f; --console-ink: #ebe6d9; --console-ink-2: #cfc8b8; --console-muted: #a29c90; --console-border: #2c2a23;
+  --ide-side: #121109; --ide-gutter: #5c574c;
+  --shadow-xs: 0 1px 2px rgba(30, 31, 25, .05); --shadow-sm: 0 2px 8px rgba(30, 31, 25, .08);
+  --shadow-md: 0 4px 16px rgba(30, 31, 25, .1); --shadow-gold: 0 0 80px -10px rgba(210, 157, 25, .22);
+  --nav-bg: #f2f0e9; --nav-ink: #1e1f19; --nav-muted: #5f6255; --nav-border: #e0ded3;
+  --nav-hover: rgba(30, 31, 25, .05); --nav-active: #ebe1c1; --nav-active-icon: #755c0a;
+  --radius-xs: 4px; --radius-sm: 6px; --radius: 10px; --radius-lg: 14px;
+  --text-2xs: .6875rem; --text-xs: .75rem; --text-sm: .8125rem; --text-base: .875rem; --text-md: 1rem;
+  --text-lg: 1.125rem; --text-2xl: 1.75rem;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Sora', 'Inter', system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --topbar-h: 60px; --nav-w: 280px;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #0b0b09; --paper: #131210; --surface-2: #1a1916; --surface-3: #23221f;
+  --ink: #f1ede4; --ink-2: #d2ccbf; --muted: #a29c90; --divider: #272521; --border-strong: #36332d;
+  --brand: #d29d19; --brand-dark: #e9c86d; --brand-pale: rgba(210, 157, 25, .13); --brand-ring: rgba(210, 157, 25, .4);
+  --hero-gradient: radial-gradient(120% 80% at 50% -10%, #181612 0%, #0b0b09 60%);
+  --success: #5dbe8a; --success-pale: rgba(93, 190, 138, .12); --warning: #e08a3c; --warning-pale: rgba(224, 138, 60, .12);
+  --error: #e0705b; --error-pale: rgba(224, 112, 91, .12); --info: #7190b7; --info-pale: rgba(113, 144, 183, .14);
+  --console-bg: #080807; --console-border: #23211c; --ide-side: #050504;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, .4); --shadow-sm: 0 2px 8px rgba(0, 0, 0, .5); --shadow-md: 0 4px 16px rgba(0, 0, 0, .6);
+  --nav-bg: #0f0e0c; --nav-ink: #f1ede4; --nav-muted: #a29c90; --nav-border: #272521;
+  --nav-hover: rgba(241, 237, 228, .05); --nav-active: rgba(210, 157, 25, .14); --nav-active-icon: #e9c86d;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--topbar-h) + 20px); }
+body { margin: 0; background: var(--page); color: var(--ink); font: 400 var(--text-md)/1.65 var(--font-sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--brand); text-decoration: none; text-underline-offset: 3px; }
+a:hover { text-decoration: underline; }
+.doc :is(p, li, td) > a[target='_blank']::after { content: '↗'; margin-left: 2px; font-size: .8em; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: var(--radius-xs); }
+code { font-family: var(--font-mono); font-size: .86em; }
+:not(pre) > code { padding: 1px 6px; border: 1px solid var(--divider); border-radius: var(--radius-xs); background: var(--surface-2); color: var(--ink-2); }
+svg.i { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; z-index: 100; top: 8px; left: 8px; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--ink); color: var(--page); transform: translateY(-160%); }
+.skip-link:focus { transform: none; }
+
+/* ─── Top bar ─── */
+.topbar { position: fixed; inset: 0 0 auto 0; z-index: 30; height: var(--topbar-h); display: flex; align-items: center; gap: 14px; padding: 0 20px; border-bottom: 1px solid var(--nav-border); background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(12px); }
+.brand { display: flex; align-items: center; text-decoration: none !important; }
+.brand svg { height: 32px; width: auto; aspect-ratio: 820 / 200; }
+.logo-dark { display: none; }
+:root[data-theme='dark'] .logo-light { display: none; }
+:root[data-theme='dark'] .logo-dark { display: block; }
+.brand-sep { width: 1px; height: 24px; background: var(--divider); }
+.doc-label { color: var(--muted); font: 500 var(--text-sm) var(--font-sans); }
+.topbar-spacer { flex: 1; }
+.search { position: relative; display: flex; align-items: center; width: min(340px, 36vw); }
+.search svg { position: absolute; left: 10px; color: var(--muted); }
+.search input { width: 100%; height: 34px; padding: 0 56px 0 32px; border: 1px solid var(--divider); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink); font-size: var(--text-sm); }
+.search input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--brand-ring); background: var(--paper); }
+.search .kbd { position: absolute; right: 8px; }
+.version-select { position: relative; display: flex; align-items: center; }
+.version-select select { height: 34px; padding: 0 28px 0 10px; border: 1px solid var(--divider); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink); font: 500 var(--text-xs) var(--font-mono); appearance: none; cursor: pointer; }
+.version-select select:hover { border-color: var(--border-strong); }
+.version-select::after { content: '▾'; position: absolute; right: 10px; color: var(--muted); font-size: 10px; pointer-events: none; }
+.btn-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--muted); cursor: pointer; }
+.btn-icon:hover { background: var(--nav-hover); color: var(--ink); text-decoration: none; }
+.menu-toggle { display: none; }
+
+/* ─── Layout ─── */
+.layout { display: grid; grid-template-columns: var(--nav-w) minmax(0, 1fr); padding-top: var(--topbar-h); min-height: 100vh; }
+.sidenav { position: sticky; top: var(--topbar-h); height: calc(100vh - var(--topbar-h)); overflow-y: auto; padding: 20px 12px 40px; border-right: 1px solid var(--nav-border); background: var(--nav-bg); }
+.nav-group { margin-bottom: 18px; }
+.nav-group-title { padding: 0 10px 6px; color: var(--nav-muted); font: 600 var(--text-2xs) var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
+.nav-link { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--radius-sm); color: var(--nav-ink); font: 500 var(--text-sm) var(--font-sans); text-decoration: none !important; }
+.nav-link svg { color: var(--nav-muted); }
+.nav-link:hover { background: var(--nav-hover); }
+.nav-link.active { background: var(--nav-active); font-weight: 600; }
+.nav-link.active svg { color: var(--nav-active-icon); }
+.nav-link .tag { margin-left: auto; padding: 0 6px; border-radius: 999px; background: var(--brand-pale); color: var(--brand); font: 600 10px var(--font-sans); }
+.nav-link.filtered, .nav-group.filtered { display: none; }
+.nav-empty { display: none; padding: 10px; color: var(--muted); font-size: var(--text-sm); }
+.nav-status { margin: 24px 10px 0; padding: 12px; border: 1px solid var(--nav-border); border-radius: var(--radius); background: var(--paper); }
+.nav-status strong { display: flex; align-items: center; gap: 7px; font-size: var(--text-xs); }
+.nav-status strong::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--warning); }
+.nav-status p { margin: 6px 0 0; color: var(--muted); font-size: var(--text-xs); line-height: 1.45; }
+.scrim { display: none; }
+
+main { min-width: 0; }
+.content { max-width: 880px; margin: 0 auto; padding: 0 40px 96px; }
+
+/* ─── Hero ─── */
+.hero { position: relative; margin: 0 -40px 8px; padding: 64px 40px 48px; background: var(--hero-gradient); border-bottom: 1px solid var(--divider); overflow: hidden; }
+.hero::after { content: ''; position: absolute; right: -120px; top: -120px; width: 380px; height: 380px; border-radius: 50%; box-shadow: var(--shadow-gold); pointer-events: none; }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--brand); font: 600 var(--text-xs) var(--font-sans); letter-spacing: .1em; text-transform: uppercase; }
+.eyebrow::before { content: ''; width: 24px; height: 2px; background: var(--brand-rule); }
+.hero h1 { margin: 14px 0 12px; font: 600 clamp(2rem, 4vw, 2.75rem)/1.12 var(--font-display); letter-spacing: -.02em; }
+.hero h1 .accent { background: var(--brand-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p.lead { max-width: 640px; margin: 0; color: var(--ink-2); font-size: var(--text-lg); }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); font: 600 var(--text-sm) var(--font-sans); text-decoration: none !important; box-shadow: var(--shadow-xs); }
+.btn:hover { border-color: var(--gold-light); }
+.btn.primary { border-color: var(--brand); background: var(--brand); color: #f8f6f2; }
+.btn.primary:hover { background: var(--brand-dark); }
+:root[data-theme='dark'] .btn.primary { color: #0b0b09; }
+
+/* ─── Sections ─── */
+section.doc { padding-top: 48px; }
+section.doc.filtered-out { display: none; }
+.section-kicker { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; color: var(--muted); font: 600 var(--text-xs) var(--font-sans); letter-spacing: .06em; text-transform: uppercase; }
+.section-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--brand-pale); color: var(--brand); }
+h2 { position: relative; margin: 0 0 12px; font: 600 var(--text-2xl)/1.25 var(--font-display); letter-spacing: -.015em; }
+h3 { position: relative; margin: 32px 0 10px; font: 600 var(--text-lg)/1.35 var(--font-display); }
+h4 { margin: 20px 0 6px; font: 600 var(--text-md) var(--font-sans); }
+.anchor { position: absolute; left: -24px; top: 0; padding-right: 6px; color: var(--muted); opacity: 0; text-decoration: none !important; font-weight: 400; }
+h2:hover .anchor, h3:hover .anchor { opacity: 1; }
+p { margin: 0 0 14px; color: var(--ink-2); }
+ul, ol { margin: 0 0 16px; padding-left: 22px; color: var(--ink-2); }
+li { margin: 4px 0; }
+li::marker { color: var(--muted); }
+strong { color: var(--ink); font-weight: 600; }
+hr { height: 1px; margin: 48px 0 0; border: 0; background: var(--divider); }
+
+/* ─── Primitives ─── */
+.kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; border: 1px solid var(--divider); border-bottom-width: 2px; border-radius: var(--radius-xs); background: var(--surface-2); color: var(--muted); font: 600 var(--text-2xs) var(--font-mono); vertical-align: 1px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font: 650 var(--text-xs) var(--font-sans); white-space: nowrap; vertical-align: 1px; }
+.pill.mono { font: 600 var(--text-2xs) var(--font-mono); }
+.pill.success { background: var(--success-pale); color: var(--success); }
+.pill.warning { background: var(--warning-pale); color: var(--warning); }
+.pill.error { background: var(--error-pale); color: var(--error); }
+.pill.info { background: var(--info-pale); color: var(--info); }
+.pill.brand { background: var(--brand-pale); color: var(--brand); }
+.pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.card { border: 1px solid var(--divider); border-radius: var(--radius); background: var(--paper); box-shadow: var(--shadow-xs); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 18px 0 20px; }
+.feature { padding: 16px 18px; }
+.feature .section-icon { margin-bottom: 10px; }
+.feature h4 { margin: 0 0 4px; font-size: var(--text-base); }
+.feature p { margin: 0; font-size: var(--text-sm); color: var(--muted); }
+a.feature { color: inherit; text-decoration: none !important; transition: border-color .15s var(--ease), box-shadow .15s var(--ease), transform .15s var(--ease); }
+a.feature:hover { border-color: var(--gold-light); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+
+.callout { display: flex; gap: 12px; margin: 18px 0; padding: 12px 16px; border: 1px solid var(--divider); border-left-width: 3px; border-radius: var(--radius-sm); background: var(--surface-2); font-size: var(--text-base); }
+.callout > svg { margin-top: 3px; }
+.callout p { margin: 0; }
+.callout p + p { margin-top: 6px; }
+.callout.info { border-left-color: var(--info); background: var(--info-pale); } .callout.info > svg { color: var(--info); }
+.callout.tip { border-left-color: var(--gold); background: var(--brand-pale); } .callout.tip > svg { color: var(--brand); }
+.callout.warning { border-left-color: var(--warning); background: var(--warning-pale); } .callout.warning > svg { color: var(--warning); }
+.callout.success { border-left-color: var(--success); background: var(--success-pale); } .callout.success > svg { color: var(--success); }
+
+.steps { list-style: none; counter-reset: step; margin: 18px 0 22px; padding: 0; }
+.steps > li { position: relative; counter-increment: step; margin: 0; padding: 0 0 18px 44px; }
+.steps > li::before { content: counter(step); position: absolute; left: 0; top: 0; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid var(--gold-light); border-radius: 50%; background: var(--brand-pale); color: var(--brand); font: 600 var(--text-sm) var(--font-display); }
+.steps > li::after { content: ''; position: absolute; left: 13.5px; top: 32px; bottom: 4px; width: 1px; background: var(--divider); }
+.steps > li:last-child::after { display: none; }
+.steps > li > strong:first-child { display: block; margin-bottom: 2px; }
+
+.table-wrap { margin: 18px 0 22px; overflow-x: auto; border: 1px solid var(--divider); border-radius: var(--radius); background: var(--paper); box-shadow: var(--shadow-xs); }
+table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+th, td { padding: 10px 14px; border-bottom: 1px solid var(--divider); text-align: left; vertical-align: top; color: var(--ink-2); }
+th { background: var(--surface-2); color: var(--muted); font: 600 var(--text-xs) var(--font-sans); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { color: var(--ink); font-weight: 500; }
+td code { white-space: nowrap; }
+
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0 20px; }
+.flow .node { padding: 8px 14px; border: 1px solid var(--divider); border-radius: var(--radius-sm); background: var(--paper); box-shadow: var(--shadow-xs); font: 600 var(--text-sm) var(--font-sans); }
+.flow .node small { display: block; color: var(--muted); font-weight: 500; font-size: var(--text-2xs); letter-spacing: .06em; text-transform: uppercase; }
+.flow .node.gold { border-color: var(--gold-light); background: var(--brand-pale); color: var(--brand); }
+.flow .arrow { color: var(--muted); }
+.flow.compact { gap: 6px; }
+.flow.compact .arrow { font-size: var(--text-xs); }
+
+.tabs { display: inline-flex; gap: 2px; margin: 12px 0 0; padding: 3px; border: 1px solid var(--divider); border-radius: var(--radius-sm); background: var(--surface-2); }
+.tab { padding: 4px 12px; border: 0; border-radius: var(--radius-xs); background: none; color: var(--muted); cursor: pointer; font: 600 var(--text-xs) var(--font-sans); }
+.tab[aria-selected='true'] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-xs); }
+
+/* ─── Annotation markers & legends (shared with Studio guide) ─── */
+.n { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--brand); color: #f8f6f2; font: 700 10px var(--font-sans); box-shadow: 0 0 0 2px var(--console-bg); }
+:root[data-theme='dark'] .n, :root[data-theme='dark'] .legend b { color: #0b0b09; }
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 20px; margin: 12px 0 20px; padding: 0; list-style: none; font-size: var(--text-sm); }
+.legend li { display: flex; gap: 8px; margin: 0; }
+.legend b { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--brand); color: #f8f6f2; font: 600 var(--text-2xs) var(--font-sans); }
+.figcaption { margin: 8px 0 14px; color: var(--muted); font-size: var(--text-xs); text-align: center; }
+
+/* ─── IDE window: the library equivalent of a product screenshot ─── */
+.ide, .term { margin: 22px 0 6px; overflow: hidden; border: 1px solid var(--console-border); border-radius: var(--radius-lg); background: var(--console-bg); box-shadow: var(--shadow-md); color: var(--console-ink); }
+.ide-chrome { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-bottom: 1px solid var(--console-border); background: var(--ide-side); }
+.ide-chrome i { width: 10px; height: 10px; border-radius: 50%; background: #3a372e; }
+.ide-chrome i:nth-child(1) { background: #c14933; opacity: .75; } .ide-chrome i:nth-child(2) { background: #d29d19; opacity: .75; } .ide-chrome i:nth-child(3) { background: #2e7a4f; opacity: .75; }
+.ide-title { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; margin-right: 42px; color: var(--console-muted); font: 500 11px var(--font-sans); }
+.ide-title svg { width: 14px; height: 14px; }
+.ide-body { display: grid; grid-template-columns: 176px minmax(0, 1fr); }
+.ide-tree { padding: 10px 0; border-right: 1px solid var(--console-border); background: var(--ide-side); font: 12px var(--font-sans); }
+.ide-tree-title { padding: 0 12px 6px; color: var(--console-muted); font: 600 10px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
+.ide-tree .item { display: flex; align-items: center; gap: 6px; width: 100%; padding: 3px 12px 3px calc(12px + var(--d, 0) * 14px); border: 0; background: none; color: var(--console-ink-2); text-align: left; white-space: nowrap; }
+.ide-tree .item svg { width: 13px; height: 13px; color: var(--console-muted); }
+.ide-tree button.item { cursor: pointer; }
+.ide-tree button.item:hover { background: rgba(235, 230, 217, .05); }
+.ide-tree button.item.on { background: rgba(210, 157, 25, .16); color: #fff; }
+.ide-tree button.item.on svg { color: var(--gold-light); }
+.ide-main { display: flex; flex-direction: column; min-width: 0; }
+.ide-tabs { display: flex; align-items: stretch; height: 34px; border-bottom: 1px solid var(--console-border); background: var(--ide-side); }
+.ide-tabs button[data-file] { padding: 0 14px; border: 0; border-right: 1px solid var(--console-border); background: none; color: var(--console-muted); cursor: pointer; font: 500 12px var(--font-mono); }
+.ide-tabs button[data-file].on { background: var(--console-bg); color: var(--console-ink); box-shadow: inset 0 2px 0 var(--gold); }
+.ide-tabs .sp, .term-head .sp { flex: 1; }
+.copy-btn { align-self: center; display: inline-flex; align-items: center; gap: 5px; height: 24px; margin-right: 8px; padding: 0 8px; border: 1px solid var(--console-border); border-radius: var(--radius-xs); background: transparent; color: var(--console-muted); cursor: pointer; font: 500 10.5px var(--font-sans); }
+.copy-btn svg { width: 12px; height: 12px; }
+.copy-btn:hover { color: var(--console-ink); border-color: #45412f; }
+pre { margin: 0; font: 400 12.5px/1.7 var(--font-mono); tab-size: 4; }
+.ide-code { padding: 12px 0; overflow: auto; max-height: 560px; }
+.ide-code code { display: block; width: max-content; min-width: 100%; counter-reset: ln; font-size: inherit; }
+.line { position: relative; display: block; padding: 0 24px 0 70px; }
+.line::before { counter-increment: ln; content: counter(ln); position: absolute; left: 0; width: 34px; text-align: right; color: var(--ide-gutter); }
+.line.hl { background: rgba(210, 157, 25, .1); box-shadow: inset 2px 0 0 var(--gold); }
+/* Markers live in the gutter so they stay visible when long lines scroll. */
+.line .n { position: absolute; left: 44px; top: 50%; transform: translateY(-50%); }
+.ide-panel { border-top: 1px solid var(--console-border); background: var(--ide-side); }
+.ide-panel-head, .term-head { display: flex; align-items: center; gap: 16px; height: 30px; padding: 0 14px; color: var(--console-muted); font: 600 10px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
+.ide-panel-head .on { color: var(--console-ink); box-shadow: inset 0 -1px 0 var(--gold); line-height: 29px; }
+.ide-panel pre, .term pre { padding: 4px 14px 12px; color: var(--console-ink-2); overflow-x: auto; }
+.ide-status { display: flex; align-items: center; gap: 16px; height: 22px; padding: 0 12px; background: #2a2618; color: var(--gold-light); font: 500 10.5px var(--font-sans); }
+.ide-status .sp { flex: 1; }
+.term-head { border-bottom: 1px solid var(--console-border); background: var(--ide-side); letter-spacing: 0; text-transform: none; font: 500 11px var(--font-sans); }
+.term-head svg { width: 13px; height: 13px; }
+.term pre { padding-top: 10px; }
+.term .copy-btn { margin-right: -6px; }
+/* Syntax tokens */
+.t-k { color: #e9c86d; } .t-s { color: #a9c98a; } .t-f { color: #8fb8de; } .t-c { color: #7d776b; font-style: italic; }
+.t-n { color: #f0a868; } .t-y { color: #e0b45a; } .t-p { color: var(--gold); user-select: none; } .t-ok { color: #6fcf97; } .t-dim { color: var(--console-muted); }
+.cmd { color: var(--console-ink); }
+
+/* ─── Event stream (run inspector representation) ─── */
+.trace { margin: 22px 0 6px; overflow: hidden; border: 1px solid var(--divider); border-radius: var(--radius-lg); background: var(--paper); box-shadow: var(--shadow-md); font-size: var(--text-xs); }
+.trace-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--divider); background: var(--surface-2); }
+.trace-head .sp { flex: 1; }
+.trace-row { display: grid; grid-template-columns: 30px 170px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 7px 14px; border-bottom: 1px solid var(--divider); color: var(--ink-2); }
+.trace-row:last-child { border-bottom: 0; }
+.trace-row .seq { color: var(--muted); font: 500 11px var(--font-mono); text-align: right; }
+.trace-row .ev { justify-self: start; }
+.trace-row .meta { color: var(--muted); font: 500 11px var(--font-mono); white-space: nowrap; }
+.trace-row.hl { background: var(--brand-pale); }
+.trace-row .n { box-shadow: 0 0 0 2px var(--paper); }
+
+/* ─── Architecture explorer ─── */
+:root { --d-execution: #956e18; --d-governance: #c14933; --d-orchestration: #325886; --d-data: #6b5590; --d-integration: #b35a14; --d-operations: #2e7a4f; --d-product: #5f6255; }
+:root[data-theme='dark'] { --d-execution: #e9c86d; --d-governance: #e0705b; --d-orchestration: #7190b7; --d-data: #a893c9; --d-integration: #e08a3c; --d-operations: #5dbe8a; --d-product: #a29c90; }
+/* Breaks out of the reading column so the map has room, while staying centred in the main area. */
+.arch { --arch-w: max(100%, min(1240px, calc(100vw - var(--nav-w) - 64px))); position: relative; left: 50%; width: var(--arch-w); margin: 22px 0 6px calc(var(--arch-w) / -2); overflow: clip; border: 1px solid var(--divider); border-radius: var(--radius-lg); background: var(--paper); box-shadow: var(--shadow-md); }
+.arch-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--divider); background: var(--surface-2); }
+.arch-toolbar > svg { color: var(--brand); }
+.arch-toolbar .sp { flex: 1; }
+.arch-title strong { display: block; font: 600 var(--text-base)/1.3 var(--font-display); }
+.arch-title span { color: var(--muted); font-size: var(--text-xs); }
+.arch-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px solid var(--divider); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink-2); font: 600 var(--text-xs) var(--font-sans); cursor: pointer; }
+.arch-btn svg { width: 14px; height: 14px; }
+.arch-btn:hover, .arch-btn[aria-pressed='true'] { border-color: var(--gold-light); background: var(--brand-pale); color: var(--brand); }
+.arch-btn:disabled { opacity: .5; cursor: not-allowed; }
+.arch-select { height: 30px; padding: 0 8px; border: 1px solid var(--gold-light); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); font: 600 var(--text-xs) var(--font-mono); cursor: pointer; }
+.arch-summary { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--divider); font-size: var(--text-sm); }
+.arch-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 9px 16px; border-bottom: 1px solid var(--divider); }
+.arch-chips-label { margin-right: 4px; color: var(--muted); font: 600 var(--text-2xs) var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
+.arch-chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border: 1px solid var(--divider); border-radius: 999px; background: var(--paper); color: var(--ink-2); font: 600 var(--text-2xs) var(--font-sans); cursor: pointer; }
+.arch-chip:hover { border-color: var(--gold-light); }
+.arch-chip i { width: 8px; height: 8px; border-radius: 2px; background: var(--tone); }
+.arch-chip b { color: var(--muted); font: 600 9.5px var(--font-mono); }
+.arch-chip[aria-pressed='true'] { border-color: var(--tone); color: var(--ink); box-shadow: 0 0 0 2px color-mix(in srgb, var(--tone) 22%, transparent); }
+.arch-compare-key { background: var(--brand-pale); }
+.arch-compare-key .arch-chips-label { color: var(--brand); }
+.arch-body { display: grid; grid-template-columns: minmax(0, 1fr) 290px; }
+.arch-canvas { container: arch / inline-size; min-width: 0; padding: 16px; background-color: var(--page); background-image: linear-gradient(color-mix(in srgb, var(--divider) 60%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--divider) 60%, transparent) 1px, transparent 1px); background-size: 24px 24px; }
+.arch-map { position: relative; }
+.arch-lines { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.arch-lines path { fill: none; stroke: var(--gold); stroke-width: 2; stroke-dasharray: 4 5; opacity: .85; animation: arch-flow .9s linear infinite; }
+.arch-lines circle { fill: var(--gold); }
+@keyframes arch-flow { to { stroke-dashoffset: -9; } }
+.arch-root { padding: 14px; border: 1.5px solid var(--border-strong); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--paper) 88%, transparent); }
+.arch-root-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--divider); }
+.arch-root-head svg { width: 24px; height: 24px; flex: none; }
+.arch-root-head strong { font: 600 var(--text-base) var(--font-display); }
+.arch-root-head span, .arch-layer-sub { margin-left: auto; color: var(--muted); font: 500 var(--text-2xs) var(--font-mono); text-transform: uppercase; }
+.arch-layer, .arch-nested { padding: 12px; border: 1px solid var(--divider); border-radius: var(--radius); background: var(--paper); }
+.arch-layer + .arch-layer { margin-top: 10px; }
+.arch-nested { grid-column: 1 / -1; border-style: dashed; background: var(--surface-2); }
+.arch-layer-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.arch-code { display: inline-grid; place-items: center; min-width: 26px; height: 20px; padding: 0 6px; border-radius: var(--radius-xs); background: var(--tone); color: #fdfcf9; font: 700 10px var(--font-mono); }
+:root[data-theme='dark'] .arch-code { color: #0b0b09; }
+.arch-layer-title { color: var(--ink); font: 600 var(--text-sm) var(--font-sans); }
+.arch-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@container arch (max-width: 640px) { .arch-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container arch (max-width: 480px) { .arch-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cap { position: relative; display: flex; flex-direction: column; align-items: flex-start; min-height: 86px; padding: 9px 10px; border: 1px solid var(--divider); border-top: 3px solid var(--tone); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); text-align: left; cursor: pointer; transition: transform .15s var(--ease), box-shadow .15s var(--ease), opacity .15s var(--ease); }
+.cap:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.cap-name { font: 600 12px/1.3 var(--font-sans); }
+.cap:is(.is-added, .is-changed, .is-removed) .cap-name { padding-right: 52px; }
+.cap-note { display: -webkit-box; margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 11px; line-height: 1.35; line-clamp: 3; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.cap-state { margin-top: auto; padding-top: 6px; color: var(--tone); font: 600 9.5px var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
+.cap.is-absent { border-style: dashed; opacity: .5; }
+.cap.is-selected { border-color: var(--tone); box-shadow: 0 0 0 2px color-mix(in srgb, var(--tone) 30%, transparent); }
+.cap.is-related { background: var(--brand-pale); }
+.cap.is-dim { opacity: .28; }
+.cap.is-added::after, .cap.is-changed::after, .cap.is-removed::after { position: absolute; top: 6px; right: 6px; padding: 1px 6px; border-radius: 999px; font: 600 9px var(--font-mono); text-transform: uppercase; }
+.cap.is-added::after { content: 'added'; background: var(--success-pale); color: var(--success); }
+.cap.is-changed::after { content: 'changed'; background: var(--warning-pale); color: var(--warning); }
+.cap.is-removed::after { content: 'removed'; background: var(--error-pale); color: var(--error); }
+.arch-inspector { position: sticky; top: calc(var(--topbar-h) + 12px); align-self: start; max-height: calc(100vh - var(--topbar-h) - 24px); overflow: auto; padding: 18px; border-left: 1px solid var(--divider); background: var(--paper); }
+.arch-close { display: none; position: absolute; top: 10px; right: 10px; }
+.arch-empty { display: grid; place-items: center; min-height: 300px; color: var(--muted); font-size: var(--text-sm); text-align: center; }
+.arch-empty strong { display: block; margin-bottom: 4px; }
+.arch-empty .target { display: grid; place-items: center; width: 56px; height: 56px; margin: 0 auto 12px; border: 1px dashed var(--border-strong); border-radius: 50%; color: var(--brand); }
+.arch-kicker { color: var(--tone); font: 600 var(--text-2xs) var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+.arch-detail h4 { margin: 6px 0 8px; font: 600 var(--text-lg)/1.25 var(--font-display); }
+.arch-detail h5 { margin: 16px 0 6px; color: var(--muted); font: 600 var(--text-2xs) var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
+.arch-detail p { font-size: var(--text-sm); }
+.arch-detail ul { margin: 0; padding-left: 18px; font-size: var(--text-sm); }
+.arch-detail li::marker { color: var(--tone); }
+.arch-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.arch-note { padding: 8px 10px; border-left: 3px solid var(--gold); border-radius: var(--radius-xs); background: var(--brand-pale); font-size: var(--text-xs) !important; }
+.arch-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.arch-fact { padding: 7px 9px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.arch-fact span { display: block; color: var(--muted); font: 600 9.5px var(--font-mono); text-transform: uppercase; }
+.arch-fact strong { display: block; margin-top: 2px; font-size: var(--text-xs); }
+.arch-source { display: block; padding: 8px 10px; border: 0; border-radius: var(--radius-sm); background: var(--console-bg); color: var(--console-ink); font-size: 11px; overflow-wrap: anywhere; }
+.arch-rel { display: flex; flex-wrap: wrap; gap: 5px; }
+.arch-rel button { height: 24px; padding: 0 8px; border: 1px solid var(--divider); border-radius: 999px; background: var(--paper); color: var(--ink-2); font: 500 var(--text-2xs) var(--font-mono); cursor: pointer; }
+.arch-rel button:hover { border-color: var(--gold-light); color: var(--brand); }
+.arch-muted { color: var(--muted); font-size: var(--text-xs); }
+.arch-detail .btn { height: 32px; margin-top: 16px; }
+.arch.is-full { position: fixed; inset: 0; z-index: 60; width: auto; margin: 0; overflow: auto; border: 0; border-radius: 0; }
+.arch.is-full .arch-inspector { top: 12px; max-height: calc(100vh - 24px); }
+body.arch-full-open { overflow: hidden; }
+@media (max-width: 1100px) {
+  .arch-body { grid-template-columns: minmax(0, 1fr); }
+  .arch-inspector, .arch.is-full .arch-inspector { position: fixed; z-index: 65; inset: auto 0 0 0; height: 55vh; max-height: none; border-left: 0; border-top: 1px solid var(--divider); box-shadow: 0 -12px 40px rgba(0, 0, 0, .2); transform: translateY(105%); transition: transform .22s var(--ease); }
+  .arch-inspector.is-open { transform: none; }
+  .arch-close { display: inline-flex; }
+}
+
+/* ─── Agent Manifest UI sample ─── */
+.mui { --mui-w: max(100%, min(1240px, calc(100vw - var(--nav-w) - 64px))); position: relative; left: 50%; width: var(--mui-w); margin: 24px 0 6px calc(var(--mui-w) / -2); overflow: clip; border: 1px solid var(--border-strong); border-radius: 16px; background: var(--paper); box-shadow: var(--shadow-md), var(--shadow-gold); font-size: 13px; }
+.mui svg.i { width: 15px; height: 15px; }
+.mui-chrome { display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px; border-bottom: 1px solid var(--divider); background: var(--surface-2); }
+.mui-chrome > i { width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong); }
+.mui-url { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 1 380px; height: 24px; margin: 0 auto; padding: 0 14px; border: 1px solid var(--divider); border-radius: 999px; background: var(--paper); color: var(--muted); font: 500 11px var(--font-mono); }
+.mui-url svg.i { width: 12px; height: 12px; color: var(--success); }
+.mui-chrome-tag { color: var(--muted); font: 600 10px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
+.mui-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--divider); background: linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--surface-2) 60%, var(--paper))); }
+.mui-top .sp { flex: 1; }
+.mui-mark { width: 30px; height: 30px; flex: none; }
+.mui-brand small { display: block; color: var(--muted); font: 600 9.5px var(--font-sans); letter-spacing: .1em; text-transform: uppercase; }
+.mui-brand strong { display: block; font: 600 15px/1.2 var(--font-display); }
+.mui-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border: 1px solid var(--divider); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink-2); font: 600 12px var(--font-sans); cursor: pointer; box-shadow: var(--shadow-xs); }
+.mui-btn:hover { border-color: var(--gold-light); color: var(--brand); }
+.mui-btn.primary { border-color: var(--brand); background: var(--brand); color: #f8f6f2; }
+.mui-btn.primary:hover { background: var(--brand-dark); color: #f8f6f2; }
+:root[data-theme='dark'] .mui-btn.primary, :root[data-theme='dark'] .mui-btn.primary:hover { color: #0b0b09; }
+.mui .n { box-shadow: 0 0 0 2px var(--paper); }
+.mui .mk { position: relative; }
+.mui .mk > .n { position: absolute; z-index: 6; top: -8px; left: -8px; }
+.mui .mk.in > .n { top: 8px; left: auto; right: 8px; }
+.mui-app { display: grid; grid-template-columns: 196px minmax(0, 1fr); }
+.mui-nav { display: flex; flex-direction: column; gap: 2px; padding: 12px 8px; border-right: 1px solid var(--nav-border); background: var(--nav-bg); }
+.mui-nav-label { margin: 10px 10px 4px; color: var(--nav-muted); font: 600 10px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
+.mui-nav-label:first-of-type { margin-top: 2px; }
+.mui-nav button { display: grid; grid-template-columns: 16px 1fr auto; align-items: center; gap: 9px; width: 100%; padding: 7px 10px; border: 0; border-radius: var(--radius-sm); background: none; color: var(--nav-ink); font: 500 12.5px var(--font-sans); text-align: left; white-space: nowrap; cursor: pointer; }
+.mui-nav button svg { color: var(--nav-muted); }
+.mui-nav button:hover { background: var(--nav-hover); }
+.mui-nav button.on { background: var(--nav-active); font-weight: 600; }
+.mui-nav button.on svg { color: var(--nav-active-icon); }
+.mui-count { min-width: 20px; height: 18px; padding: 0 6px; border-radius: 999px; background: var(--surface-3); color: var(--muted); font: 600 10px/18px var(--font-mono); text-align: center; }
+.mui-nav button.on .mui-count { background: var(--paper); color: var(--brand); }
+.mui-nav-foot { margin-top: auto; padding: 10px; border: 1px solid var(--nav-border); border-radius: var(--radius); background: var(--paper); font-size: 11px; }
+.mui-nav-foot strong { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: var(--success); font-size: 12px; }
+.mui-nav-foot span { display: block; color: var(--muted); line-height: 1.6; }
+.mui-main { container: mui / inline-size; position: relative; min-width: 0; min-height: 600px; padding: 18px; background: var(--page); }
+.mui-pane-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.mui-pane-head h3 { margin: 0; font: 600 17px/1.3 var(--font-display); }
+.mui-pane-head p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+.mui-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.mui-kpi { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--divider); border-radius: var(--radius); background: var(--paper); box-shadow: var(--shadow-xs); }
+.mui-kpi .ic { display: grid; grid-row: span 2; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: color-mix(in srgb, var(--tone) 14%, transparent); color: var(--tone); }
+.mui-kpi strong { font: 600 19px/1.1 var(--font-display); }
+.mui-kpi span:last-child { color: var(--muted); font-size: 11px; }
+.mui-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.mui-card { overflow: hidden; border: 1px solid var(--divider); border-radius: var(--radius); background: var(--paper); box-shadow: var(--shadow-xs); }
+.mui-card + .mui-card { margin-top: 12px; }
+.mui-grid2 > .mui-card + .mui-card { margin-top: 0; }
+.mui-card-h { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--divider); font-weight: 600; }
+.mui-card-h svg { color: var(--brand); }
+.mui-card-h .sp { flex: 1; }
+.mui-card-b { padding: 12px; }
+.mui-card table { font-size: 12px; }
+.mui-card th, .mui-card td { padding: 8px 12px; }
+.mui-checks { margin: 0; padding: 4px 12px; list-style: none; }
+.mui-checks li { display: flex; align-items: center; gap: 8px; margin: 0; padding: 7px 0; border-bottom: 1px dashed var(--divider); color: var(--ink-2); }
+.mui-checks li:last-child { border-bottom: 0; }
+.mui-checks li::before { content: '✓'; display: grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--success-pale); color: var(--success); font: 700 10px var(--font-sans); }
+.mui-checks li.warn::before { content: '!'; background: var(--warning-pale); color: var(--warning); }
+.mui-checks li span { margin-left: auto; color: var(--muted); font: 500 10.5px var(--font-mono); white-space: nowrap; }
+.mui-topo { padding: 4px 12px; }
+.mui-topo > div { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--divider); }
+.mui-topo > div:last-child { border-bottom: 0; }
+.mui-topo strong { min-width: 0; overflow: hidden; font: 600 12px var(--font-mono); white-space: nowrap; text-overflow: ellipsis; }
+.mui-topo .mui-chip { margin-left: auto; }
+.mui-av { display: inline-grid; flex: none; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--brand-gradient); color: #1e1f19; font: 700 10px var(--font-sans); }
+.mui-chip { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border: 1px solid var(--divider); border-radius: 6px; background: var(--surface-2); color: var(--ink-2); font: 500 11px var(--font-mono); white-space: nowrap; }
+.mui-chip.tone { border-color: color-mix(in srgb, var(--tone) 40%, transparent); background: color-mix(in srgb, var(--tone) 10%, transparent); color: var(--tone); }
+.mui-chips { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.mui-dag-area { position: relative; overflow: hidden; border: 1px solid var(--divider); border-radius: 12px; background-color: var(--paper); background-image: radial-gradient(color-mix(in srgb, var(--border-strong) 80%, transparent) 1px, transparent 1px); background-size: 16px 16px; }
+.mui-dag-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--divider); background: color-mix(in srgb, var(--paper) 92%, transparent); }
+.mui-dag-bar .sp { flex: 1; }
+.mui-legend { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font: 500 11px var(--font-sans); }
+.mui-legend i { width: 8px; height: 8px; border-radius: 2px; background: var(--tone); }
+.mui-dag-scroll { overflow-x: auto; padding: 26px 18px 30px; transition: padding .2s var(--ease); }
+.mui-dag { position: relative; display: flex; flex-direction: column; align-items: center; gap: 30px; min-width: 440px; }
+.mui-row { display: flex; justify-content: center; gap: 22px; }
+.mui-edges { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.mui-edges path { fill: none; stroke: var(--border-strong); stroke-width: 1.6; }
+.mui-edges path.hot { stroke: var(--gold); stroke-width: 2; stroke-dasharray: 5 5; animation: arch-flow .9s linear infinite; }
+.mui-edges circle { fill: var(--border-strong); }
+.mui-edges circle.hot { fill: var(--gold); }
+.mui-node { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 2px; width: 196px; padding: 9px 11px; border: 1px solid var(--divider); border-left: 3px solid var(--tone); border-radius: 9px; background: var(--paper); color: var(--ink); text-align: left; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform .15s var(--ease), box-shadow .15s var(--ease); }
+.mui-node:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.mui-node.on { border-color: var(--tone); box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 25%, transparent), var(--shadow-md); }
+.mui-node .k { display: inline-flex; align-items: center; gap: 5px; color: var(--tone); font: 600 9.5px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+.mui-node .k svg { width: 12px; height: 12px; }
+.mui-node .id { font: 600 12.5px var(--font-mono); }
+.mui-node .s { overflow: hidden; color: var(--muted); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
+.mui-drawer { display: none; padding: 14px; border-top: 1px solid var(--divider); background: var(--paper); }
+.mui-dag-area.has-drawer .mui-drawer { display: block; }
+@container mui (min-width: 760px) {
+  .mui-drawer { display: block; position: absolute; z-index: 4; top: 0; right: 0; bottom: 0; width: 290px; overflow: auto; border-top: 0; border-left: 1px solid var(--divider); transform: translateX(105%); transition: transform .22s var(--ease); }
+  .mui-dag-area.has-drawer .mui-drawer { transform: none; }
+  .mui-dag-area.has-drawer .mui-dag-scroll { padding-right: 308px; }
+}
+.mui-drawer-h { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.mui-drawer-h strong { font: 600 14px var(--font-mono); }
+.mui-drawer-h .btn-icon { width: 28px; height: 28px; margin-left: auto; }
+.mui-drawer p { margin: 0 0 10px; font-size: 12.5px; }
+.mui-drawer h5 { margin: 14px 0 6px; color: var(--muted); font: 600 10px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
+.mui-kv { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--divider); font-size: 12px; }
+.mui-kv:last-child { border-bottom: 0; }
+.mui-kv > span:first-child { color: var(--muted); }
+.mui-kv code { white-space: nowrap; }
+.mui-agents { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.mui-agent { padding: 14px; border: 1px solid var(--divider); border-top: 3px solid var(--d-execution); border-radius: var(--radius); background: var(--paper); box-shadow: var(--shadow-xs); }
+.mui-agent-h { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+.mui-agent-h strong { display: block; font: 600 13px var(--font-mono); }
+.mui-agent-h small { color: var(--muted); font-size: 11px; }
+.mui-agent-h .pill { margin-left: auto; }
+.mui-agent > p { margin: 0 0 8px; font-size: 12.5px; }
+.mui-budget { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+.mui-budget div { padding: 7px 8px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.mui-budget span { display: block; color: var(--muted); font: 600 9.5px var(--font-sans); letter-spacing: .06em; text-transform: uppercase; }
+.mui-budget strong { font: 600 13px var(--font-display); }
+.mui-caps { display: flex; flex-wrap: wrap; gap: 3px; }
+.mui-caps span { padding: 1px 6px; border-radius: 4px; background: var(--success-pale); color: var(--success); font: 600 10px var(--font-mono); }
+.mui-form { display: grid; gap: 10px; }
+.mui-form label { display: grid; gap: 4px; color: var(--ink); font: 600 11.5px var(--font-sans); }
+.mui-form select, .mui-form input, .mui-form textarea { width: 100%; padding: 7px 9px; border: 1px solid var(--divider); border-radius: var(--radius-sm); background: var(--paper); color: var(--ink); font: 400 12.5px var(--font-sans); }
+.mui-form textarea { min-height: 70px; resize: vertical; }
+.mui-form :is(select, input, textarea):focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--brand-ring); }
+.mui-form .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mui-exec { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr); gap: 14px; align-items: start; }
+.mui-exec .term { margin: 0 0 10px; }
+.mui-exec .term pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11.5px; }
+.mui-callout { display: flex; gap: 10px; margin-bottom: 14px; padding: 10px 12px; border: 1px solid var(--gold-light); border-radius: var(--radius); background: var(--brand-pale); font-size: 12.5px; }
+.mui-callout svg { margin-top: 2px; color: var(--brand); }
+.mui-pane .ide { margin: 0; }
+.mui-status { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; min-height: 28px; padding: 4px 14px; border-top: 1px solid var(--divider); background: var(--surface-2); color: var(--muted); font: 500 11px var(--font-sans); }
+.mui-status .sp { flex: 1; }
+.mui-status .ok { display: inline-flex; align-items: center; gap: 6px; color: var(--success); font-weight: 600; }
+.mui-status .ok::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px var(--success-pale); }
+.mui-status .n { position: static; }
+.mui-toast { position: absolute; z-index: 8; left: 50%; bottom: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: var(--ink); color: var(--page); font: 500 12px var(--font-sans); box-shadow: var(--shadow-md); opacity: 0; transform: translate(-50%, 8px); transition: opacity .2s, transform .2s; pointer-events: none; }
+.mui-toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (max-width: 960px) {
+  .mui { --mui-w: max(100%, calc(100vw - 24px)); }
+  .mui-app { grid-template-columns: 1fr; }
+  .mui-nav { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--nav-border); }
+  .mui-nav button { width: auto; }
+  .mui-nav-label, .mui-nav-foot { display: none; }
+  .mui-exec { grid-template-columns: 1fr; }
+}
+
+/* ─── Skills & prompts ─── */
+button.feature { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: border-color .15s var(--ease), box-shadow .15s var(--ease), transform .15s var(--ease); }
+button.feature:hover { border-color: var(--gold-light); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.feature .pill { margin-top: 10px; }
+.prompt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; margin: 14px 0 20px; }
+.prompt-card { display: flex; flex-direction: column; padding: 14px; }
+.prompt-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.prompt-head h4 { margin: 0; font-size: var(--text-base); }
+.prompt-head p { margin: 2px 0 0; color: var(--muted); font-size: var(--text-xs); }
+.prompt-composer { display: flex; flex: 1; flex-direction: column; overflow: hidden; border: 1px solid var(--divider); border-radius: var(--radius); background: var(--surface-2); }
+.prompt-text { flex: 1; padding: 10px 12px; color: var(--ink-2); font: 400 var(--text-sm)/1.55 var(--font-sans); white-space: pre-wrap; }
+.prompt-text .ph { padding: 0 3px; border-radius: 3px; background: var(--brand-pale); color: var(--brand); font-weight: 600; }
+.prompt-text code { padding: 0 4px; border-radius: 3px; background: var(--paper); font-size: .9em; }
+.prompt-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 8px 7px 12px; border-top: 1px solid var(--divider); background: var(--paper); }
+.prompt-foot .sp { flex: 1; }
+.prompt-agent { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font: 500 var(--text-2xs) var(--font-sans); }
+.prompt-agent svg { width: 13px; height: 13px; color: var(--brand); }
+.prompt-foot .pill { height: 20px; }
+.copy-btn.primary { height: 28px; margin: 0; border-color: var(--brand); background: var(--brand); color: #f8f6f2; font-size: var(--text-xs); font-weight: 600; }
+.copy-btn.primary:hover { border-color: var(--brand-dark); background: var(--brand-dark); color: #f8f6f2; }
+:root[data-theme='dark'] .copy-btn.primary, :root[data-theme='dark'] .copy-btn.primary:hover { color: #0b0b09; }
+
+/* ─── Release notes ─── */
+.release-head { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 6px 0 4px; }
+.release-meta { color: var(--muted); font: 500 var(--text-xs) var(--font-mono); }
+.release-group { margin-top: 14px; overflow: hidden; }
+.release-group h4 { margin: 0; padding: 9px 14px; border-bottom: 1px solid var(--divider); background: var(--surface-2); color: var(--muted); font: 600 var(--text-xs) var(--font-sans); letter-spacing: .06em; text-transform: uppercase; }
+.release-group ul { margin: 0; padding: 12px 18px 14px 34px; }
+.release-group li { font-size: var(--text-sm); }
+.release-history { display: grid; gap: 8px; margin-top: 14px; }
+.release-history button { display: grid; grid-template-columns: 96px 1fr auto; align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid var(--divider); border-radius: var(--radius); background: var(--paper); text-align: left; cursor: pointer; box-shadow: var(--shadow-xs); }
+.release-history button:hover { border-color: var(--gold-light); }
+.release-history button[aria-current='true'] { border-color: var(--gold-light); background: var(--brand-pale); }
+.release-history code { color: var(--brand); font-size: var(--text-xs); }
+.release-history span { color: var(--ink-2); font-size: var(--text-sm); }
+.release-history em { color: var(--muted); font: normal 500 var(--text-2xs) var(--font-mono); text-transform: uppercase; }
+
+details.faq { margin: 0 0 10px; border: 1px solid var(--divider); border-radius: var(--radius); background: var(--paper); box-shadow: var(--shadow-xs); }
+details.faq summary { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; color: var(--ink); font-weight: 600; font-size: var(--text-base); list-style: none; }
+details.faq summary::-webkit-details-marker { display: none; }
+details.faq summary::after { content: '+'; margin-left: auto; color: var(--muted); font: 400 var(--text-lg) var(--font-sans); }
+details.faq[open] summary::after { content: '−'; }
+details.faq .body { padding: 0 16px 14px; font-size: var(--text-base); }
+details.faq .body p:last-child { margin-bottom: 0; }
+
+dl.glossary { display: grid; grid-template-columns: 200px 1fr; margin: 16px 0; overflow: hidden; border: 1px solid var(--divider); border-radius: var(--radius); background: var(--paper); }
+dl.glossary dt, dl.glossary dd { margin: 0; padding: 10px 14px; border-bottom: 1px solid var(--divider); font-size: var(--text-sm); }
+dl.glossary dt { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+dl.glossary dd { color: var(--ink-2); }
+dl.glossary dt:last-of-type, dl.glossary dd:last-of-type { border-bottom: 0; }
+
+.page-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--divider); color: var(--muted); font-size: var(--text-xs); }
+.no-results { display: none; margin: 48px 0; padding: 32px; border: 1px dashed var(--border-strong); border-radius: var(--radius); color: var(--muted); text-align: center; }
+mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); color: inherit; box-shadow: inset 0 -2px 0 var(--gold); }
+.ide mark.hit, .term mark.hit { background: rgba(210, 157, 25, .3); }
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidenav { position: fixed; z-index: 25; left: 0; top: var(--topbar-h); width: var(--nav-w); transform: translateX(-100%); transition: transform .2s var(--ease); box-shadow: var(--shadow-md); }
+  body.nav-open .sidenav { transform: none; }
+  body.nav-open .scrim { display: block; position: fixed; z-index: 20; inset: var(--topbar-h) 0 0; background: rgba(0, 0, 0, .35); }
+  .menu-toggle { display: inline-flex; }
+  .content { padding: 0 20px 72px; }
+  .hero { margin: 0 -20px 8px; padding: 44px 20px 36px; }
+  .doc-label, .brand-sep, .github-link { display: none; }
+  .anchor { display: none; }
+  dl.glossary { grid-template-columns: 1fr; }
+  .arch { --arch-w: max(100%, calc(100vw - 24px)); }
+}
+@media (max-width: 720px) {
+  .topbar { gap: 8px; padding: 0 10px; }
+  .brand svg { height: 26px; }
+  .search { width: 34px; }
+  .search input { padding: 0; width: 34px; color: transparent; cursor: pointer; }
+  .search input::placeholder { color: transparent; }
+  .search input:focus { position: fixed; left: 10px; right: 10px; top: 13px; width: auto; padding: 0 12px 0 32px; color: var(--ink); }
+  .search .kbd { display: none; }
+  .ide-body { grid-template-columns: 1fr; }
+  .ide-tree { display: none; }
+  .trace-row { grid-template-columns: 26px minmax(0, 1fr); }
+  .trace-row .detail, .trace-row .meta { grid-column: 2; }
+  .release-history button { grid-template-columns: 1fr; gap: 4px; }
+}
+@media print {
+  .topbar, .sidenav, .anchor, .copy-btn, .hero-actions { display: none !important; }
+  .layout { display: block; padding: 0; }
+  .content { max-width: none; padding: 0; }
+  .hero { margin: 0; padding: 24px 0; background: none; }
+  .hero::after { display: none; }
+  section.doc { break-inside: avoid-page; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to documentation</a>
+
+<!-- Icon sprite (Lucide-style, matching Studio iconography) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="rt-g" x1="24" y1="24" x2="176" y2="176" gradientUnits="userSpaceOnUse"><stop stop-color="#F3D98B"/><stop offset=".52" stop-color="#D4A017"/><stop offset="1" stop-color="#B8860B"/></linearGradient>
+  </defs>
+  <symbol id="rt-mark" viewBox="20 20 160 160"><rect x="20" y="20" width="160" height="160" rx="42" fill="#1A1813"/><path d="M57 119 78 74l45-14 26 38-18 45-49-2Z" fill="none" stroke="url(#rt-g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="m78 74 34 35 37-11m-37 11 19 34m-49-2 30-32" fill="none" stroke="#D4A017" stroke-width="5" stroke-linecap="round" opacity=".8"/><g fill="#1A1813" stroke="url(#rt-g)" stroke-width="7"><circle cx="78" cy="74" r="10"/><circle cx="149" cy="98" r="10"/><circle cx="82" cy="141" r="10"/><circle cx="112" cy="109" r="13"/></g></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="i-merge" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></symbol>
+  <symbol id="i-layout" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-user-check" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="m2 22 3-3"/><path d="M7.5 13.5 10 11"/><path d="M10.5 16.5 13 14"/><path d="m18 3-4 4h6l-4 4"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></symbol>
+  <symbol id="i-maximize" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-compare" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c2 0 2 .9 2 2"/></symbol>
+</svg>
+
+<header class="topbar">
+  <button class="btn-icon menu-toggle" type="button" id="menuToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidenav"><svg class="i"><use href="#i-menu"/></svg></button>
+  <a class="brand" href="#welcome" aria-label="Algen Agent Tools documentation home">
+    <svg class="logo-light" viewBox="0 0 820 200" role="img" aria-label="Algen Agent Tools"><defs><linearGradient id="logo-g-light" x1="24" y1="24" x2="176" y2="176" gradientUnits="userSpaceOnUse"><stop stop-color="#F3D98B"/><stop offset=".52" stop-color="#D4A017"/><stop offset="1" stop-color="#B8860B"/></linearGradient></defs><rect x="20" y="20" width="160" height="160" rx="42" fill="#1A1813"/><path d="M100 100 66 66M100 100l34-34M100 100l-34 34M100 100l34 34" fill="none" stroke="url(#logo-g-light)" stroke-width="7" stroke-linecap="round"/><path d="m76 88 12-12m24 0 12 12m-48 24 12 12m24 0 12-12" fill="none" stroke="#D4A017" stroke-width="5" stroke-linecap="round" opacity=".85"/><g fill="#1A1813" stroke="url(#logo-g-light)" stroke-width="7"><rect x="45" y="45" width="30" height="30" rx="9"/><rect x="125" y="45" width="30" height="30" rx="9"/><rect x="45" y="125" width="30" height="30" rx="9"/><rect x="125" y="125" width="30" height="30" rx="9"/><circle cx="100" cy="100" r="16"/></g><circle cx="100" cy="100" r="7" fill="#D4A017"/><text x="215" y="96" fill="#1E1F19" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="51" font-weight="760" letter-spacing="-1.4">Algen Agent</text><text x="217" y="143" fill="#755C0A" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="38" font-weight="680" letter-spacing="5">TOOLS</text></svg>
+    <svg class="logo-dark" viewBox="0 0 820 200" role="img" aria-label="Algen Agent Tools"><defs><linearGradient id="logo-g-dark" x1="24" y1="24" x2="176" y2="176" gradientUnits="userSpaceOnUse"><stop stop-color="#F3D98B"/><stop offset=".52" stop-color="#D4A017"/><stop offset="1" stop-color="#B8860B"/></linearGradient></defs><rect x="20" y="20" width="160" height="160" rx="42" fill="#2E2A1F"/><path d="M100 100 66 66M100 100l34-34M100 100l-34 34M100 100l34 34" fill="none" stroke="url(#logo-g-dark)" stroke-width="7" stroke-linecap="round"/><path d="m76 88 12-12m24 0 12 12m-48 24 12 12m24 0 12-12" fill="none" stroke="#E0B43A" stroke-width="5" stroke-linecap="round" opacity=".85"/><g fill="#1A1813" stroke="url(#logo-g-dark)" stroke-width="7"><rect x="45" y="45" width="30" height="30" rx="9"/><rect x="125" y="45" width="30" height="30" rx="9"/><rect x="45" y="125" width="30" height="30" rx="9"/><rect x="125" y="125" width="30" height="30" rx="9"/><circle cx="100" cy="100" r="16"/></g><circle cx="100" cy="100" r="7" fill="#E0B43A"/><text x="215" y="96" fill="#F1EDE4" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="51" font-weight="760" letter-spacing="-1.4">Algen Agent</text><text x="217" y="143" fill="#E9C86D" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="38" font-weight="680" letter-spacing="5">TOOLS</text></svg>
+  </a>
+  <span class="brand-sep" aria-hidden="true"></span>
+  <span class="doc-label">Documentation</span>
+  <span class="topbar-spacer"></span>
+  <label class="search" for="search">
+    <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+    <input id="search" type="search" placeholder="Search the docs…" autocomplete="off" aria-label="Search the documentation">
+    <span class="kbd" aria-hidden="true">/</span>
+  </label>
+  <a class="btn-icon github-link" href="https://github.com/AlgenAI/algen-agent-tools" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub repository"><svg class="i"><use href="#i-github"/></svg></a>
+  <button class="btn-icon" type="button" id="themeToggle" aria-label="Toggle color theme" title="Toggle color theme"><svg class="i"><use href="#i-moon"/></svg></button>
+</header>
+
+<div class="layout">
+  <nav class="sidenav" id="sidenav" aria-label="Documentation sections">
+    <div class="nav-group">
+      <div class="nav-group-title">Get started</div>
+      <a class="nav-link" href="#welcome"><svg class="i"><use href="#i-book"/></svg>Welcome</a>
+      <a class="nav-link" href="#install"><svg class="i"><use href="#i-download"/></svg>Install</a>
+      <a class="nav-link" href="#quickstart"><svg class="i"><use href="#i-zap"/></svg>Quickstart</a>
+      <a class="nav-link" href="#in-studio"><svg class="i"><use href="#i-zap"/></svg>In Studio</a>
+      <a class="nav-link" href="#how-it-works"><svg class="i"><use href="#i-layers"/></svg>How it works</a>
+      <a class="nav-link" href="#releases"><svg class="i"><use href="#i-history"/></svg>What's new</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Connectors</div>
+      <a class="nav-link" href="#postgres"><svg class="i"><use href="#i-database"/></svg>PostgreSQL</a>
+      <a class="nav-link" href="#mysql"><svg class="i"><use href="#i-database"/></svg>MySQL / MariaDB</a>
+      <a class="nav-link" href="#sqlite"><svg class="i"><use href="#i-database"/></svg>SQLite</a>
+      <a class="nav-link" href="#smtp"><svg class="i"><use href="#i-server"/></svg>SMTP</a>
+      <a class="nav-link" href="#gmail"><svg class="i"><use href="#i-server"/></svg>Gmail</a>
+      <a class="nav-link" href="#outlook"><svg class="i"><use href="#i-server"/></svg>Outlook</a>
+      <a class="nav-link" href="#imap"><svg class="i"><use href="#i-server"/></svg>IMAP</a>
+      <a class="nav-link" href="#telegram"><svg class="i"><use href="#i-bot"/></svg>Telegram</a>
+      <a class="nav-link" href="#discord"><svg class="i"><use href="#i-bot"/></svg>Discord</a>
+      <a class="nav-link" href="#github"><svg class="i"><use href="#i-github"/></svg>GitHub</a>
+      <a class="nav-link" href="#documents"><svg class="i"><use href="#i-file"/></svg>Documents</a>
+      <a class="nav-link" href="#webhook"><svg class="i"><use href="#i-link"/></svg>Webhook</a>
+      <a class="nav-link" href="#sample"><svg class="i"><use href="#i-check"/></svg>Sample</a>
+      <a class="nav-link" href="#mcp-overlays"><svg class="i"><use href="#i-plug"/></svg>MCP overlays</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Govern</div>
+      <a class="nav-link" href="#guarantees"><svg class="i"><use href="#i-shield"/></svg>What every tool guarantees</a>
+      <a class="nav-link" href="#email-guardrails"><svg class="i"><use href="#i-user-check"/></svg>Email and guardrails</a>
+      <a class="nav-link" href="#secrets"><svg class="i"><use href="#i-lock"/></svg>Secrets and environment</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Build</div>
+      <a class="nav-link" href="#in-code"><svg class="i"><use href="#i-code"/></svg>Configure in code</a>
+      <a class="nav-link" href="#testing"><svg class="i"><use href="#i-target"/></svg>Testing</a>
+      <a class="nav-link" href="#writing-a-connector"><svg class="i"><use href="#i-wrench"/></svg>Write a connector</a>
+      <a class="nav-link" href="#connector-policy"><svg class="i"><use href="#i-sliders"/></svg>Connector policy</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Reference</div>
+      <a class="nav-link" href="#tool-reference"><svg class="i"><use href="#i-map"/></svg>Tool reference</a>
+      <a class="nav-link" href="#compatibility"><svg class="i"><use href="#i-compare"/></svg>Runtime compatibility</a>
+      <a class="nav-link" href="#migrating"><svg class="i"><use href="#i-rotate"/></svg>Migrating from Runtime</a>
+      <a class="nav-link" href="#troubleshooting"><svg class="i"><use href="#i-help"/></svg>Troubleshooting</a>
+      <a class="nav-link" href="#resources"><svg class="i"><use href="#i-link"/></svg>Source and links</a>
+    </div>
+    <p class="nav-empty" id="navEmpty">No sections match.</p>
+    <div class="nav-status"><strong>Pre-alpha release</strong><p>Tool contracts may change between alpha releases, always with an upgrade note.</p></div>
+  </nav>
+  <div class="scrim" id="scrim"></div>
+
+  <main id="main">
+    <div class="content">
+
+      <!-- ═══════════════ GET STARTED ═══════════════ -->
+      <section class="doc" id="welcome" style="padding-top:0">
+        <div class="hero">
+          <span class="eyebrow">Algen Agent Tools · v0.2.0a7</span>
+          <h1>Typed tools for agents. <span class="accent">Governed by default.</span></h1>
+          <p class="lead">Curated connectors for agents built on Algen Agent Runtime. Each connector is a set of narrow, typed actions with a declared side effect, permission and approval rule, registered as a Runtime plugin so Studio can list it before anything runs.</p>
+          <div class="hero-meta">
+            <span class="pill brand"><span class="dot"></span>0.2.0a7 · pre-alpha</span>
+            <span class="pill">Python 3.12 &amp; 3.13</span>
+            <span class="pill">Runtime &gt;=0.1.0a20,&lt;0.2</span>
+            <span class="pill">Apache-2.0</span>
+          </div>
+          <div class="hero-actions">
+            <a class="btn primary" href="#quickstart"><svg class="i"><use href="#i-zap"/></svg>Add a connector</a>
+            <a class="btn" href="#tool-reference"><svg class="i"><use href="#i-map"/></svg>Browse every tool</a>
+          </div>
+        </div>
+
+        <h3 id="ecosystem">Where Tools fits<a class="anchor" href="#ecosystem" aria-label="Link to this section">#</a></h3>
+        <p>Runtime runs agents; Tools gives them safe ways to touch the outside world. A connector's tools reach Runtime through a declared plugin, Studio lists them from <code>algen-agent-runtime describe</code>, and the same <code>agent.yaml</code> deploys anywhere.</p>
+        <div class="flow" aria-label="Connectors, Runtime, Studio, Deploy">
+          <span class="node gold"><small>Connect</small>Agent Tools</span><span class="arrow">→</span>
+          <span class="node"><small>Run</small>Agent Runtime</span><span class="arrow">→</span>
+          <span class="node"><small>Build</small>Agent Studio</span><span class="arrow">→</span>
+          <span class="node"><small>Ship</small>Deploy</span>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Layer</th><th>Package</th><th>Contains</th></tr></thead>
+          <tbody>
+            <tr><td>Core</td><td><code>algen-agent-runtime</code></td><td>Contracts, <code>@tool</code>, presets, <code>Toolkit</code>, plugins, <code>describe</code>, the MCP and HTTP adapters.</td></tr>
+            <tr><td>Connectors</td><td><code>algen-agent-tools</code></td><td>Generic toolkits for databases, email, chat, documents, webhooks and MCP servers, one optional extra each.</td></tr>
+            <tr><td>Domain packs</td><td>Their own packages</td><td>Product-specific tools such as hiring, HR or text-to-SQL.</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3 id="why-tools">Why a separate package<a class="anchor" href="#why-tools" aria-label="Link to this section">#</a></h3>
+        <div class="card-grid">
+          <a class="card feature" href="#guarantees"><span class="section-icon"><svg class="i"><use href="#i-shield"/></svg></span><h4>Narrow, typed actions</h4><p>No free-form SQL, URLs, shell commands or vendor request bodies. The model fills typed fields; the connector does the rest.</p></a>
+          <a class="card feature" href="#tool-reference"><span class="section-icon"><svg class="i"><use href="#i-map"/></svg></span><h4>Visible before it runs</h4><p>Every tool's side effect, permission, timeout and environment variables appear in <code>describe</code> and Studio without running project code.</p></a>
+          <a class="card feature" href="#mcp-overlays"><span class="section-icon"><svg class="i"><use href="#i-plug"/></svg></span><h4>MCP, reviewed</h4><p>A governance overlay turns a remote MCP server into declared, schema-pinned tools; anything undeclared is never exposed.</p></a>
+          <a class="card feature" href="#connector-policy"><span class="section-icon"><svg class="i"><use href="#i-user-check"/></svg></span><h4>Curated and owned</h4><p>Each connector has an owner, a security review and its own release cadence, so the Runtime core stays small.</p></a>
+        </div>
+        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Pre-release.</strong> <code>0.2.0a7</code> is an alpha. A tool's name, input schema, side effect and permission are public contract; any change ships with a CHANGELOG entry and an upgrade note.</p></div>
+      </section>
+
+      <section class="doc" id="install">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-download"/></svg></span>Get started</div>
+        <h2>Install<a class="anchor" href="#install" aria-label="Link to this section">#</a></h2>
+        <p>Install the extra for each connector you use. The package pulls in a supported <code>algen-agent-runtime</code>.</p>
+        <div data-tabs>
+          <div class="tabs" role="tablist" aria-label="Install method">
+            <button class="tab" role="tab" aria-selected="true" data-tab="one">One connector</button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="all">Every connector</button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="source">From source</button>
+          </div>
+          <div class="term" data-panel="one"><div class="term-head"><svg class="i"><use href="#i-terminal"/></svg>zsh<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="t-p">$ </span><span class="cmd">python -m pip install --pre 'algen-agent-tools[postgres]'</span></pre></div>
+          <div class="term" data-panel="all" hidden><div class="term-head"><svg class="i"><use href="#i-terminal"/></svg>zsh<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="t-p">$ </span><span class="cmd">python -m pip install --pre 'algen-agent-tools[all]'</span></pre></div>
+          <div class="term" data-panel="source" hidden><div class="term-head"><svg class="i"><use href="#i-terminal"/></svg>zsh<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="t-p">$ </span><span class="cmd">git clone https://github.com/AlgenAI/algen-agent-tools.git</span>
+<span class="t-p">$ </span><span class="cmd">cd algen-agent-tools</span>
+<span class="t-p">$ </span><span class="cmd">python3.12 -m venv .venv &amp;&amp; source .venv/bin/activate</span>
+<span class="t-p">$ </span><span class="cmd">python -m pip install -e '.[dev,all]'</span></pre></div>
+        </div>
+
+        <h3 id="extras">Extras<a class="anchor" href="#extras" aria-label="Link to this section">#</a></h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Extra</th><th>Connector</th><th>Installs</th></tr></thead>
+          <tbody>
+            <tr><td><code>postgres</code></td><td>PostgreSQL</td><td><code>asyncpg</code></td></tr>
+            <tr><td><code>mysql</code></td><td>MySQL / MariaDB</td><td><code>aiomysql[rsa]</code> (with <code>cryptography</code>, for MySQL 8's default authentication)</td></tr>
+            <tr><td><code>sqlite</code></td><td>SQLite</td><td>nothing extra (standard library)</td></tr>
+            <tr><td><code>smtp</code></td><td>SMTP</td><td>nothing extra (standard library)</td></tr>
+            <tr><td><code>gmail</code></td><td>Gmail</td><td>nothing extra (uses the Runtime's HTTP client)</td></tr>
+            <tr><td><code>outlook</code></td><td>Outlook (Microsoft 365)</td><td>nothing extra (uses the Runtime's HTTP client)</td></tr>
+            <tr><td><code>imap</code></td><td>IMAP</td><td>nothing extra (standard library)</td></tr>
+            <tr><td><code>telegram</code></td><td>Telegram</td><td>nothing extra (uses the Runtime's HTTP client)</td></tr>
+            <tr><td><code>discord</code></td><td>Discord</td><td>nothing extra (uses the Runtime's HTTP client)</td></tr>
+            <tr><td><code>github</code></td><td>GitHub (MCP overlay)</td><td>the Runtime's <code>mcp</code> extra</td></tr>
+            <tr><td><code>documents</code></td><td>Documents</td><td>the Runtime's <code>documents</code> extra, for PDFs (PyMuPDF, AGPL-3.0); every other format needs nothing</td></tr>
+            <tr><td><code>webhook</code></td><td>Webhook</td><td>nothing extra (uses the Runtime's HTTP client)</td></tr>
+            <tr><td><code>mcp</code></td><td>MCP overlays</td><td>the Runtime's <code>mcp</code> extra</td></tr>
+            <tr><td><code>all</code></td><td>everything above</td><td>includes PyMuPDF (AGPL-3.0) through <code>documents</code>; install only the extras you use if you cannot ship AGPL code</td></tr>
+          </tbody>
+        </table></div>
+        <div class="callout info"><svg class="i"><use href="#i-info"/></svg><p>Each connector imports its dependency only when its client first opens. If the extra is missing, the error names it, for example <code>pip install "algen-agent-tools[postgres]"</code>.</p></div>
+      </section>
+
+      <section class="doc" id="quickstart">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-zap"/></svg></span>Get started</div>
+        <h2>Quickstart: add a connector to an agent<a class="anchor" href="#quickstart" aria-label="Link to this section">#</a></h2>
+        <p>No code is needed for the built-in connectors. Name the plugin, trust the package, enable the tools and grant their permissions.</p>
+        <ol class="steps">
+          <li><strong>Declare the plugin in <code>agent.yaml</code></strong>
+            <div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>agent.yaml<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd">agents:
+  - name: assistant
+    version: 1.0.0
+    description: Checks that tools are wired up
+    system_instructions: Use sample.echo when asked to echo text.
+    default_model: {name: m, provider: demo}
+    domain_plugins: [algen_agent_tools.sample]   <span class="t-c"># the connector's plugin</span>
+    enabled_tools: [sample.echo]                  <span class="t-c"># the tools this agent may call</span>
+    tool_permissions: [sample.read]               <span class="t-c"># and their permissions</span>
+security:
+  trusted_plugin_prefixes: [algen_agent_tools]</span></pre></div>
+          </li>
+          <li><strong>Validate it the way Studio will</strong>
+            <div class="term"><div class="term-head"><svg class="i"><use href="#i-terminal"/></svg>zsh<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="t-p">$ </span><span class="cmd">algen-agent-runtime check agent.yaml</span>
+<span class="t-p">$ </span><span class="cmd">algen-agent-runtime describe --config agent.yaml --json</span></pre></div>
+            <p>The first command fails on an unknown tool name and suggests the closest match. <code>describe</code> lists each tool with its side effect, permissions, timeout and the environment variables it needs.</p>
+          </li>
+          <li><strong>Set the connector's environment variables</strong>
+            <p>Each connector reads its settings from <code>env://</code> references when its client first opens, never at import. See <a href="#secrets">Secrets and environment</a>.</p>
+          </li>
+        </ol>
+        <div class="callout tip"><svg class="i"><use href="#i-bulb"/></svg><p><strong>In Studio</strong>, use <a href="#in-studio">Add connector</a> instead of writing this by hand. The YAML above is what it writes.</p></div>
+      </section>
+
+      <section class="doc" id="in-studio">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-zap"/></svg></span>Get started</div>
+        <h2>In Studio: add a connector<a class="anchor" href="#in-studio" aria-label="Link to this section">#</a></h2>
+        <p>When your Studio offers the connector catalog, open the project's <strong>Connections</strong> tab, go to <strong>Tools &amp; knowledge → Connectors</strong>, and choose <strong>Add</strong> on a connector. You can also ask azAI ("let the assistant read my Gmail"); it adds the connector the same way and asks first.</p>
+        <ol class="steps">
+          <li><strong>Choose the agents and tools.</strong> The connector's default tools are selected. The preview shows what changes: the plugin, the tools and only the permissions they need, the trusted <code>algen_agent_tools</code> prefix, and the sites the connector calls (added to the allowed HTTP hosts, where you can see them).</li>
+          <li><strong>Fill in its settings.</strong> Secrets are saved encrypted and never shown again. A database connector's server must also be declared under <strong>Organization → Database hosts</strong> before hosted runs reach it.</li>
+          <li><strong>Build, if Studio says so.</strong> Until a build describes the connector, its tools show as <em>Pending build</em>. Where Studio runs catalogued connectors on its own image, no build is needed.</li>
+        </ol>
+        <p>Each connector card shows its maturity (alpha connectors carry a badge), its tools with their side effects, and options only code can set. SMTP cannot run on hosted Studio yet; run it from a local Studio or a deployment. When Studio moves to a newer Tools version, the Connectors section offers <strong>Review upgrade</strong>, which lists removed tools, new permissions and new settings before anything changes.</p>
+        <div class="callout info"><svg class="i"><use href="#i-info"/></svg><p>Studio's Connectors list comes from the connector catalog of the Tools version Studio ships with, which can be older than the one this page documents. A connector added in a later release appears there once Studio moves to that release.</p></div>
+      </section>
+
+      <section class="doc" id="how-it-works">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-layers"/></svg></span>Get started</div>
+        <h2>How it works<a class="anchor" href="#how-it-works" aria-label="Link to this section">#</a></h2>
+        <ul>
+          <li><strong>A connector is a Runtime <code>Toolkit</code>.</strong> Its tools are named <code>&lt;toolkit&gt;.&lt;action&gt;</code> and their permissions sit under the toolkit's prefix (<code>postgres.read</code>, <code>smtp.write</code>).</li>
+          <li><strong>Governance comes from a Runtime preset.</strong> <code>read</code>, <code>write</code>, <code>external</code>, <code>destructive</code> or <code>long_running</code> sets the side effect, idempotency, retries, timeout and approval default. Connectors never hand-set them.</li>
+          <li><strong>A plugin registers it.</strong> Each connector ships a plugin in the <code>algen_agent_runtime.plugins</code> entry-point group under the trusted prefix <code>algen_agent_tools</code>. Registering opens nothing and resolves no secret.</li>
+          <li><strong>The client opens late.</strong> The toolkit's client opens at container start or on first use, resolves its <code>env://</code> secrets then, and is closed with the container.</li>
+        </ul>
+      </section>
+
+      <section class="doc" id="releases">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-history"/></svg></span>Get started</div>
+        <h2>What's new<a class="anchor" href="#releases" aria-label="Link to this section">#</a></h2>
+        <h3 id="release-0-2-0a7">0.2.0a7 · 31 October 2026<a class="anchor" href="#release-0-2-0a7" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>Refusals are not "may have happened".</strong> A refusal before anything is sent (a token that could not be fetched, an unconfigured host, an attachment refused or over the limit, invalid MCP arguments, a too-large webhook payload) and a provider&#39;s definite rejection (a 4xx other than 408 from Graph, Gmail, Telegram, Discord or a webhook receiver; an SMTP connection, login, sender, recipient or data refusal) are recorded as not attempted, so a retry runs instead of manual reconciliation. Timeouts, dropped connections and 5xx stay indeterminate. Errors keep their type and message.</li>
+          <li><strong>Reply to what was read.</strong> Gmail, Outlook and IMAP results carry <code>sender_address</code>, <code>sender_name</code>, <code>recipient_addresses</code> and <code>cc_addresses</code>, declared <code>format: email</code>, so the default <code>pii</code> guardrail keeps them; see <a href="#email-guardrails">Email and guardrails</a>.</li>
+          <li><strong>Document inspection lives here.</strong> The extractors moved from the Runtime to <code>algen_agent_tools.documents</code> (<code>extractor_for</code>, <code>ExtractedDocument</code>, …); the <code>documents</code> extra installs PyMuPDF directly. DOCX and PPTX with text and images now return <code>review</code>. <code>runtime_attachment_loader</code> reads the run&#39;s own attachments; see <a href="#documents">Documents</a>.</li>
+          <li><strong>Fixed.</strong> An MCP overlay session closed from another task no longer fails; <code>OAuthRefresh</code> uses a rotated refresh token, and <code>on_refresh_token=</code> on the Gmail and Outlook clients stores it.</li>
+          <li>Requires <code>algen-agent-runtime&gt;=0.1.0a20,&lt;0.2</code> (tested on 0.1.0a20 and 0.1.0a21). Runtime 0.1.0a19 fixed the <code>session</code>-scoped tool cache.</li>
+        </ul>
+        <h3 id="release-0-2-0a6">0.2.0a6 · 30 October 2026<a class="anchor" href="#release-0-2-0a6" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>The caller's rows.</strong> <code>context_params</code> on <code>query()</code> for PostgreSQL, MySQL and SQLite binds the call's <code>tenant_id</code>, <code>user_id</code>, <code>run_id</code> or <code>step_id</code>, which the model cannot choose. The tool declares them as its <code>cache_context</code>, so the Runtime's tool-result cache never serves one caller's rows to another. See <a href="#postgres-callers-rows">The caller's rows</a>.</li>
+          <li><strong>More document formats.</strong> <code>documents.extract_text</code> reads Excel (XLSX), PowerPoint (PPTX), HTML, CSV and TSV as well as PDF, DOCX, text and Markdown, with hidden sheets, slides, shapes and HTML elements reported rather than returned. <code>truncated</code> is also true when the inspection cut the text.</li>
+          <li>Requires <code>algen-agent-runtime&gt;=0.1.0a18,&lt;0.2</code>. Don't scope the tool-result cache to <code>session</code>: on Runtime 0.1.0a18 it fails every cacheable tool call.</li>
+        </ul>
+        <h3 id="release-0-2-0a5">0.2.0a5 · 28 October 2026<a class="anchor" href="#release-0-2-0a5" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><a href="#imap">IMAP</a>: read one mailbox with an app password, read-only (nothing is marked as seen), with typed filters instead of raw IMAP search.</li>
+          <li><code>sender_auth</code> (<code>pass</code>, <code>fail</code> or <code>unknown</code>) on inbound mail: the receiving server's SPF, DKIM and DMARC verdict, filled by Gmail and IMAP.</li>
+        </ul>
+        <h3 id="release-0-2-0a4">0.2.0a4 · 27 October 2026<a class="anchor" href="#release-0-2-0a4" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><a href="#mysql">MySQL / MariaDB</a> and <a href="#sqlite">SQLite</a> on a shared SQL core, with the same typed queries as PostgreSQL.</li>
+          <li><a href="#github">GitHub</a>: the first shipped MCP overlay, 37 reviewed tools on GitHub's hosted MCP server.</li>
+          <li><a href="#webhook">Webhook</a>: typed, signed events to URLs the deployment fixes.</li>
+        </ul>
+        <h3 id="release-0-2-0a3">0.2.0a3 · 27 October 2026<a class="anchor" href="#release-0-2-0a3" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><a href="#telegram">Telegram</a> and <a href="#discord">Discord</a> bots on one shared messaging toolkit, limited to an allowlist of conversations.</li>
+          <li><code>python -m algen_agent_tools.mcp check &lt;overlay&gt;</code> reports drift between an overlay and its live server.</li>
+        </ul>
+        <h3 id="release-0-2-0a2">0.2.0a2 · 27 October 2026<a class="anchor" href="#release-0-2-0a2" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><a href="#outlook">Outlook (Microsoft 365)</a> through Microsoft Graph, delegated or application access.</li>
+          <li><code>gmail.get_message</code>, and <code>get_attachment</code> for Gmail and Outlook when the toolkit has an artifact sink.</li>
+          <li><a href="#documents">Documents</a>: <code>documents.extract_text</code> with the Runtime's document inspection.</li>
+        </ul>
+        <h3 id="release-0-2-0a1">0.2.0a1 · 27 October 2026<a class="anchor" href="#release-0-2-0a1" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li>The connector catalog, <code>connectors.json</code>, shipped in the wheel: every connector's settings, egress hosts and tool contracts, which Studio reads to list and enable connectors without running their code.</li>
+          <li>Shared attachment handling (<code>AttachmentPolicy</code>, artifact loaders and sinks), and <code>ALGEN_TOOLS_SMTP_ALLOWED_DOMAINS</code> / <code>ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS</code> to bound recipients without code.</li>
+        </ul>
+        <h3 id="release-0-1-0a2">0.1.0a2 · 27 October 2026<a class="anchor" href="#release-0-1-0a2" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>Email under the default guardrails.</strong> Address fields in <code>smtp.send_email</code> and <code>gmail.send_email</code> declare <code>format: email</code>, so the Runtime's <code>pii</code> guardrail leaves recipients alone and still screens the rest of the message. Agents no longer need a <code>tool_policies</code> setting to send; see <a href="#email-guardrails">Email and guardrails</a>.</li>
+          <li>Requires <code>algen-agent-runtime&gt;=0.1.0a12,&lt;0.2</code>.</li>
+        </ul>
+        <h3 id="release-0-1-0a1">0.1.0a1 · 27 October 2026<a class="anchor" href="#release-0-1-0a1" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li>First release, supporting <code>algen-agent-runtime&gt;=0.1.0a11,&lt;0.2</code>.</li>
+          <li>Connectors: <a href="#postgres">PostgreSQL</a> (typed queries and catalog reads), <a href="#smtp">SMTP</a> and <a href="#gmail">Gmail</a> (governed sending, inbox listing), and the dependency-free <a href="#sample">sample</a> toolkit.</li>
+          <li><a href="#mcp-overlays">MCP governance overlays</a> with schema pinning, deny-by-default and a <code>snapshot</code> command.</li>
+          <li><a href="#testing">Contract harness</a>: <code>assert_toolkit_contract</code>, <code>describe_plugin</code>, and a fake for every connector.</li>
+          <li>Replaces the Runtime's deprecated <code>communications</code> email tools and <code>database_tool</code>; see <a href="#migrating">Migrating from Runtime</a>.</li>
+        </ul>
+      </section>
+
+      <!-- ═══════════════ CONNECTORS ═══════════════ -->
+      <section class="doc" id="postgres">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-database"/></svg></span>Connectors</div>
+        <h2>PostgreSQL<a class="anchor" href="#postgres" aria-label="Link to this section">#</a></h2>
+        <p>Connect an agent to one PostgreSQL (Postgres) database through typed actions. The model never writes SQL: each tool is a named, parameterised query a developer declares in code, and the model fills in its typed parameters.</p>
+        <div class="table-wrap"><table>
+          <tbody>
+            <tr><td>Plugin</td><td><code>algen_agent_tools.postgres</code></td></tr>
+            <tr><td>Extra</td><td><code>postgres</code> (asyncpg)</td></tr>
+            <tr><td>Environment</td><td><code>ALGEN_TOOLS_POSTGRES_DSN</code></td></tr>
+          </tbody>
+        </table></div>
+        <h3 id="postgres-tools">Zero-configuration tools<a class="anchor" href="#postgres-tools" aria-label="Link to this section">#</a></h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Returns</th></tr></thead>
+          <tbody>
+            <tr><td><code>postgres.list_tables</code></td><td>read</td><td><code>postgres.read</code></td><td>Tables and views in the <code>public</code> schema with approximate row counts.</td></tr>
+            <tr><td><code>postgres.describe_table</code></td><td>read</td><td><code>postgres.read</code></td><td>Columns: type, nullability, default, primary key.</td></tr>
+          </tbody>
+        </table></div>
+        <h3 id="postgres-queries">Declaring typed queries<a class="anchor" href="#postgres-queries" aria-label="Link to this section">#</a></h3>
+        <p>Most agents need the database's own actions. Declare them in your project's plugin:</p>
+        <div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>plugin.py<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd"><span class="t-k">from</span> pydantic <span class="t-k">import</span> BaseModel, Field
+<span class="t-k">from</span> algen_agent_runtime.tools.authoring <span class="t-k">import</span> write
+<span class="t-k">from</span> algen_agent_tools.postgres <span class="t-k">import</span> PostgresToolkit
+
+<span class="t-k">class</span> <span class="t-f">CustomerInvoices</span>(BaseModel):
+    customer_id: str = Field(min_length=1)
+    due_before: date
+
+billing = PostgresToolkit(<span class="t-s">"billing"</span>, dsn=<span class="t-s">"env://BILLING_DATABASE_URL"</span>)
+
+billing.query(
+    <span class="t-s">"list_open_invoices"</span>,
+    <span class="t-s">"SELECT id, amount, due FROM invoices "</span>
+    <span class="t-s">"WHERE customer_id = $1 AND status = 'open' AND due &lt; $2 ORDER BY due"</span>,
+    description=<span class="t-s">"List one customer's open invoices that fall due before a date."</span>,
+    params=CustomerInvoices,
+    row=Invoice,
+)
+
+billing.query(
+    <span class="t-s">"add_note"</span>,
+    <span class="t-s">"INSERT INTO invoice_notes (invoice_id, text, request_key) VALUES ($1, $2, $3) "</span>
+    <span class="t-s">"ON CONFLICT (request_key) DO NOTHING"</span>,
+    description=<span class="t-s">"Add a note to an invoice."</span>,
+    params=NewNote,
+    preset=write(),
+    idempotency_key=<span class="t-k">True</span>,   <span class="t-c"># the call's key is bound as the last parameter</span>
+)</span></pre></div>
+        <ul>
+          <li><code>params</code> fields fill <code>$1</code>, <code>$2</code>, … in field order; a query whose placeholders do not match is refused when it is declared. Unknown input fields are rejected.</li>
+          <li>A read returns <code>list[row]</code>. A write returns <code>list[row]</code> with <code>RETURNING</code>, otherwise <code>{"rows_affected": n}</code>.</li>
+          <li><code>preset</code> is any Runtime preset: <code>read()</code> (default), <code>write(approval=...)</code>, <code>destructive()</code> (approval on by default), <code>long_running(...)</code>.</li>
+          <li><code>postgres_toolkit(name, dsn=..., schemas=(...))</code> builds a toolkit that already has the two catalog reads, limited to the schemas you list.</li>
+        </ul>
+        <h3 id="postgres-callers-rows">The caller's rows<a class="anchor" href="#postgres-callers-rows" aria-label="Link to this section">#</a></h3>
+        <p>In a shared, multi-tenant database, bind the caller's identity with <code>context_params</code> instead of asking the model for it:</p>
+<div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>plugin.py<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd">billing.query(
+    <span class="t-s">"my_invoices"</span>,
+    <span class="t-s">"SELECT id, amount, due FROM invoices "</span>
+    <span class="t-s">"WHERE due &lt; $1 AND tenant_id = $2 AND owner_id = $3 ORDER BY due"</span>,
+    description=<span class="t-s">"List the signed-in user's invoices that fall due before a date."</span>,
+    params=DueBefore,                         <span class="t-c"># $1, from the model</span>
+    row=Invoice,
+    context_params=(<span class="t-s">"tenant_id"</span>, <span class="t-s">"user_id"</span>),  <span class="t-c"># $2, $3, from the call</span>
+)</span></pre></div>
+        <ul>
+          <li>The values are <code>ToolContext.tenant_id</code>, <code>user_id</code>, <code>run_id</code> and <code>step_id</code>, which the Runtime sets from the run's authenticated request. Nothing else can be bound.</li>
+          <li>They are not in the tool's input schema, and a call that sends one is rejected. A <code>params</code> field whose name or alias is a context value is refused when the query is declared.</li>
+          <li>Placeholders fill in this order: <code>params</code> fields, then <code>context_params</code> in the order given, then the idempotency key.</li>
+          <li><strong>Caching:</strong> the tool declares the bound values as its <code>cache_context</code>, so the Runtime's tool-result cache keys each result on them and never serves one caller's rows to another, at any cache scope. Don't use the <code>session</code> scope for tool results: on Runtime 0.1.0a18 it fails every cacheable call.</li>
+          <li>They narrow rows; they don't replace privileges. Keep a least-privilege role, and use row-level security where the database has it.</li>
+        </ul>
+        <p>The same argument works for <a href="#mysql">MySQL</a> (<code>%s</code>) and <a href="#sqlite">SQLite</a> (<code>?</code>) toolkits: all three share <code>algen_agent_tools.sql</code>, and each database adds only a dialect for its placeholders, read-only reads, transactions and timeouts.</p>
+        <h3 id="postgres-guarantees">Guarantees<a class="anchor" href="#postgres-guarantees" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>No SQL from the model.</strong> Inputs are typed fields; values are always bound parameters.</li>
+          <li><strong>Reads cannot write.</strong> A read runs in a <code>READ ONLY</code> transaction, so PostgreSQL itself refuses an <code>UPDATE</code> hidden in one.</li>
+          <li><strong>Bounded.</strong> Every statement runs under <code>SET LOCAL statement_timeout</code> equal to the tool's timeout. Reads stream through a cursor and fail with <code>TooManyRows</code>, rather than silently truncate, past the row limit (500 by default).</li>
+          <li><strong>Writes are keyed and tried once.</strong> With <code>idempotency_key=True</code> the SQL can be exactly-once.</li>
+          <li><strong>The caller's identity comes from the call.</strong> <code>context_params</code> values are never tool input, and the result cache keys on them.</li>
+          <li><strong>Catalog reads are limited</strong> to the schemas you list and to tables the role can <code>SELECT</code>.</li>
+        </ul>
+        <div class="callout tip"><svg class="i"><use href="#i-bulb"/></svg><p>Connect with a database role that has only the privileges the declared queries need.</p></div>
+      </section>
+
+      <section class="doc" id="mysql">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-database"/></svg></span>Connectors</div>
+        <h2>MySQL / MariaDB<a class="anchor" href="#mysql" aria-label="Link to this section">#</a></h2>
+        <p>Read a MySQL or MariaDB database through typed tools. Your own queries are declared in code exactly as for <a href="#postgres-queries">PostgreSQL</a>, with <code>%s</code> placeholders (a literal <code>%</code> is <code>%%</code>).</p>
+        <div class="table-wrap"><table>
+          <tbody><tr><td>Plugin</td><td><code>algen_agent_tools.mysql</code></td></tr><tr><td>Extra</td><td><code>mysql</code> (<code>aiomysql[rsa]</code>)</td></tr><tr><td>Environment</td><td><code>ALGEN_TOOLS_MYSQL_DSN</code> (secret): <code>mysql://user:password@host:port/database</code>, with <code>?ssl=verify</code> for verified TLS</td></tr></tbody>
+        </table></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
+          <tbody><tr><td><code>mysql.list_tables</code></td><td>read</td><td><code>mysql.read</code></td><td>30 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>mysql.describe_table</code></td><td>read</td><td><code>mysql.read</code></td><td>30 s</td><td>Runtime default</td><td>agent policy</td></tr></tbody>
+        </table></div>
+        <ul>
+          <li><strong>Reads</strong> run in <code>START TRANSACTION READ ONLY</code>, so a declared read that writes fails.</li>
+          <li><strong>Timeouts</strong> are enforced three ways: on the server (<code>max_execution_time</code> on MySQL, <code>max_statement_time</code> on MariaDB, detected at connect), on lock waits (<code>innodb_lock_wait_timeout</code>), and by a client-side deadline that drops a stuck connection.</li>
+          <li><strong>Writes</strong> run in their own transaction. With <code>idempotency_key=True</code>, <code>INSERT IGNORE</code> or <code>ON DUPLICATE KEY UPDATE</code> on a unique key makes a write exactly-once.</li>
+          <li><strong>Errors</strong> carry only the MySQL error number, never the server's message, which can quote data.</li>
+        </ul>
+
+      </section>
+
+      <section class="doc" id="sqlite">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-database"/></svg></span>Connectors</div>
+        <h2>SQLite<a class="anchor" href="#sqlite" aria-label="Link to this section">#</a></h2>
+        <p>Read a SQLite database file through typed tools, with your own queries declared in code using plain <code>?</code> placeholders. Numbered and named placeholders are refused, so the order can't differ from the model's fields.</p>
+        <div class="table-wrap"><table>
+          <tbody><tr><td>Plugin</td><td><code>algen_agent_tools.sqlite</code></td></tr><tr><td>Extra</td><td><code>sqlite</code> (no extra packages)</td></tr><tr><td>Environment</td><td><code>ALGEN_TOOLS_SQLITE_PATH</code></td></tr></tbody>
+        </table></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
+          <tbody><tr><td><code>sqlite.list_tables</code></td><td>read</td><td><code>sqlite.read</code></td><td>30 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>sqlite.describe_table</code></td><td>read</td><td><code>sqlite.read</code></td><td>30 s</td><td>Runtime default</td><td>agent policy</td></tr></tbody>
+        </table></div>
+        <ul>
+          <li><strong>Read-only by default.</strong> The file opens with <code>mode=ro</code>, and declaring a write fails unless the toolkit is built with <code>read_only=False</code>. Reads run with <code>PRAGMA query_only</code>.</li>
+          <li><strong>Timeouts:</strong> SQLite has no statement timeout, so a progress handler interrupts a statement that runs past the tool's timeout.</li>
+          <li>The file must already exist; the connector never creates one. SQLite suits small, local, read-mostly data. For concurrent writers, use PostgreSQL.</li>
+        </ul>
+
+      </section>
+
+      <section class="doc" id="smtp">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-server"/></svg></span>Connectors</div>
+        <h2>SMTP<a class="anchor" href="#smtp" aria-label="Link to this section">#</a></h2>
+        <p>Send email over SMTP from the deployment's own address.</p>
+        <div class="table-wrap"><table>
+          <tbody>
+            <tr><td>Plugin</td><td><code>algen_agent_tools.smtp</code></td></tr>
+            <tr><td>Extra</td><td><code>smtp</code> (no extra packages)</td></tr>
+            <tr><td>Environment</td><td><code>ALGEN_TOOLS_SMTP_HOST</code>, <code>ALGEN_TOOLS_SMTP_SENDER</code> (required); <code>ALGEN_TOOLS_SMTP_PORT</code> (587), <code>ALGEN_TOOLS_SMTP_SECURITY</code> (<code>starttls</code>), <code>ALGEN_TOOLS_SMTP_USERNAME</code>, <code>ALGEN_TOOLS_SMTP_PASSWORD</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
+          <tbody>
+            <tr><td><code>smtp.send_email</code></td><td>external</td><td><code>smtp.write</code></td><td>60 s</td><td>1</td><td>agent policy (asks by default)</td></tr>
+          </tbody>
+        </table></div>
+        <p><code>smtp.send_email</code> takes <code>to</code> (1 to 50), <code>cc</code>, <code>bcc</code>, <code>reply_to</code>, <code>subject</code>, and <code>text_body</code> and/or <code>html_body</code>. It returns the delivery receipt: provider, Message-ID, accepted and rejected recipients.</p>
+        <h3 id="email-sending-guarantees">Sending guarantees (SMTP and Gmail)<a class="anchor" href="#email-sending-guarantees" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>The sender is the deployment's.</strong> The model cannot choose the From address or add headers.</li>
+          <li><strong>Header-safe.</strong> Line breaks in addresses, names or the subject are refused; recipients must be unique, at most 100 in all.</li>
+          <li><strong>One message per idempotency key.</strong> The key becomes a deterministic Message-ID and the tool is tried once, so a replay does not send twice.</li>
+          <li><strong>Bounded audience.</strong> With <code>allowed_domains</code>, every recipient and the Reply-To address must be in those domains or their subdomains.</li>
+          <li><strong>TLS by default.</strong> <code>security</code> is <code>starttls</code> or <code>tls</code>; <code>plain</code> is allowed only to loopback.</li>
+          <li><strong>Content is not captured</strong> in audit metadata, and errors name only the failure type.</li>
+        </ul>
+        <p>Attachments are offered only when you configure an artifact loader; see <a href="#in-code">Configure in code</a>.</p>
+      </section>
+
+      <section class="doc" id="gmail">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-server"/></svg></span>Connectors</div>
+        <h2>Gmail<a class="anchor" href="#gmail" aria-label="Link to this section">#</a></h2>
+        <p>Read and send mail for one Gmail or Google Workspace mailbox, through the Gmail API with an OAuth refresh token.</p>
+        <div class="table-wrap"><table>
+          <tbody>
+            <tr><td>Plugin</td><td><code>algen_agent_tools.gmail</code></td></tr>
+            <tr><td>Extra</td><td><code>gmail</code> (no extra packages)</td></tr>
+            <tr><td>Environment</td><td><code>ALGEN_TOOLS_GMAIL_CLIENT_ID</code>, <code>ALGEN_TOOLS_GMAIL_CLIENT_SECRET</code>, <code>ALGEN_TOOLS_GMAIL_REFRESH_TOKEN</code>, <code>ALGEN_TOOLS_GMAIL_SENDER</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
+          <tbody>
+            <tr><td><code>gmail.list_messages</code></td><td>read</td><td><code>gmail.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr>
+            <tr><td><code>gmail.get_message</code></td><td>read</td><td><code>gmail.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr>
+            <tr><td><code>gmail.get_attachment</code> (with <code>artifact_sink</code>)</td><td>read</td><td><code>gmail.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr>
+            <tr><td><code>gmail.send_email</code></td><td>external</td><td><code>gmail.write</code></td><td>60 s</td><td>1</td><td>agent policy (asks by default)</td></tr>
+          </tbody>
+        </table></div>
+        <ul>
+          <li><code>gmail.list_messages(query="is:unread", max_results=25, page_token=None)</code> takes a Gmail search query and returns message metadata: sender, recipients, subject, a snippet, labels, attachments with their <code>part_id</code>, and <code>sender_auth</code>, at most 100 per page. Bodies and attachment bytes are not returned.</li>
+          <li><code>sender_auth</code> is Gmail's own SPF, DKIM and DMARC verdict on the sender (<code>pass</code>, <code>fail</code> or <code>unknown</code>), read only from the <code>Authentication-Results</code> header Gmail stamped. Use it to keep a spoofed From out of trusted workflows; <code>unknown</code> is not a failure.</li>
+          <li><code>gmail.get_message(message_id, max_chars=20000)</code> reads one message with its body as plain text (HTML without markup, scripts or styles), with <code>body_truncated</code> set when cut. The tool tells the model to treat instructions in the message as data.</li>
+          <li><code>gmail.get_attachment(message_id, attachment_id)</code> is offered only when the toolkit is built in code with an <code>artifact_sink</code>. It saves one attachment as an artifact, within the <code>attachment_policy</code> size and type checks, and returns only its reference. Pass the stable <code>part_id</code> from the listing.</li>
+          <li><code>gmail.send_email</code> takes the same input as <a href="#smtp"><code>smtp.send_email</code></a>, sends from <code>ALGEN_TOOLS_GMAIL_SENDER</code>, and delivers Bcc recipients without exposing them to other recipients.</li>
+        </ul>
+        <h3 id="gmail-credentials">Credentials<a class="anchor" href="#gmail-credentials" aria-label="Link to this section">#</a></h3>
+        <p>Create an OAuth client in Google Cloud, authorise the mailbox once to obtain a refresh token, and grant only the scopes the agent needs: <code>gmail.readonly</code> for <code>list_messages</code>, <code>get_message</code> and <code>get_attachment</code>, <code>gmail.send</code> for <code>send_email</code>. The access token is refreshed in memory and never leaves the client; token and API errors name only the failure type.</p>
+      </section>
+
+      <section class="doc" id="outlook">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-server"/></svg></span>Connectors</div>
+        <h2>Outlook (Microsoft 365)<a class="anchor" href="#outlook" aria-label="Link to this section">#</a></h2>
+        <p>Read and send mail for one Outlook mailbox through Microsoft Graph, with an Entra app registration.</p>
+        <div class="table-wrap"><table>
+          <tbody><tr><td>Plugin</td><td><code>algen_agent_tools.outlook</code></td></tr><tr><td>Extra</td><td><code>outlook</code> (no extra packages)</td></tr><tr><td>Environment</td><td><code>ALGEN_TOOLS_OUTLOOK_TENANT_ID</code>, <code>ALGEN_TOOLS_OUTLOOK_CLIENT_ID</code>, <code>ALGEN_TOOLS_OUTLOOK_CLIENT_SECRET</code>, <code>ALGEN_TOOLS_OUTLOOK_MAILBOX</code>; optional <code>ALGEN_TOOLS_OUTLOOK_REFRESH_TOKEN</code>, <code>ALGEN_TOOLS_OUTLOOK_ALLOWED_DOMAINS</code></td></tr></tbody>
+        </table></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
+          <tbody><tr><td><code>outlook.list_messages</code></td><td>read</td><td><code>outlook.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.get_message</code></td><td>read</td><td><code>outlook.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.get_attachment</code> (with <code>artifact_sink</code>)</td><td>read</td><td><code>outlook.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>outlook.send_email</code></td><td>external</td><td><code>outlook.write</code></td><td>60 s</td><td>1</td><td>agent policy (asks by default)</td></tr></tbody>
+        </table></div>
+        <ul>
+          <li><code>outlook.list_messages(folder="inbox", search=None, unread_only=False, max_results=25, page_token=None)</code> lists one folder (<code>inbox</code>, <code>sentitems</code>, <code>drafts</code>, <code>archive</code>, <code>junkemail</code>), newest first, at most 50 per page. The page token is opaque and never a URL; the connector rebuilds each request for its own mailbox.</li>
+          <li><code>get_message</code> and <code>get_attachment</code> are the same shared tools as Gmail's. Only file attachments can be saved.</li>
+          <li><code>outlook.send_email</code> takes the same input as <a href="#smtp"><code>smtp.send_email</code></a> and saves a copy in Sent Items. Attachments travel inline, at most 3 MB in all.</li>
+          <li><strong>Delegated access</strong> (a refresh token is set) acts as the signed-in user. <strong>Application access</strong> uses the app's own credentials on <code>ALGEN_TOOLS_OUTLOOK_MAILBOX</code>.</li>
+        </ul>
+        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Application access:</strong> limit the app to the one mailbox with an Exchange Online application access policy (or RBAC for Applications). Otherwise the app's <code>Mail.Read</code> grant reaches every mailbox in the tenant.</p></div>
+      </section>
+
+      <section class="doc" id="imap">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-server"/></svg></span>Connectors</div>
+        <h2>IMAP<a class="anchor" href="#imap" aria-label="Link to this section">#</a></h2>
+        <p>Read one mailbox over IMAP with an app password: Gmail and Google Workspace without an OAuth app, Zoho, Fastmail or any IMAPS server. The connector is read-only: nothing is moved, flagged, deleted or marked as seen. Send replies with <a href="#smtp"><code>smtp.send_email</code></a>.</p>
+        <div class="table-wrap"><table>
+          <tbody><tr><td>Plugin</td><td><code>algen_agent_tools.imap</code></td></tr><tr><td>Extra</td><td><code>imap</code> (no extra packages)</td></tr><tr><td>Environment</td><td><code>ALGEN_TOOLS_IMAP_HOST</code>, <code>ALGEN_TOOLS_IMAP_USERNAME</code>, <code>ALGEN_TOOLS_IMAP_PASSWORD</code>; optional <code>ALGEN_TOOLS_IMAP_PORT</code> (993), <code>ALGEN_TOOLS_IMAP_FOLDERS</code> (<code>INBOX</code>), <code>ALGEN_TOOLS_IMAP_AUTHSERV_ID</code></td></tr></tbody>
+        </table></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
+          <tbody><tr><td><code>imap.list_messages</code></td><td>read</td><td><code>imap.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>imap.get_message</code></td><td>read</td><td><code>imap.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>imap.get_attachment</code> (with <code>artifact_sink</code>)</td><td>read</td><td><code>imap.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr></tbody>
+        </table></div>
+        <ul>
+          <li><code>imap.list_messages</code> takes typed filters, not raw IMAP search: <code>from_address</code>, <code>subject</code>, <code>since</code>, <code>before</code> and <code>unread_only</code>, at most 100 per page, newest first.</li>
+          <li>Only the folders in <code>ALGEN_TOOLS_IMAP_FOLDERS</code> can be read. Folders open with <code>EXAMINE</code> and bodies are fetched with <code>BODY.PEEK</code>, by part and within byte limits.</li>
+          <li>On Gmail, message and thread ids are Gmail's own, the same ones the Gmail API returns. Elsewhere an id carries the folder's UIDVALIDITY, so a stale id is an error rather than another message.</li>
+          <li><code>sender_auth</code> trusts the topmost <code>Authentication-Results</code> header only from <code>mx.google.com</code> on Gmail, or from the server named in <code>ALGEN_TOOLS_IMAP_AUTHSERV_ID</code>; otherwise it is <code>unknown</code>.</li>
+          <li>TLS on port 993 is always on, with the certificate and host name verified. The password is sent only in <code>LOGIN</code>.</li>
+        </ul>
+
+      </section>
+
+      <section class="doc" id="telegram">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-bot"/></svg></span>Connectors</div>
+        <h2>Telegram<a class="anchor" href="#telegram" aria-label="Link to this section">#</a></h2>
+        <p>Read the messages a Telegram bot receives, save their files as artifacts, and post plain text as the bot, through the Bot API.</p>
+        <div class="table-wrap"><table>
+          <tbody><tr><td>Plugin</td><td><code>algen_agent_tools.telegram</code></td></tr><tr><td>Extra</td><td><code>telegram</code> (no extra packages)</td></tr><tr><td>Environment</td><td><code>ALGEN_TOOLS_TELEGRAM_BOT_TOKEN</code>; optional <code>ALGEN_TOOLS_TELEGRAM_ALLOWED_CHATS</code></td></tr></tbody>
+        </table></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
+          <tbody><tr><td><code>telegram.list_messages</code></td><td>read</td><td><code>telegram.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>telegram.get_attachment</code> (with <code>artifact_sink</code>)</td><td>read</td><td><code>telegram.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>telegram.send_message</code></td><td>external</td><td><code>telegram.write</code></td><td>60 s</td><td>1</td><td>agent policy (asks by default)</td></tr></tbody>
+        </table></div>
+        <ul>
+          <li><code>telegram.list_messages</code> returns the bot's pending updates, newest first, at most 100, <strong>without confirming them</strong>, so reading changes nothing. Telegram keeps an update for 24 hours.</li>
+          <li><code>telegram.send_message</code> posts up to 4,096 characters of plain text with link previews off, so a link can't make Telegram fetch a URL.</li>
+          <li>Chat ids are numbers; <code>@username</code> is not accepted. The allowlist limits every tool to those chats.</li>
+          <li>The bot token is part of every Bot API URL; it never appears in an error and is redacted from request logs.</li>
+        </ul>
+        <p>Telegram and Discord share <code>algen_agent_tools.messaging</code>: the same models (<code>InboundMessage</code>, <code>Conversation</code>, <code>DeliveryReceipt</code>), tool names, inputs and conversation allowlist. A platform declares its capabilities, and <code>messaging_toolkit</code> adds only the tools it supports.</p>
+        <div class="callout info"><svg class="i"><use href="#i-info"/></svg><p>Reading uses <code>getUpdates</code>, which fails with <code>error 409</code> while the bot has a webhook or another program polls it. Use a bot for this connector alone.</p></div>
+      </section>
+
+      <section class="doc" id="discord">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-bot"/></svg></span>Connectors</div>
+        <h2>Discord<a class="anchor" href="#discord" aria-label="Link to this section">#</a></h2>
+        <p>List one Discord server's text channels, read their messages, save attachments as artifacts, and post plain text as a bot, through the REST API.</p>
+        <div class="table-wrap"><table>
+          <tbody><tr><td>Plugin</td><td><code>algen_agent_tools.discord</code></td></tr><tr><td>Extra</td><td><code>discord</code> (no extra packages)</td></tr><tr><td>Environment</td><td><code>ALGEN_TOOLS_DISCORD_BOT_TOKEN</code>, <code>ALGEN_TOOLS_DISCORD_GUILD_ID</code>; optional <code>ALGEN_TOOLS_DISCORD_ALLOWED_CHANNELS</code></td></tr></tbody>
+        </table></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
+          <tbody><tr><td><code>discord.list_conversations</code></td><td>read</td><td><code>discord.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>discord.list_messages</code></td><td>read</td><td><code>discord.read</code></td><td>60 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>discord.get_attachment</code> (with <code>artifact_sink</code>)</td><td>read</td><td><code>discord.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr><tr><td><code>discord.send_message</code></td><td>external</td><td><code>discord.write</code></td><td>60 s</td><td>1</td><td>agent policy (asks by default)</td></tr></tbody>
+        </table></div>
+        <ul>
+          <li><strong>One server.</strong> Every channel is checked to be a text channel, announcement channel or thread of <code>ALGEN_TOOLS_DISCORD_GUILD_ID</code>; direct messages, voice channels and other servers are refused.</li>
+          <li><code>discord.send_message</code> posts up to 2,000 characters with <strong>no pings</strong> (<code>@everyone</code>, roles and users don't notify anyone), <strong>no link embeds</strong>, and an enforced nonce from the idempotency key, so Discord drops a repeated send.</li>
+          <li>The token travels only in the <code>Authorization</code> header to <code>discord.com</code>, never to the CDN.</li>
+          <li>To read message text, turn on the bot's <strong>Message Content</strong> privileged intent.</li>
+        </ul>
+        <p>Telegram and Discord share <code>algen_agent_tools.messaging</code>: the same models (<code>InboundMessage</code>, <code>Conversation</code>, <code>DeliveryReceipt</code>), tool names, inputs and conversation allowlist. A platform declares its capabilities, and <code>messaging_toolkit</code> adds only the tools it supports.</p>
+
+      </section>
+
+      <section class="doc" id="github">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-github"/></svg></span>Connectors</div>
+        <h2>GitHub<a class="anchor" href="#github" aria-label="Link to this section">#</a></h2>
+        <p>Read repositories, commits, issues and pull requests, and work on issues and pull requests, through <strong>GitHub's hosted MCP server</strong>, governed by a reviewed <a href="#mcp-overlays">MCP overlay</a> that ships with the package.</p>
+        <div class="table-wrap"><table>
+          <tbody><tr><td>Plugin</td><td><code>algen_agent_tools.github</code></td></tr><tr><td>Extra</td><td><code>github</code> (the Runtime's MCP client)</td></tr><tr><td>Environment</td><td><code>ALGEN_TOOLS_GITHUB_TOKEN</code></td></tr><tr><td>Server</td><td><code>https://api.githubcopilot.com/mcp/</code>, the only host the connector reaches</td></tr></tbody>
+        </table></div>
+        <p>It declares 37 of the server's 46 tools as <code>github.&lt;tool&gt;</code>, with <code>github.read</code> for reads and <code>github.write</code> for everything else. Each input schema is pinned to what the server advertised when the overlay was reviewed; a changed tool is refused until it is reviewed again.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Kind</th><th>Tools</th><th>Approval</th></tr></thead>
+          <tbody>
+            <tr><td>Read (22)</td><td><code>get_me</code>, <code>get_file_contents</code>, <code>get_commit</code>, <code>list_commits</code>, <code>list_branches</code>, <code>list_tags</code>, <code>get_tag</code>, <code>list_releases</code>, <code>get_latest_release</code>, <code>get_release_by_tag</code>, <code>issue_read</code>, <code>list_issues</code>, <code>search_issues</code>, <code>list_issue_types</code>, <code>list_issue_fields</code>, <code>get_label</code>, <code>pull_request_read</code>, <code>list_pull_requests</code>, <code>search_pull_requests</code>, <code>search_code</code>, <code>search_repositories</code>, <code>search_commits</code></td><td>agent policy</td></tr>
+            <tr><td>Write (10)</td><td><code>add_issue_comment</code>, <code>update_issue_comment</code>, <code>issue_write</code>, <code>sub_issue_write</code>, <code>create_branch</code>, <code>create_pull_request</code>, <code>update_pull_request</code>, <code>update_pull_request_branch</code>, <code>add_reply_to_pull_request_comment</code>, <code>add_comment_to_pending_review</code></td><td>agent policy</td></tr>
+            <tr><td>Write, approved every call (3)</td><td><code>pull_request_review_write</code> (it can approve a pull request), <code>push_files</code> and <code>create_or_update_file</code> (they commit to a branch)</td><td>always</td></tr>
+            <tr><td>Destructive (2)</td><td><code>merge_pull_request</code>, <code>delete_file</code></td><td>by default</td></tr>
+          </tbody>
+        </table></div>
+        <p><strong>Not exposed:</strong> repository creation and forks, <code>run_secret_scanning</code> (it uploads the content it is given), the MCP-Apps UI tool, Copilot review requests, and people-directory lookups.</p>
+        <div class="callout tip"><svg class="i"><use href="#i-bulb"/></svg><p>Use a fine-grained personal access token (or a GitHub App user token) limited to the repositories the agent works on, with only the permissions the enabled tools need. The overlay limits which tools an agent can call; the token limits what they can reach. Issue and pull request text comes from outside contributors, so keep write tools behind approval when an agent reads and acts in one run.</p></div>
+      </section>
+
+      <section class="doc" id="documents">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-file"/></svg></span>Connectors</div>
+        <h2>Documents<a class="anchor" href="#documents" aria-label="Link to this section">#</a></h2>
+        <p>Read the text of a document an agent received, for example an email attachment saved with <code>gmail.get_attachment</code>. Parsing and inspection are the untrusted-document checks in <code>algen_agent_tools.documents</code> (moved from the Runtime in 0.2.0a7); the connector reads the artifact for the calling tenant, bounds the call and governs it as a tool.</p>
+        <div class="table-wrap"><table>
+          <tbody><tr><td>Module</td><td><code>algen_agent_tools.documents</code> (built in code; it needs an artifact loader, the deployment&#39;s or <code>runtime_attachment_loader</code> for the run&#39;s attachments, so there is no plugin yet)</td></tr><tr><td>Extra</td><td><code>documents</code> for PDFs (PyMuPDF, AGPL-3.0); every other format needs nothing</td></tr><tr><td>Environment</td><td>none</td></tr></tbody>
+        </table></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Attempts</th><th>Approval</th></tr></thead>
+          <tbody><tr><td><code>documents.extract_text</code></td><td>read</td><td><code>documents.read</code></td><td>120 s</td><td>Runtime default</td><td>agent policy</td></tr></tbody>
+        </table></div>
+        <ul>
+          <li><strong>Formats</strong> come from the file name: <code>.pdf</code>, <code>.docx</code>, <code>.xlsx</code>, <code>.pptx</code>, <code>.html</code>, <code>.htm</code>, <code>.csv</code>, <code>.tsv</code>, <code>.txt</code> and <code>.md</code>. Any other suffix, or content that doesn't match its name, is refused.</li>
+          <li><strong>Only visible text</strong> is returned, cut to <code>max_chars</code> (at most 100,000). Hidden PDF text, hidden DOCX runs, hidden XLSX sheets, rows and columns, hidden PPTX slides and shapes, and HTML hidden by attribute or inline style are reported as findings instead.</li>
+          <li><strong>A disposition</strong> (<code>pass</code>, <code>review</code> or <code>quarantine</code>) and <strong>findings</strong> cover hidden text, instructions aimed at the model and risky Office packaging (macros, remote templates). A quarantined document's text is withheld unless the toolkit is built with <code>quarantine="return"</code>.</li>
+          <li><code>truncated</code> is true when the text was cut, by <code>max_chars</code> or by the inspection (an XLSX sheet past 5,000 rows).</li>
+          <li><strong>Images are not read.</strong> A PDF, DOCX or PPTX with text and embedded images reports <code>document.images_excluded</code> and returns <code>review</code> (DOCX and PPTX from 0.2.0a7). Attach the file to the run instead when a vision model should see it.</li>
+          <li><strong>Inspection without the tool.</strong> <code>from algen_agent_tools.documents import extractor_for</code> gives the extractors directly. They replace <code>algen_agent_runtime.security.documents</code>, deprecated in Runtime 0.1.0a19.</li>
+        </ul>
+<div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>plugin.py<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd"><span class="t-k">from</span> algen_agent_tools.documents <span class="t-k">import</span> documents_toolkit
+
+documents = documents_toolkit(artifact_loader=load_artifact)  <span class="t-c"># checks the artifact's tenant</span>
+
+<span class="t-c"># or, for the files attached to the run (Runtime 0.1.0a19+): refuses any other artifact</span>
+<span class="t-k">from</span> algen_agent_tools.attachments <span class="t-k">import</span> runtime_attachment_loader
+documents = documents_toolkit(artifact_loader=runtime_attachment_loader)</span></pre></div>
+      </section>
+
+      <section class="doc" id="webhook">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-link"/></svg></span>Connectors</div>
+        <h2>Webhook<a class="anchor" href="#webhook" aria-label="Link to this section">#</a></h2>
+        <p>Send typed events to systems you own: chat incoming-webhooks, automation platforms, your own services. The deployment fixes where each event goes and what shape it has; the model only fills in the fields.</p>
+        <div class="table-wrap"><table>
+          <tbody><tr><td>Module</td><td><code>algen_agent_tools.webhook</code> (built in code; there is no plugin)</td></tr><tr><td>Extra</td><td><code>webhook</code> (no extra packages)</td></tr><tr><td>Environment</td><td>one <code>env://</code> URL per target, and an optional signing secret per target</td></tr></tbody>
+        </table></div>
+<div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>plugin.py<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd"><span class="t-k">from</span> algen_agent_tools.webhook <span class="t-k">import</span> WebhookTarget, webhook_toolkit
+
+alerts = webhook_toolkit([
+    WebhookTarget(
+        action=<span class="t-s">"notify_ops"</span>,                           <span class="t-c"># tool webhook.notify_ops</span>
+        url=<span class="t-s">"env://ALGEN_TOOLS_WEBHOOK_OPS_URL"</span>,
+        signing_secret=<span class="t-s">"env://ALGEN_TOOLS_WEBHOOK_OPS_SECRET"</span>,
+        payload=OpsAlert,                              <span class="t-c"># a Pydantic model: the tool's input</span>
+        description=<span class="t-s">"Post an alert to the operations channel."</span>,
+    ),
+])</span></pre></div>
+        <ul>
+          <li>Each target is one <strong>external</strong> tool, <code>webhook.&lt;action&gt;</code>, with permission <code>webhook.write</code>, a 30 s timeout and one attempt; <code>approval=True</code> asks before every call.</li>
+          <li>The URL must be <code>https</code> (or <code>allow_http=True</code> for a private network), redirects are not followed, and the URL is treated as a secret: it never appears in an error or a log line.</li>
+          <li>The receiver gets a JSON <code>POST</code> with an <code>Idempotency-Key</code> header and, given a signing secret, <code>X-Algen-Signature: t=&lt;ts&gt;,v1=&lt;HMAC-SHA256&gt;</code>. Check it with <code>verify(secret, header, raw_body)</code>.</li>
+          <li>The result is only <code>{"action", "status_code"}</code>; the receiver's body is never returned to the model.</li>
+        </ul>
+
+      </section>
+
+      <section class="doc" id="sample">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-check"/></svg></span>Connectors</div>
+        <h2>Sample toolkit<a class="anchor" href="#sample" aria-label="Link to this section">#</a></h2>
+        <p>A dependency-free toolkit that calls no external service. Use it to check that an install, the plugin entry point and <code>describe</code> work end to end, and as the template for a new connector.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Side effect</th><th>Permission</th><th>Timeout</th><th>Input</th></tr></thead>
+          <tbody>
+            <tr><td><code>sample.echo</code></td><td>read</td><td><code>sample.read</code></td><td>5 s</td><td><code>text</code>, 1 to 1,000 characters; returns <code>{"text", "length"}</code></td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section class="doc" id="mcp-overlays">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-plug"/></svg></span>Connectors</div>
+        <h2>MCP governance overlays<a class="anchor" href="#mcp-overlays" aria-label="Link to this section">#</a></h2>
+        <p>When a well-maintained MCP server already does what an agent needs, use a governance overlay instead of a native connector. An overlay is a reviewed file, kept in the project, that declares each remote tool the agent may call: its <strong>side effect</strong>, whether a person must <strong>approve</strong> every call, and the <strong>input schema</strong> it was reviewed against. MCP's own annotations (<code>readOnlyHint</code>, <code>destructiveHint</code>) are hints a server sets about itself; the overlay is the deployment's decision.</p>
+        <h3 id="mcp-guarantees">What an overlay guarantees<a class="anchor" href="#mcp-guarantees" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>Visible before connecting.</strong> Each declared tool is an ordinary Runtime tool, so <code>describe</code> and Studio list it with its side effect, permission and approval rule.</li>
+          <li><strong>Deny by default.</strong> A remote tool the overlay does not declare is never exposed.</li>
+          <li><strong>Schema pinning.</strong> A declared tool that disappeared, or whose input schema changed on the server, is refused until the overlay is reviewed again (<code>on_drift: allow</code> relaxes this).</li>
+          <li><strong>Validated arguments.</strong> Arguments are checked against the reviewed schema, with every object closed to unknown fields, before anything is sent.</li>
+          <li><strong>Bounded results.</strong> Each tool has a result size limit (256 KB by default) and a timeout.</li>
+          <li><strong>Secrets by reference, hosts pinned.</strong> Tokens, headers and a stdio server's environment are <code>env://</code> references; an HTTP transport may reach only the server's own host unless <code>allowed_hosts</code> says otherwise.</li>
+        </ul>
+        <h3 id="mcp-snapshot">Draft, review, use<a class="anchor" href="#mcp-snapshot" aria-label="Link to this section">#</a></h3>
+        <div class="term"><div class="term-head"><svg class="i"><use href="#i-terminal"/></svg>zsh<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="t-p">$ </span><span class="cmd">python -m pip install --pre 'algen-agent-tools[mcp]'</span>
+<span class="t-p">$ </span><span class="cmd">python -m algen_agent_tools.mcp snapshot server.yaml --name github --output github.overlay.yaml</span></pre></div>
+        <p>The draft pins every advertised tool's schema and leaves each <code>effect</code> empty, with the server's annotation as a comment. It does not load until someone sets every effect. Delete each tool the agent must not call.</p>
+        <div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>github.overlay.yaml<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd">name: github                  <span class="t-c"># tools are github.&lt;tool&gt;; permissions github.read / github.write</span>
+server:
+  name: github
+  transport: streamable_http
+  url: https://api.githubcopilot.com/mcp/
+  auth_token_ref: env://GITHUB_MCP_TOKEN
+tools:
+  get_issue:
+    effect: read
+    input_schema: {...}         <span class="t-c"># pinned by the snapshot</span>
+  create_issue:
+    effect: write
+    approval: true              <span class="t-c"># ask a person before every call</span>
+    timeout_seconds: 30
+    input_schema: {...}</span></pre></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Rule field</th><th>Default</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>effect</code></td><td>required</td><td><code>read</code>, <code>write</code>, <code>external</code> or <code>destructive</code></td></tr>
+            <tr><td><code>approval</code></td><td><code>true</code> for destructive, otherwise the agent's approval policy</td><td>ask before every call</td></tr>
+            <tr><td><code>timeout_seconds</code></td><td>30</td><td>per call</td></tr>
+            <tr><td><code>permissions</code></td><td><code>&lt;name&gt;.read</code> or <code>&lt;name&gt;.write</code></td><td>explicit permission list</td></tr>
+            <tr><td><code>max_result_bytes</code></td><td>262144</td><td>result size limit</td></tr>
+            <tr><td><code>description</code></td><td>the server's</td><td>what the model reads</td></tr>
+            <tr><td><code>input_schema</code></td><td>required</td><td>the reviewed schema</td></tr>
+          </tbody>
+        </table></div>
+        <p>A server can change a tool at any time. <code>python -m algen_agent_tools.mcp check github.overlay.yaml</code> connects to the server and reports declared tools that are gone or whose schema changed, and tools the server offers that the overlay doesn't declare. It exits 1 on drift (with <code>--strict</code>, also on new tools) and prints JSON with <code>--json</code>, so you can run it on a schedule.</p>
+        <p>Load it from your project's plugin with <code>overlay_plugin(Path(...).with_name("github.overlay.yaml"), name="acme.github", version="1.0.0", publisher="acme")</code>, then name that plugin in <code>domain_plugins</code>. Do not also list the server under the Runtime's <code>mcp_servers</code>; the overlay owns the connection.</p>
+        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>No idempotency key reaches an MCP server.</strong> Write tools are single-attempt and the Runtime's ledger stops a replay from calling twice, but a timeout leaves the outcome unknown. If an action must be exactly-once, that is the case for a native connector.</p></div>
+      </section>
+
+      <!-- ═══════════════ GOVERN ═══════════════ -->
+      <section class="doc" id="guarantees">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-shield"/></svg></span>Govern</div>
+        <h2>What every tool guarantees<a class="anchor" href="#guarantees" aria-label="Link to this section">#</a></h2>
+        <p>Every toolkit in the package passes the same contract harness, <code>algen_agent_tools.testing.assert_toolkit_contract</code>, on top of the Runtime's own tool contract:</p>
+        <ul>
+          <li><strong>Narrow and typed.</strong> No field, at any depth, takes free-form SQL, URLs, shell commands or vendor request bodies.</li>
+          <li><strong>Honest about what was sent.</strong> A call refused before anything was sent, or definitely rejected by the provider, raises an error that is also a <code>ToolNotAttemptedError</code>, so the Runtime records it <code>failed</code> and it can be retried. A timeout or 5xx after a write was sent stays <code>indeterminate</code> for reconciliation.</li>
+          <li><strong>Named and scoped.</strong> Every tool is <code>&lt;toolkit&gt;.&lt;action&gt;</code>, and every permission sits under the toolkit's prefix.</li>
+          <li><strong>Governed by a preset.</strong> Reads are <code>read()</code>; anything that writes, sends or deletes is <code>write</code>, <code>external</code> or <code>destructive</code>, keyed and single-attempt. Destructive actions require approval by default.</li>
+          <li><strong>Bounded.</strong> Timeouts, row counts, page sizes and result bytes all have limits.</li>
+          <li><strong>Content-minimal errors.</strong> Errors name the failure type and the field, never the payload or a secret.</li>
+          <li><strong>Outbound hosts are configuration.</strong> No tool argument chooses where a request goes.</li>
+        </ul>
+      </section>
+
+      <section class="doc" id="email-guardrails">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-user-check"/></svg></span>Govern</div>
+        <h2>Email and guardrails<a class="anchor" href="#email-guardrails" aria-label="Link to this section">#</a></h2>
+        <p>Email tools run under the Runtime's default guardrails; no guardrail setting is needed to send:</p>
+        <div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>agent.yaml<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd">agents:
+  - name: notifier
+    domain_plugins: [algen_agent_tools.smtp]
+    enabled_tools: [smtp.send_email]
+    tool_permissions: [smtp.write]</span></pre></div>
+        <ul>
+          <li><strong>Recipients pass.</strong> Every address field (<code>to</code>, <code>cc</code>, <code>bcc</code>, <code>reply_to</code>) declares <code>format: email</code>, and the <code>pii</code> guardrail leaves a single address in such a field alone.</li>
+          <li><strong>Everything else is screened.</strong> <code>pii</code> still checks display names, the subject and the bodies. If it redacts anything, the Runtime refuses the call with <code>Payload transformed by policy</code>.</li>
+          <li><strong>Read addresses pass too.</strong> From 0.2.0a7 (Runtime 0.1.0a19 or later), Gmail, Outlook and IMAP results carry <code>sender_address</code>, <code>recipient_addresses</code> and <code>cc_addresses</code>, declared <code>format: email</code>, so the agent can reply to the sender it read. <code>pii</code> still redacts addresses in the display strings and bodies of results.</li>
+        </ul>
+        <p>An agent that must quote addresses or phone numbers in a message leaves <code>pii</code> out of its tool boundaries. It still screens messages to and from the model:</p>
+        <div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>agent.yaml<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd">    guardrail_policy:
+      tool_policies: [secrets, prompt_injection, output_validation]</span></pre></div>
+        <p>Keep the agent's approval policy on: by default it asks a person before every external call. Use <code>allowed_domains</code> to bound who the agent can write to.</p>
+      </section>
+
+      <section class="doc" id="secrets">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-lock"/></svg></span>Govern</div>
+        <h2>Secrets and environment<a class="anchor" href="#secrets" aria-label="Link to this section">#</a></h2>
+        <p>Every setting is an <code>env://NAME</code> reference, resolved by the Runtime's secret resolver when the client first opens. Nothing is read at import or while a plugin registers, and no secret is logged, returned or put in an error. <code>describe</code> lists each plugin's variables so Studio can ask for them before a run.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Plugin</th><th>Environment variables</th></tr></thead>
+          <tbody>
+            <tr><td><code>algen_agent_tools.postgres</code></td><td><code>ALGEN_TOOLS_POSTGRES_DSN</code></td></tr>
+            <tr><td><code>algen_agent_tools.mysql</code></td><td><code>ALGEN_TOOLS_MYSQL_DSN</code></td></tr>
+            <tr><td><code>algen_agent_tools.sqlite</code></td><td><code>ALGEN_TOOLS_SQLITE_PATH</code></td></tr>
+            <tr><td><code>algen_agent_tools.smtp</code></td><td><code>ALGEN_TOOLS_SMTP_HOST</code>, <code>ALGEN_TOOLS_SMTP_PORT</code>, <code>ALGEN_TOOLS_SMTP_SECURITY</code>, <code>ALGEN_TOOLS_SMTP_USERNAME</code>, <code>ALGEN_TOOLS_SMTP_PASSWORD</code>, <code>ALGEN_TOOLS_SMTP_SENDER</code>, <code>ALGEN_TOOLS_SMTP_ALLOWED_DOMAINS</code></td></tr>
+            <tr><td><code>algen_agent_tools.gmail</code></td><td><code>ALGEN_TOOLS_GMAIL_CLIENT_ID</code>, <code>ALGEN_TOOLS_GMAIL_CLIENT_SECRET</code>, <code>ALGEN_TOOLS_GMAIL_REFRESH_TOKEN</code>, <code>ALGEN_TOOLS_GMAIL_SENDER</code>, <code>ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS</code></td></tr>
+            <tr><td><code>algen_agent_tools.outlook</code></td><td><code>ALGEN_TOOLS_OUTLOOK_TENANT_ID</code>, <code>ALGEN_TOOLS_OUTLOOK_CLIENT_ID</code>, <code>ALGEN_TOOLS_OUTLOOK_CLIENT_SECRET</code>, <code>ALGEN_TOOLS_OUTLOOK_MAILBOX</code>, <code>ALGEN_TOOLS_OUTLOOK_REFRESH_TOKEN</code>, <code>ALGEN_TOOLS_OUTLOOK_ALLOWED_DOMAINS</code></td></tr>
+            <tr><td><code>algen_agent_tools.imap</code></td><td><code>ALGEN_TOOLS_IMAP_HOST</code>, <code>ALGEN_TOOLS_IMAP_USERNAME</code>, <code>ALGEN_TOOLS_IMAP_PASSWORD</code>, <code>ALGEN_TOOLS_IMAP_PORT</code>, <code>ALGEN_TOOLS_IMAP_FOLDERS</code>, <code>ALGEN_TOOLS_IMAP_AUTHSERV_ID</code></td></tr>
+            <tr><td><code>algen_agent_tools.telegram</code></td><td><code>ALGEN_TOOLS_TELEGRAM_BOT_TOKEN</code>, <code>ALGEN_TOOLS_TELEGRAM_ALLOWED_CHATS</code></td></tr>
+            <tr><td><code>algen_agent_tools.discord</code></td><td><code>ALGEN_TOOLS_DISCORD_BOT_TOKEN</code>, <code>ALGEN_TOOLS_DISCORD_GUILD_ID</code>, <code>ALGEN_TOOLS_DISCORD_ALLOWED_CHANNELS</code></td></tr>
+            <tr><td><code>algen_agent_tools.github</code></td><td><code>ALGEN_TOOLS_GITHUB_TOKEN</code></td></tr>
+            <tr><td><code>algen_agent_tools.sample</code></td><td>none</td></tr>
+          </tbody>
+        </table></div>
+        <div class="callout info"><svg class="i"><use href="#i-info"/></svg><p>To use other variable names, or two databases at once, build the toolkit yourself with your own <code>env://</code> references; see <a href="#in-code">Configure in code</a>.</p></div>
+      </section>
+
+      <!-- ═══════════════ BUILD ═══════════════ -->
+      <section class="doc" id="in-code">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-code"/></svg></span>Build</div>
+        <h2>Configure in code<a class="anchor" href="#in-code" aria-label="Link to this section">#</a></h2>
+        <p>Every connector has a toolkit factory that takes each setting as an argument. Build it in your own plugin to rename it, point it at other variables, bound recipients, or pass a fake in tests:</p>
+        <div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>plugin.py<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd"><span class="t-k">from</span> algen_agent_runtime.plugins.sdk <span class="t-k">import</span> PluginManifest, plugin
+<span class="t-k">from</span> algen_agent_tools.smtp <span class="t-k">import</span> smtp_toolkit
+
+notices = smtp_toolkit(
+    <span class="t-s">"notices"</span>,                              <span class="t-c"># tool notices.send_email, permission notices.write</span>
+    host=<span class="t-s">"env://NOTICES_SMTP_HOST"</span>,
+    sender=<span class="t-s">"env://NOTICES_FROM"</span>,
+    allowed_domains=(<span class="t-s">"example.com"</span>,),         <span class="t-c"># refuse other recipient domains</span>
+    artifact_loader=load_artifact,            <span class="t-c"># adds an attachments field</span>
+)
+
+
+<span class="t-f">@plugin</span>(PluginManifest(name=<span class="t-s">"acme.tools"</span>, version=<span class="t-s">"1.0.0"</span>, publisher=<span class="t-s">"acme"</span>))
+<span class="t-k">class</span> <span class="t-f">AcmeTools</span>:
+    <span class="t-k">def</span> <span class="t-f">register</span>(self, context):
+        notices.register(context)</span></pre></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Factory</th><th>Module</th></tr></thead>
+          <tbody>
+            <tr><td><code>PostgresToolkit(name, dsn=...)</code>, <code>postgres_toolkit(...)</code></td><td><code>algen_agent_tools.postgres</code></td></tr>
+            <tr><td><code>MysqlToolkit(name, dsn=...)</code>, <code>mysql_toolkit(...)</code></td><td><code>algen_agent_tools.mysql</code></td></tr>
+            <tr><td><code>SqliteToolkit(name, path=..., read_only=True)</code>, <code>sqlite_toolkit(...)</code></td><td><code>algen_agent_tools.sqlite</code></td></tr>
+            <tr><td><code>smtp_toolkit(name, host=..., sender=..., ...)</code></td><td><code>algen_agent_tools.smtp</code></td></tr>
+            <tr><td><code>gmail_toolkit(name, client_id=..., client_secret=..., refresh_token=..., sender=...)</code></td><td><code>algen_agent_tools.gmail</code></td></tr>
+            <tr><td><code>outlook_toolkit(name, mailbox=..., ...)</code></td><td><code>algen_agent_tools.outlook</code></td></tr>
+            <tr><td><code>imap_toolkit(name, host=..., username=..., password=..., folders=...)</code></td><td><code>algen_agent_tools.imap</code></td></tr>
+            <tr><td><code>telegram_toolkit(name, bot_token=..., ...)</code>, <code>discord_toolkit(name, bot_token=..., ...)</code></td><td><code>algen_agent_tools.telegram</code>, <code>algen_agent_tools.discord</code></td></tr>
+            <tr><td><code>github_toolkit(session_factory=None)</code>, <code>github_overlay()</code></td><td><code>algen_agent_tools.github</code></td></tr>
+            <tr><td><code>documents_toolkit(artifact_loader=..., quarantine="withhold")</code></td><td><code>algen_agent_tools.documents</code></td></tr>
+            <tr><td><code>webhook_toolkit([WebhookTarget(...)])</code></td><td><code>algen_agent_tools.webhook</code></td></tr>
+            <tr><td><code>sample_toolkit(name=...)</code></td><td><code>algen_agent_tools.sample</code></td></tr>
+            <tr><td><code>McpOverlay.from_file(...)</code>, <code>overlay_plugin(...)</code></td><td><code>algen_agent_tools.mcp</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Attachments:</strong> the artifact loader is <code>async def load_artifact(reference, context) -&gt; bytes</code>. The model chooses the artifact id, so the loader must check that it belongs to <code>context.tenant_id</code> (and, if you scope artifacts to runs, <code>context.run_id</code>) before returning bytes.</p></div>
+        <div class="callout info"><svg class="i"><use href="#i-info"/></svg><p><strong>Saving received files:</strong> Gmail, Outlook, IMAP, Telegram and Discord offer <code>&lt;name&gt;.get_attachment</code> only when the toolkit is built with an <code>artifact_sink</code>, the deployment's artifact store. Each file is checked against the <code>attachment_policy</code> (size limit, allowed types, and leading bytes that match the declared type), and the model gets back only the artifact reference, never the bytes.</p></div>
+        <p>Trust your own plugin's package under <code>security.trusted_plugin_prefixes</code>, as you do for <code>algen_agent_tools</code>.</p>
+      </section>
+
+      <section class="doc" id="testing">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-target"/></svg></span>Build</div>
+        <h2>Testing<a class="anchor" href="#testing" aria-label="Link to this section">#</a></h2>
+        <p>Every connector ships an in-memory fake, so agent tests never touch the network:</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Fake</th><th>Use</th></tr></thead>
+          <tbody>
+            <tr><td><code>algen_agent_tools.postgres.FakePostgres</code></td><td>Answers by SQL fragment, records every call and whether it ran read-only, refuses writes inside read-only transactions. <code>PostgresToolkit("billing", client=fake.factory)</code></td></tr>
+            <tr><td><code>algen_agent_tools.mysql.FakeMysql</code></td><td>Answers by SQL fragment and records whether each call ran read-only, as <code>FakePostgres</code> does.</td></tr>
+            <tr><td><code>algen_agent_tools.mail.FakeMailbox</code></td><td>Records sent messages, serves inbox pages and <code>get_message</code>, and from <code>files=</code> serves <code>get_attachment</code>. <code>smtp_toolkit(client=FakeMailbox().factory())</code></td></tr>
+            <tr><td><code>algen_agent_tools.imap.FakeImapServer</code></td><td>Holds folders of real MIME messages and answers as <code>imaplib</code> does; <code>server.commands</code> proves a test wrote nothing. <code>imap_toolkit(imap_factory=server.factory())</code></td></tr>
+            <tr><td><code>algen_agent_tools.messaging.FakeMessaging</code></td><td>A chat platform for the shared messaging tools.</td></tr>
+            <tr><td><code>algen_agent_tools.mcp.fake.FakeMcpServer</code></td><td>Advertises tools and answers calls. <code>overlay.toolkit(session_factory=fake.session_factory)</code></td></tr>
+          </tbody>
+        </table></div>
+        <p>Check your own toolkits with the same harness the package uses:</p>
+        <div class="term"><div class="term-head"><svg class="i"><use href="#i-file"/></svg>test_billing.py<span class="sp"></span><button class="copy-btn" type="button"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+<pre><span class="cmd"><span class="t-k">from</span> algen_agent_tools.testing <span class="t-k">import</span> assert_toolkit_contract, plugin_tools
+
+<span class="t-k">def</span> <span class="t-f">test_billing_tools_meet_the_contract</span>():
+    assert_toolkit_contract(billing)
+
+<span class="t-k">def</span> <span class="t-f">test_the_plugin_describes_its_tools</span>():
+    <span class="t-k">assert</span> set(plugin_tools(<span class="t-s">"acme.plugins:AcmeTools"</span>)) == {<span class="t-s">"billing.list_open_invoices"</span>}</span></pre></div>
+        <p>Live tests in this package are marked <code>live</code> and run only with <code>ALGEN_TOOLS_LIVE=1</code>. Its end-to-end tests also run agents through the Runtime's real executor, for example to check that a <code>context_params</code> query's cached results stay with each caller.</p>
+      </section>
+
+      <section class="doc" id="writing-a-connector">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-wrench"/></svg></span>Build</div>
+        <h2>Write a connector<a class="anchor" href="#writing-a-connector" aria-label="Link to this section">#</a></h2>
+        <p>Open a "Connector proposal" issue first; a connector needs an accepted proposal. <code>src/algen_agent_tools/sample</code> is the smallest complete connector to copy.</p>
+        <div class="term"><div class="term-head"><svg class="i"><use href="#i-folder"/></svg>layout<span class="sp"></span></div>
+<pre><span class="cmd">src/algen_agent_tools/&lt;connector&gt;/
+  __init__.py   <span class="t-c"># public API: the toolkit factory, its models and its fake</span>
+  toolkit.py    <span class="t-c"># &lt;connector&gt;_toolkit(...) -&gt; Toolkit</span>
+  client.py     <span class="t-c"># the vendor client; optional imports happen here, lazily</span>
+  fake.py       <span class="t-c"># an in-memory stand-in used by tests</span>
+  plugin.py     <span class="t-c"># &lt;Connector&gt;Plugin = toolkit_plugin("&lt;connector&gt;", ...)</span></span></pre></div>
+        <ul>
+          <li>The factory takes every setting as an argument, with <code>env://</code> defaults named <code>ALGEN_TOOLS_&lt;CONNECTOR&gt;_&lt;SETTING&gt;</code>, and a <code>client</code> override for the fake.</li>
+          <li>Tools are defined inside the factory, so each call returns an independent toolkit.</li>
+          <li>Nothing connects in the factory or in <code>register</code>. The client resolves its secrets and imports its optional package when it opens, and raises an error naming the extra if it is missing.</li>
+          <li>The docstring is what the model reads: say what the action does and when to use it.</li>
+          <li>Add an extra and an entry point in <code>pyproject.toml</code>, a docs page, unit tests against the fake, and opt-in live tests.</li>
+        </ul>
+      </section>
+
+      <section class="doc" id="connector-policy">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-sliders"/></svg></span>Build</div>
+        <h2>Connector policy<a class="anchor" href="#connector-policy" aria-label="Link to this section">#</a></h2>
+        <p>The package is curated. A new connector needs all of:</p>
+        <ol>
+          <li><strong>Demand:</strong> at least two projects need it.</li>
+          <li><strong>No domain logic:</strong> it speaks to a vendor or protocol, not to one product. Hiring, payroll, text-to-SQL and similar logic belong in a domain pack.</li>
+          <li><strong>An owner:</strong> a named maintainer who reviews its changes and answers its security reports.</li>
+          <li><strong>A security review</strong> recorded in the pull request that adds it.</li>
+          <li><strong>MCP first:</strong> if a well-maintained MCP server covers the need, the package ships an overlay instead. A native connector is justified only when an overlay cannot give a guarantee the agent needs, such as an idempotency key or a typed action the server lacks.</li>
+        </ol>
+        <p>Deprecations warn on use for at least one further minor release before removal, always with the replacement recorded in the changelog.</p>
+      </section>
+
+      <!-- ═══════════════ REFERENCE ═══════════════ -->
+      <section class="doc" id="tool-reference">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-map"/></svg></span>Reference</div>
+        <h2>Tool reference<a class="anchor" href="#tool-reference" aria-label="Link to this section">#</a></h2>
+        <p>Every tool the built-in plugins register, as <code>algen-agent-runtime describe</code> reports it:</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Plugin</th><th>Side effect</th><th>Permission</th><th>Timeout</th></tr></thead>
+          <tbody>
+            <tr><td><code>postgres.list_tables</code></td><td><code>algen_agent_tools.postgres</code></td><td>read</td><td><code>postgres.read</code></td><td>30 s</td></tr>
+            <tr><td><code>postgres.describe_table</code></td><td><code>algen_agent_tools.postgres</code></td><td>read</td><td><code>postgres.read</code></td><td>30 s</td></tr>
+            <tr><td><code>mysql.list_tables</code></td><td><code>algen_agent_tools.mysql</code></td><td>read</td><td><code>mysql.read</code></td><td>30 s</td></tr>
+            <tr><td><code>mysql.describe_table</code></td><td><code>algen_agent_tools.mysql</code></td><td>read</td><td><code>mysql.read</code></td><td>30 s</td></tr>
+            <tr><td><code>sqlite.list_tables</code></td><td><code>algen_agent_tools.sqlite</code></td><td>read</td><td><code>sqlite.read</code></td><td>30 s</td></tr>
+            <tr><td><code>sqlite.describe_table</code></td><td><code>algen_agent_tools.sqlite</code></td><td>read</td><td><code>sqlite.read</code></td><td>30 s</td></tr>
+            <tr><td><code>smtp.send_email</code></td><td><code>algen_agent_tools.smtp</code></td><td>external</td><td><code>smtp.write</code></td><td>60 s</td></tr>
+            <tr><td><code>gmail.list_messages</code></td><td><code>algen_agent_tools.gmail</code></td><td>read</td><td><code>gmail.read</code></td><td>120 s</td></tr>
+            <tr><td><code>gmail.get_message</code></td><td><code>algen_agent_tools.gmail</code></td><td>read</td><td><code>gmail.read</code></td><td>60 s</td></tr>
+            <tr><td><code>gmail.send_email</code></td><td><code>algen_agent_tools.gmail</code></td><td>external</td><td><code>gmail.write</code></td><td>60 s</td></tr>
+            <tr><td><code>outlook.list_messages</code></td><td><code>algen_agent_tools.outlook</code></td><td>read</td><td><code>outlook.read</code></td><td>120 s</td></tr>
+            <tr><td><code>outlook.get_message</code></td><td><code>algen_agent_tools.outlook</code></td><td>read</td><td><code>outlook.read</code></td><td>60 s</td></tr>
+            <tr><td><code>outlook.send_email</code></td><td><code>algen_agent_tools.outlook</code></td><td>external</td><td><code>outlook.write</code></td><td>60 s</td></tr>
+            <tr><td><code>imap.list_messages</code></td><td><code>algen_agent_tools.imap</code></td><td>read</td><td><code>imap.read</code></td><td>120 s</td></tr>
+            <tr><td><code>imap.get_message</code></td><td><code>algen_agent_tools.imap</code></td><td>read</td><td><code>imap.read</code></td><td>60 s</td></tr>
+            <tr><td><code>telegram.list_messages</code></td><td><code>algen_agent_tools.telegram</code></td><td>read</td><td><code>telegram.read</code></td><td>60 s</td></tr>
+            <tr><td><code>telegram.send_message</code></td><td><code>algen_agent_tools.telegram</code></td><td>external</td><td><code>telegram.write</code></td><td>60 s</td></tr>
+            <tr><td><code>discord.list_conversations</code></td><td><code>algen_agent_tools.discord</code></td><td>read</td><td><code>discord.read</code></td><td>60 s</td></tr>
+            <tr><td><code>discord.list_messages</code></td><td><code>algen_agent_tools.discord</code></td><td>read</td><td><code>discord.read</code></td><td>60 s</td></tr>
+            <tr><td><code>discord.send_message</code></td><td><code>algen_agent_tools.discord</code></td><td>external</td><td><code>discord.write</code></td><td>60 s</td></tr>
+            <tr><td><code>github.*</code> (37 tools)</td><td><code>algen_agent_tools.github</code></td><td>22 read, 13 write, 2 destructive; see <a href="#github">GitHub</a></td><td><code>github.read</code>, <code>github.write</code></td><td>30 s</td></tr>
+            <tr><td><code>sample.echo</code></td><td><code>algen_agent_tools.sample</code></td><td>read</td><td><code>sample.read</code></td><td>5 s</td></tr>
+          </tbody>
+        </table></div>
+        <p>Also registered, but only when built in code: <code>&lt;name&gt;.get_attachment</code> (read, 120 s) for Gmail, Outlook, IMAP, Telegram and Discord with an <code>artifact_sink</code>; <code>documents.extract_text</code> (read, 120 s); and one <code>webhook.&lt;action&gt;</code> (external, <code>webhook.write</code>) per webhook target. Typed SQL queries and your own MCP overlay tools are named by your toolkit or overlay (<code>billing.list_open_invoices</code>) and appear in <code>describe</code> the same way. The full contract of every tool is in the package's <code>connectors.json</code>, which each GitHub release also attaches.</p>
+      </section>
+
+      <section class="doc" id="compatibility">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-compare"/></svg></span>Reference</div>
+        <h2>Runtime compatibility<a class="anchor" href="#compatibility" aria-label="Link to this section">#</a></h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>algen-agent-tools</th><th>Supported algen-agent-runtime</th></tr></thead>
+          <tbody><tr><td>0.2.0a7</td><td><code>&gt;=0.1.0a20,&lt;0.2</code> (tested on 0.1.0a20 and 0.1.0a21)</td></tr><tr><td>0.2.0a6</td><td><code>&gt;=0.1.0a18,&lt;0.2</code></td></tr><tr><td>0.2.0a1 to 0.2.0a5</td><td><code>&gt;=0.1.0a12,&lt;0.2</code> (tested on 0.1.0a12 and 0.1.0a13)</td></tr><tr><td>0.1.0a2</td><td><code>&gt;=0.1.0a12,&lt;0.2</code></td></tr><tr><td>0.1.0a1</td><td><code>&gt;=0.1.0a11,&lt;0.2</code></td></tr></tbody>
+        </table></div>
+        <p>The package is built on the Runtime's tool authoring API (<code>@tool</code>, presets, <code>Toolkit</code>), declared plugins and <code>describe</code>, all introduced in Runtime 0.1.0a11. From 0.1.0a2 it needs Runtime 0.1.0a12, whose <code>pii</code> guardrail leaves fields declared <code>format: email</code> alone. From 0.2.0a6 it needs Runtime 0.1.0a18: 0.1.0a14's document inspection reads XLSX, PPTX, HTML, CSV and TSV, and 0.1.0a18's <code>cache_context</code> keys cached SQL results on the values <code>context_params</code> binds. CI runs the full suite against the lowest supported Runtime and the newest release inside the range; a Runtime release that breaks a connector lowers the upper bound until it is fixed. Every plugin targets plugin core API version <code>1</code>.</p>
+      </section>
+
+      <section class="doc" id="migrating">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-rotate"/></svg></span>Reference</div>
+        <h2>Migrating from the Runtime's connectors<a class="anchor" href="#migrating" aria-label="Link to this section">#</a></h2>
+        <p>Runtime 0.1.0a11 and earlier shipped a few connectors in its core. They moved here; the Runtime deprecates them and removes them later.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Runtime (deprecated)</th><th>algen-agent-tools</th></tr></thead>
+          <tbody>
+            <tr><td><code>communications.EmailMessage</code> and the other message models</td><td><code>algen_agent_tools.mail</code> (same names)</td></tr>
+            <tr><td><code>communications.SmtpEmailSender</code>, <code>SmtpSettings</code></td><td><code>algen_agent_tools.smtp</code> (same names)</td></tr>
+            <tr><td><code>communications.email_tool(sender)</code></td><td><code>smtp_toolkit(...)</code> or <code>gmail_toolkit(...)</code>: tool <code>&lt;name&gt;.send_email</code></td></tr>
+            <tr><td><code>communications.GmailMailboxClient</code> and its models</td><td><code>algen_agent_tools.gmail</code> (same names)</td></tr>
+            <tr><td><code>communications.gmail_inbox_tool(mailbox)</code></td><td><code>gmail_toolkit(...)</code>: tool <code>&lt;name&gt;.list_messages</code></td></tr>
+            <tr><td><code>tools.adapters.database_tool(name, handler)</code></td><td><code>PostgresToolkit.query(...)</code>: one typed tool per query</td></tr>
+          </tbody>
+        </table></div>
+        <p>The email tool changes on purpose: it is named <code>smtp.send_email</code> or <code>gmail.send_email</code> with permission <code>&lt;name&gt;.write</code>, the sender is fixed by the deployment instead of chosen by the model, custom headers are not accepted, and the timeout is 60 s. Update <code>enabled_tools</code>, <code>tool_permissions</code> and any policy that names the old tool <code>communications.email.send</code>. <code>database_tool</code> let the model send any statement; replace each statement the agent needs with a declared query.</p>
+      </section>
+
+      <section class="doc" id="troubleshooting">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-help"/></svg></span>Reference</div>
+        <h2>Troubleshooting<a class="anchor" href="#troubleshooting" aria-label="Link to this section">#</a></h2>
+        <details class="faq"><summary>"Payload transformed by policy" when sending email</summary><div class="body"><p>The <code>pii</code> guardrail redacted part of the message, usually an address or phone number in the subject or body, and the Runtime does not run a tool on redacted arguments. Recipients are not redacted with algen-agent-tools 0.1.0a2 and Runtime 0.1.0a12 or later, nor are the structured address fields of mail results with 0.2.0a7. Remove the detail from the message, or leave <code>pii</code> out of <code>guardrail_policy.tool_policies</code>; see <a href="#email-guardrails">Email and guardrails</a>.</p></div></details>
+        <details class="faq"><summary>The plugin is not trusted, or is not found</summary><div class="body"><p>Add <code>algen_agent_tools</code> (and your own plugin's package) to <code>security.trusted_plugin_prefixes</code>, and check the package is installed in the same environment as the Runtime. <code>algen-agent-runtime describe</code> lists the plugins it can see.</p></div></details>
+        <details class="faq"><summary>"install algen-agent-tools[...]" when a tool first runs</summary><div class="body"><p>The connector's optional dependency is missing. Install the extra the message names, for example <code>pip install "algen-agent-tools[postgres]"</code>.</p></div></details>
+        <details class="faq"><summary>An MCP tool is refused after a server update</summary><div class="body"><p>The server changed the tool's input schema, or removed it. Run <code>snapshot</code> again, review the difference, and update the overlay's <code>input_schema</code>. Use <code>on_drift: allow</code> only when you accept unreviewed changes.</p></div></details>
+        <details class="faq"><summary><code>check</code> reports an unknown tool</summary><div class="body"><p>The name in <code>enabled_tools</code> does not match a registered tool. The message suggests the closest name; tool names are <code>&lt;toolkit&gt;.&lt;action&gt;</code>, so a renamed toolkit renames its tools.</p></div></details>
+        <details class="faq"><summary>A database read fails with a row limit error</summary><div class="body"><p>The query returned more rows than its limit (500 by default) and raised <code>TooManyRows</code>. Narrow the query, or raise <code>max_rows</code> when declaring it; reads never truncate silently. This applies to PostgreSQL, MySQL and SQLite alike.</p></div></details>
+        <details class="faq"><summary>Every cached tool call fails with "Internal error (ValueError)"</summary><div class="body"><p>The tool-result cache is scoped to <code>session</code>. On Runtime 0.1.0a18 the tool cache gets no session, so every cacheable call fails; Runtime 0.1.0a19 fixed it, and 0.2.0a7 requires 0.1.0a20 or later. On 0.1.0a18 use <code>user</code> or <code>run</code> scope instead. A <code>context_params</code> query is safe at any scope: its cache key includes the values it binds.</p></div></details>
+        <details class="faq"><summary>Telegram reads fail with error 409</summary><div class="body"><p>The bot has a webhook, or another program is polling it. <code>getUpdates</code> works only when this connector is the bot's only reader; delete the webhook or use a separate bot.</p></div></details>
+        <details class="faq"><summary>Discord messages come back with empty text</summary><div class="body"><p>Turn on the bot's <strong>Message Content</strong> privileged intent in the Discord developer portal. Without it Discord returns text only for messages that mention the bot.</p></div></details>
+        <details class="faq"><summary><code>sender_auth</code> is always <code>unknown</code> on IMAP</summary><div class="body"><p>On servers other than Gmail, set <code>ALGEN_TOOLS_IMAP_AUTHSERV_ID</code> to the name your receiving server writes at the start of its <code>Authentication-Results</code> header (for example <code>mx.zoho.com</code>). A header the connector can't attribute to your server proves nothing, so it is ignored.</p></div></details>
+      </section>
+
+      <section class="doc" id="resources">
+        <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-link"/></svg></span>Reference</div>
+        <h2>Source and links<a class="anchor" href="#resources" aria-label="Link to this section">#</a></h2>
+        <ul>
+          <li><a href="https://github.com/AlgenAI/algen-agent-tools" target="_blank" rel="noopener noreferrer">GitHub: AlgenAI/algen-agent-tools</a>, including each connector's page under <code>docs/connectors</code>.</li>
+          <li><a href="https://pypi.org/project/algen-agent-tools/" target="_blank" rel="noopener noreferrer">PyPI: algen-agent-tools</a></li>
+          <li><a href="https://github.com/AlgenAI/algen-agent-tools/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">Changelog</a> and <a href="https://github.com/AlgenAI/algen-agent-tools/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">security policy</a></li>
+          <li><a href="https://algenai.github.io/algen-agent-runtime/">Algen Agent Runtime documentation</a> and the <a href="https://studio.algen.ai/guide/">Studio user guide</a></li>
+        </ul>
+      </section>
+
+      <div class="no-results" id="noResults">No sections match your search. Try a different term.</div>
+      <footer class="page-foot">
+        <span>Algen Agent Tools · Apache-2.0 · Documentation for package version 0.2.0a7</span>
+        <span>© AlgenAI</span>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const root = document.documentElement;
+
+  /* ----- Editor windows: line numbers, highlights, file switching ----- */
+  const parseRanges = (spec) => {
+    const lines = new Set();
+    spec.split(',').filter(Boolean).forEach((part) => {
+      const [start, end] = part.split('-').map(Number);
+      for (let n = start; n <= (end || start); n++) lines.add(n);
+    });
+    return lines;
+  };
+  $$('.ide-code').forEach((pre) => {
+    const code = $('code', pre);
+    const highlighted = parseRanges(pre.dataset.hl || '');
+    code.innerHTML = code.innerHTML.replace(/\n$/, '').split('\n')
+      .map((line, i) => `<span class="line${highlighted.has(i + 1) ? ' hl' : ''}">${line || ' '}</span>`).join('');
+  });
+  document.addEventListener('click', (event) => {
+    const fileButton = event.target.closest('.ide [data-file]:not(pre)');
+    if (!fileButton) return;
+    const ide = fileButton.closest('.ide');
+    const file = fileButton.dataset.file;
+    $$('[data-file]', ide).forEach((el) => {
+      if (el.tagName === 'PRE') el.hidden = el.dataset.file !== file;
+      else el.classList.toggle('on', el.dataset.file === file);
+    });
+  });
+
+  /* ----- Copy: strips line numbers, annotation markers, and prompts ----- */
+  const plainText = (node) => {
+    const clone = node.cloneNode(true);
+    clone.querySelectorAll('.n').forEach((marker) => marker.remove());
+    return clone.textContent.replace(/\s+$/, '');
+  };
+  document.addEventListener('click', async (event) => {
+    const button = event.target.closest('.copy-btn');
+    if (!button) return;
+    let text;
+    const term = button.closest('.term');
+    const promptCard = button.closest('.prompt-card');
+    if (promptCard) {
+      text = $('.prompt-text', promptCard).textContent.trim();
+    } else if (term) {
+      text = $$('.cmd', term).map(plainText).join('\n');
+    } else {
+      const pre = $$('.ide-code', button.closest('.ide')).find((el) => !el.hidden);
+      text = $$('.line', pre).map(plainText).join('\n');
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      const label = button.lastChild;
+      button.dataset.label ??= label.textContent;
+      label.textContent = 'Copied';
+      setTimeout(() => { label.textContent = button.dataset.label; }, 1400);
+    } catch (error) { /* clipboard unavailable */ }
+  });
+
+  /* ----- Skills & prompt library ----- */
+  $$('[data-prompt-filter]').forEach((filter) => filter.addEventListener('click', () => {
+    $$('[data-prompt-filter]').forEach((item) => item.setAttribute('aria-selected', String(item === filter)));
+    $$('.prompt-card').forEach((card) => {
+      card.hidden = filter.dataset.promptFilter !== 'all' && card.dataset.cat !== filter.dataset.promptFilter;
+    });
+  }));
+  document.addEventListener('click', (event) => {
+    const opener = event.target.closest('[data-open-skill]');
+    if (!opener) return;
+    $(`#skillsIde .ide-tabs [data-file="${opener.dataset.openSkill}"]`).click();
+    $('#skillsIde').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  /* ----- Tabs ----- */
+  $$('[data-tabs]').forEach((tabset) => {
+    $$('.tab', tabset).forEach((tab) => tab.addEventListener('click', () => {
+      $$('.tab', tabset).forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+      $$(':scope > [data-panel]', tabset).forEach((panel) => { panel.hidden = panel.dataset.panel !== tab.dataset.tab; });
+    }));
+  });
+
+  /* ----- Theme ----- */
+  const themeBtn = $('#themeToggle');
+  const themeIcon = $('use', themeBtn);
+  const applyTheme = (theme) => {
+    root.dataset.theme = theme;
+    themeIcon.setAttribute('href', theme === 'dark' ? '#i-sun' : '#i-moon');
+  };
+  let storedTheme = null;
+  try { storedTheme = localStorage.getItem('algen-docs-theme'); } catch (error) { /* storage unavailable */ }
+  applyTheme(storedTheme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  themeBtn.addEventListener('click', () => {
+    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('algen-docs-theme', next); } catch (error) { /* storage unavailable */ }
+    applyTheme(next);
+  });
+
+  /* ----- Mobile navigation ----- */
+  const menuBtn = $('#menuToggle');
+  const closeNav = () => { document.body.classList.remove('nav-open'); menuBtn.setAttribute('aria-expanded', 'false'); };
+  menuBtn.addEventListener('click', () => {
+    const open = document.body.classList.toggle('nav-open');
+    menuBtn.setAttribute('aria-expanded', String(open));
+  });
+  $('#scrim').addEventListener('click', closeNav);
+
+  const links = $$('.nav-link');
+  const sections = $$('section.doc');
+  links.forEach((link) => link.addEventListener('click', closeNav));
+  const setActive = (id) => links.forEach((link) => link.classList.toggle('active', link.getAttribute('href') === '#' + id));
+  const observer = new IntersectionObserver((entries) => {
+    const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+    if (visible[0]) setActive(visible[0].target.id);
+  }, { rootMargin: '-70px 0px -65% 0px' });
+  sections.forEach((s) => observer.observe(s));
+
+  /* ----- Search: filter sections and highlight matches in place ----- */
+  const search = $('#search');
+  const noResults = $('#noResults');
+  const navEmpty = $('#navEmpty');
+  const clearMarks = (node) => $$('mark.hit', node).forEach((mark) => {
+    const parent = mark.parentNode;
+    mark.replaceWith(document.createTextNode(mark.textContent));
+    parent.normalize();
+  });
+  const highlight = (node, term) => {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => n.parentElement.closest('script, style, svg, .anchor, .n, button, select, [hidden]') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+    });
+    const hits = [];
+    while (walker.nextNode()) if (walker.currentNode.nodeValue.toLowerCase().includes(term)) hits.push(walker.currentNode);
+    hits.forEach((textNode) => {
+      const frag = document.createDocumentFragment();
+      const text = textNode.nodeValue;
+      const lower = text.toLowerCase();
+      let i = 0, idx;
+      while ((idx = lower.indexOf(term, i)) !== -1) {
+        frag.append(text.slice(i, idx));
+        const mark = document.createElement('mark');
+        mark.className = 'hit';
+        mark.textContent = text.slice(idx, idx + term.length);
+        frag.append(mark);
+        i = idx + term.length;
+      }
+      frag.append(text.slice(i));
+      textNode.replaceWith(frag);
+    });
+  };
+  const runSearch = () => {
+    const term = search.value.trim().toLowerCase();
+    let matches = 0;
+    sections.forEach((section) => {
+      clearMarks(section);
+      const link = links.find((l) => l.getAttribute('href') === '#' + section.id);
+      if (section.hidden) return;
+      const hit = !term || section.textContent.toLowerCase().includes(term);
+      section.classList.toggle('filtered-out', !hit);
+      if (link) link.classList.toggle('filtered', !hit);
+      if (hit) { matches++; if (term.length > 1) highlight(section, term); }
+    });
+    $$('.nav-group').forEach((g) => g.classList.toggle('filtered', !g.querySelector('.nav-link:not(.filtered):not([hidden])')));
+    const none = Boolean(term) && matches === 0;
+    noResults.style.display = none ? 'block' : 'none';
+    navEmpty.style.display = none ? 'block' : 'none';
+    if (term) $$('section.doc:not(.filtered-out) details.faq').forEach((d) => { if (d.textContent.toLowerCase().includes(term)) d.open = true; });
+  };
+  let timer;
+  search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(runSearch, 120); });
+  document.addEventListener('keydown', (event) => {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if ((event.key === '/' && !typing) || ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k')) {
+      event.preventDefault();
+      search.focus();
+      search.select();
+    } else if (event.key === 'Escape' && document.activeElement === search) {
+      search.value = '';
+      runSearch();
+      search.blur();
+    }
+  });
+})();
+</script>
+</body>
+</html>

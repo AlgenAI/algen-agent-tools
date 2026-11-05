@@ -31,6 +31,9 @@ artifacts from a workstation.
    CODEOWNERS review and signed-off commits; disallow force pushes.
 5. **Security features.** Enable private vulnerability reporting, Dependabot alerts and secret
    scanning.
+6. **Repository page and docs site.** Set the description, the website
+   (`https://algenai.github.io/algen-agent-tools/`) and the topics under **About**, and set
+   **Settings → Pages → Source** to **GitHub Actions** so the `Docs` workflow can publish.
 
 ## Before a release
 
@@ -45,6 +48,15 @@ artifacts from a workstation.
   (for GitHub, `ALGEN_TOOLS_LIVE=1 ALGEN_TOOLS_GITHUB_TOKEN=... pytest
   tests/integration/test_github_live.py`). A declared tool that is missing or changed blocks
   the release until the overlay is reviewed again.
+- The documentation page is current. Its source is `docs/tools-docs.html` in the Algen Agent
+  Studio repository, which also serves a copy at `src/algen_agent_studio/static/tools-docs.html`.
+  Add the release there (its tools, configuration, compatibility and limitations) and keep the
+  two Studio copies identical; Studio changes stay in Studio's repository. Then copy the page to
+  `docs/docs.html` here, keeping this repository's `canonical` and `og:url`
+  (`https://algenai.github.io/algen-agent-tools/`) and pointing Studio's root-relative links at
+  absolute URLs (`/runtime/` to `https://algenai.github.io/algen-agent-runtime/`, `/guide/` to
+  `https://studio.algen.ai/guide/`). Run `gitleaks detect --no-git --source docs` on the copy.
+  The `Docs` workflow publishes it to GitHub Pages when it reaches `main`.
 - `main` is green on every required check, and dependency, CodeQL, Bandit and Gitleaks findings
   are reviewed.
 

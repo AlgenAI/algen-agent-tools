@@ -14,6 +14,7 @@
 
 Curated, governed connectors for agents built on
 [Algen Agent Runtime](https://github.com/AlgenAI/algen-agent-runtime).
+Documentation: [algenai.github.io/algen-agent-tools](https://algenai.github.io/algen-agent-tools/).
 
 Each connector is a Runtime `Toolkit` of narrow, typed actions, registered through a declared
 plugin. An agent names the plugin in `agent.yaml`, the Runtime checks every tool it enables, and
@@ -21,7 +22,7 @@ Algen Agent Studio lists each tool with its side effect, permissions and environ
 from `algen-agent-runtime describe`, without running project code.
 
 > [!IMPORTANT]
-> `0.2.0a7` is a pre-release. Tool contracts may change between alpha releases; every change is
+> `0.2.0a8` is a pre-release. Tool contracts may change between alpha releases; every change is
 > recorded in [CHANGELOG.md](CHANGELOG.md) with an upgrade note. Review the
 > [security policy](SECURITY.md) and each connector's guarantees before deployment. What must be
 > true before the beta and 1.0 is tracked in [beta and GA criteria](docs/ga-criteria.md).
