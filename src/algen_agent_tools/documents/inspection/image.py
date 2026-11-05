@@ -4,7 +4,8 @@ Used only when a :class:`~algen_agent_tools.documents.inspection.ocr.TextRecogni
 without one, ``extractor_for`` refuses images as before. The image is checked before the
 recognizer sees it: its content must match its suffix, and its dimensions, read from the header
 with the standard library, must be within ``max_pixels`` (a small file cannot claim a huge
-canvas).
+canvas). A GIF or TIFF can hold many frames and a recognizer may decode them all, so every frame
+is read and the limit applies to their total.
 """
 
 from __future__ import annotations
@@ -32,6 +33,9 @@ IMAGE_MEDIA_TYPES: dict[str, str] = {
     ".tif": "image/tiff",
     ".tiff": "image/tiff",
 }
+
+MAX_FRAMES = 64
+"""The most frames a GIF or TIFF may hold."""
 
 
 def image_media_type(data: bytes) -> str | None:
@@ -73,6 +77,72 @@ def image_size(data: bytes, media_type: str) -> tuple[int, int] | None:
     except (struct.error, IndexError):
         return None
     return None
+
+
+def image_frames(data: bytes, media_type: str) -> tuple[tuple[int, int], ...] | None:
+    """The width and height of every frame, or ``None`` when a header cannot be read.
+
+    A GIF or TIFF gives one entry per frame, at most ``MAX_FRAMES + 1`` (the caller refuses
+    more); the other types give one.
+    """
+    try:
+        if media_type == "image/gif":
+            return _gif_frames(data)
+        if media_type == "image/tiff":
+            return _tiff_frames(data)
+    except (struct.error, IndexError):
+        return None
+    size = image_size(data, media_type)
+    return None if size is None else (size,)
+
+
+def _gif_frames(data: bytes) -> tuple[tuple[int, int], ...] | None:
+    screen_width, screen_height, packed = struct.unpack("<HHB", data[6:11])
+    position = 13
+    if packed & 0x80:
+        position += 3 << ((packed & 0x07) + 1)
+    frames: list[tuple[int, int]] = []
+    while len(frames) <= MAX_FRAMES and position < len(data):
+        block = data[position]
+        if block == 0x3B:
+            break
+        if block == 0x21:
+            position = _skip_gif_sub_blocks(data, position + 2)
+        elif block == 0x2C:
+            left, top, width, height, packed = struct.unpack(
+                "<HHHHB", data[position + 1 : position + 10]
+            )
+            # A frame can extend past the logical screen; decoders size the canvas for both.
+            frames.append((max(screen_width, left + width), max(screen_height, top + height)))
+            position += 10
+            if packed & 0x80:
+                position += 3 << ((packed & 0x07) + 1)
+            position = _skip_gif_sub_blocks(data, position + 1)
+        else:
+            return None
+    return tuple(frames) or None
+
+
+def _skip_gif_sub_blocks(data: bytes, position: int) -> int:
+    while data[position]:
+        position += 1 + data[position]
+    return position + 1
+
+
+def _tiff_frames(data: bytes) -> tuple[tuple[int, int], ...] | None:
+    order = "<" if data[:2] == b"II" else ">"
+    (offset,) = struct.unpack(f"{order}I", data[4:8])
+    frames: list[tuple[int, int]] = []
+    seen: set[int] = set()
+    while offset and len(frames) <= MAX_FRAMES:
+        if offset in seen:
+            return None
+        seen.add(offset)
+        size, offset = _tiff_ifd(data, order, offset)
+        if size is None:
+            return None
+        frames.append(size)
+    return tuple(frames) or None
 
 
 def _bmp_size(data: bytes) -> tuple[int, int]:
@@ -122,6 +192,12 @@ def _webp_size(data: bytes) -> tuple[int, int] | None:
 def _tiff_size(data: bytes) -> tuple[int, int] | None:
     order = "<" if data[:2] == b"II" else ">"
     (offset,) = struct.unpack(f"{order}I", data[4:8])
+    return _tiff_ifd(data, order, offset)[0]
+
+
+def _tiff_ifd(data: bytes, order: str, offset: int) -> tuple[tuple[int, int] | None, int]:
+    """One image file directory's width and height, and the offset of the next one (0 at the
+    end)."""
     (count,) = struct.unpack(f"{order}H", data[offset : offset + 2])
     size: dict[int, int] = {}
     for index in range(min(count, 512)):
@@ -130,17 +206,20 @@ def _tiff_size(data: bytes) -> tuple[int, int] | None:
         if tag in {256, 257}:
             value_format = f"{order}H" if kind == 3 else f"{order}I"
             (size[tag],) = struct.unpack_from(value_format, entry, 8)
+    next_at = offset + 2 + count * 12
+    (next_offset,) = struct.unpack(f"{order}I", data[next_at : next_at + 4])
     if 256 in size and 257 in size:
-        return size[256], size[257]
-    return None
+        return (size[256], size[257]), next_offset
+    return None, next_offset
 
 
 class ImageDocumentExtractor:
     """Recognize the text in one PNG, JPEG, WebP, GIF, BMP or TIFF image.
 
     The recognized text is a ``source="ocr"`` span and passes the same prompt-injection checks
-    and sanitizing as any document text. A multi-frame GIF or TIFF is passed to the recognizer
-    whole; which frames it reads is the recognizer's choice.
+    and sanitizing as any document text. A GIF or TIFF with more than ``MAX_FRAMES`` frames, or
+    whose frames together exceed ``max_pixels``, is refused; otherwise it is passed to the
+    recognizer whole.
     """
 
     def __init__(
@@ -163,10 +242,12 @@ class ImageDocumentExtractor:
         media_type = image_media_type(data)
         if declared is None or media_type != declared:
             raise ValueError("file content does not match its image type")
-        size = image_size(data, media_type)
-        if size is None or size[0] < 1 or size[1] < 1:
+        frames = image_frames(data, media_type)
+        if not frames or any(width < 1 or height < 1 for width, height in frames):
             raise ValueError("image dimensions could not be read")
-        if size[0] * size[1] > self._max_pixels:
+        if len(frames) > MAX_FRAMES:
+            raise ValueError(f"image has more than {MAX_FRAMES} frames")
+        if sum(width * height for width, height in frames) > self._max_pixels:
             raise ValueError(f"image exceeds {self._max_pixels} pixel limit")
         span, ocr_findings = recognize_span(self._ocr, data, media_type=media_type, page=1)
         findings: list[DocumentSecurityFinding] = list(ocr_findings)

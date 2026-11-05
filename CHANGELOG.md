@@ -14,7 +14,8 @@ A tool's name, input schema, side effect and permission are part of the public c
   ([#39](https://github.com/AlgenAI/algen-agent-tools/issues/39), step 1). A host passes a
   `TextRecognizer` (any object with `recognize(image, *, media_type) -> RecognizedText`) as
   `extractor_for(filename, ocr=..., ocr_max_pages=3)` or `documents_toolkit(ocr=...)`. With one,
-  PNG, JPEG, WebP, GIF, BMP and TIFF images are read by the new `ImageDocumentExtractor`, and PDF
+  PNG, JPEG, WebP, GIF, BMP and TIFF images are read by the new `ImageDocumentExtractor` (every
+  frame of a GIF or TIFF counts toward its pixel limit, at most 64 frames), and PDF
   pages that have images and almost no text are rendered with PyMuPDF (DPI and pixel caps) and
   recognized, up to `ocr_max_pages` per PDF. Recognized text is a `DocumentSpan` with
   `source="ocr"` (and the recognizer's `confidence`) and passes the same prompt-injection checks,
@@ -24,6 +25,8 @@ A tool's name, input schema, side effect and permission are part of the public c
   Tesseract extra is planned. Without a recognizer, behaviour is unchanged: images are refused
   and nothing is rendered.
 - `DocumentSpan.source` (`"text"` or `"ocr"`, default `"text"`) and `DocumentSpan.confidence`.
+- With a recognizer, `documents.extract_text`'s description says images and scanned pages are
+  read by OCR. Without one it is unchanged.
 
 ## [0.2.0a7] - 2026-10-31
 

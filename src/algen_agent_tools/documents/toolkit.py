@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 from typing import Annotated, Literal
 
 from algen_agent_runtime.tools.authoring import Toolkit, read
@@ -14,6 +15,7 @@ from algen_agent_tools.documents.inspection.ocr import TextRecognizer
 
 MAX_CHARS = 100_000
 AUDIT_METADATA = {"content_capture": "disabled", "channel": "documents"}
+OCR_NOTE = "PNG, JPEG, WebP, GIF, BMP and TIFF images and scanned PDF pages are read by OCR."
 
 Disposition = Literal["pass", "review", "quarantine"]
 
@@ -62,7 +64,11 @@ def _inspect(
     try:
         extractor = extractor_for(filename, ocr=ocr, ocr_max_pages=ocr_max_pages)
         return extractor.extract(data, filename=filename)
-    except ImportError:
+    except ImportError as exc:
+        # Only PyMuPDF is the documents extra; an ImportError from the host's recognizer is
+        # the recognizer's own and propagates unchanged.
+        if exc.name != "fitz":
+            raise
         raise missing_extra("PyMuPDF", "documents") from None
 
 
@@ -92,7 +98,6 @@ def documents_toolkit(
         raise ValueError("ocr_max_pages must be 0 or more")
     toolkit = Toolkit(name)
 
-    @toolkit.tool(read(timeout=120), max_result_bytes=1_048_576, audit_metadata=AUDIT_METADATA)
     async def extract_text(
         document: AttachmentRef,
         context: ToolContext,
@@ -141,4 +146,12 @@ def documents_toolkit(
             text_withheld=withheld,
         )
 
+    toolkit.tool(
+        read(timeout=120),
+        max_result_bytes=1_048_576,
+        audit_metadata=AUDIT_METADATA,
+        # With a recognizer the model is told it may send images; without one the docstring is
+        # the description, unchanged.
+        description=None if ocr is None else f"{inspect.getdoc(extract_text)} {OCR_NOTE}",
+    )(extract_text)
     return toolkit
