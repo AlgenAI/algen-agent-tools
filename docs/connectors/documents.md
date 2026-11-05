@@ -9,7 +9,7 @@ the calling tenant, bounds the call and governs it as a tool.
 | | |
 | --- | --- |
 | Plugin | none yet: the toolkit needs the deployment's artifact loader, so it is built in code |
-| Extra | `pip install "algen-agent-tools[documents]"` for PDFs (installs PyMuPDF, licensed AGPL-3.0); every other format uses only the standard library and needs no extra |
+| Extra | `pip install "algen-agent-tools[documents]"` for PDFs (installs PyMuPDF, licensed AGPL-3.0); every other format uses only the standard library and needs no extra. Optional `ocr` for Tesseract OCR (see [OCR](#ocr)) |
 | Environment | none |
 | Owner | @saurav-samantray |
 
@@ -147,8 +147,29 @@ application decides what that warrants: run OCR, ask a person, or file the docum
 
 ## OCR
 
-This package ships no OCR engine (a Tesseract extra is planned). A host that has one passes a
-recognizer, any object with a `recognize` method:
+OCR is off unless the host passes a recognizer. The `ocr` extra ships one for
+[Tesseract](https://github.com/tesseract-ocr/tesseract):
+
+```bash
+pip install "algen-agent-tools[documents,ocr]"   # pytesseract and Pillow
+apt install tesseract-ocr tesseract-ocr-deu       # or: brew install tesseract tesseract-lang
+```
+
+```python
+from algen_agent_tools.documents import TesseractRecognizer, documents_toolkit
+
+documents = documents_toolkit(
+    artifact_loader=load, ocr=TesseractRecognizer(languages=("eng", "deu"), timeout=30)
+)
+```
+
+`TesseractRecognizer` fails when it is built, naming the fix, if the extra, the `tesseract`
+program or one of its languages is missing. It reads every frame of a multi-page TIFF or an
+animated GIF (up to `max_frames`, default 64), each within `timeout` seconds, over a white
+background for transparent images, and reports the mean word confidence. Installing the program
+and its language data is the host's job; this package never runs one by default.
+
+Any other engine plugs in the same way: a recognizer is any object with a `recognize` method.
 
 ```python
 from algen_agent_tools.documents import RecognizedText, documents_toolkit, extractor_for

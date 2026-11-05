@@ -37,9 +37,12 @@ A tool's name, input schema, side effect and permission are part of the public c
   `source="ocr"` (and the recognizer's `confidence`) and passes the same prompt-injection checks,
   so an instruction in a scan quarantines. OCRed pages no longer report
   `document.ocr_required`; scanned pages past the limit report it per page, and an image or page
-  with no recognized text reports `document.ocr_no_text` (low). No OCR engine ships yet; a
-  Tesseract extra is planned. Without a recognizer, behaviour is unchanged: images are refused
-  and nothing is rendered.
+  with no recognized text reports `document.ocr_no_text` (low). Without a recognizer, behaviour
+  is unchanged: images are refused and nothing is rendered.
+- The `ocr` extra (pytesseract and Pillow) with `TesseractRecognizer(languages=("eng",),
+  timeout=30, max_frames=64)`, a recognizer backed by the Tesseract program, which the host
+  installs (#39, step 2). It is never the default. Building one fails, naming the fix, when the
+  extra, the program or a language is missing. The `all` extra includes `ocr`.
 - `DocumentSpan.source` (`"text"` or `"ocr"`, default `"text"`) and `DocumentSpan.confidence`.
 - With a recognizer, `documents.extract_text`'s description says images and scanned pages are
   read by OCR. Without one it is unchanged.
