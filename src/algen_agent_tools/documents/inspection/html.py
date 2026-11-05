@@ -17,6 +17,7 @@ from algen_agent_tools.documents.inspection.core import (
     ExtractedDocument,
     FindingSeverity,
     classify_findings,
+    decode_text,
     normalize_document_text,
     prompt_injection_findings,
     sanitize_untrusted_text,
@@ -88,7 +89,7 @@ class HtmlDocumentExtractor:
         if len(data) > self._max_bytes:
             raise ValueError(f"document exceeds {self._max_bytes} byte limit")
         collector = _Collector()
-        collector.feed(data.decode("utf-8", errors="replace"))
+        collector.feed(decode_text(data))
         collector.close()
         lines = [
             line

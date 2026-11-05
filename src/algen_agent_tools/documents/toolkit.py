@@ -86,7 +86,7 @@ def _inspect(
     # The extractors (documents.inspection) do the parsing and the hidden-text and
     # prompt-injection checks; this function bounds and governs the call.
     try:
-        extractor = extractor_for(filename, ocr=ocr, ocr_max_pages=ocr_max_pages)
+        extractor = extractor_for(filename, data=data, ocr=ocr, ocr_max_pages=ocr_max_pages)
         return extractor.extract(data, filename=filename)
     except ImportError as exc:
         # PyMuPDF is the documents extra and olefile the msg extra; an ImportError from the
@@ -139,7 +139,8 @@ class DocumentReader:
         # The inspection reports content it did not read (an XLSX sheet past its row limit) as a
         # finding; surface it on the result so the model knows the text is incomplete.
         cut_by_inspection = any(
-            finding.kind == "document.truncated" for finding in extracted.findings
+            finding.kind in {"document.truncated", "document.pages_skipped"}
+            for finding in extracted.findings
         )
         return DocumentText(
             filename=filename,

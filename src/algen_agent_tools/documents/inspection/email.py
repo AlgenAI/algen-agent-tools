@@ -229,8 +229,11 @@ class EmailDocumentExtractor:
 
                         data = msg_to_email(data).as_bytes()
                 return self._extract(data, depth=depth + 1, budget=budget)
-            extractor = extractor_for(name, ocr=self._ocr, ocr_max_pages=self._ocr_max_pages)
-            return extractor.extract(_payload(attachment), filename=name)
+            payload = _payload(attachment)
+            extractor = extractor_for(
+                name, data=payload, ocr=self._ocr, ocr_max_pages=self._ocr_max_pages
+            )
+            return extractor.extract(payload, filename=name)
         except ImportError as exc:
             extra = {"fitz": "PDF needs the documents extra", "olefile": ".msg needs the msg extra"}
             if exc.name not in extra:

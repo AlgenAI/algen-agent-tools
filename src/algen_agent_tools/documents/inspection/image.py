@@ -240,7 +240,9 @@ class ImageDocumentExtractor:
             raise ValueError(f"document exceeds {self._max_bytes} byte limit")
         declared = IMAGE_MEDIA_TYPES.get(Path(filename).suffix.lower())
         media_type = image_media_type(data)
-        if declared is None or media_type != declared:
+        # A name that is not an image's (scan.pdf) defers to the content, which extractor_for
+        # sniffed; an image name must match the content.
+        if media_type is None or (declared is not None and media_type != declared):
             raise ValueError("file content does not match its image type")
         frames = image_frames(data, media_type)
         if not frames or any(width < 1 or height < 1 for width, height in frames):
