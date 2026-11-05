@@ -208,7 +208,7 @@ async def test_text_is_cut_to_max_chars() -> None:
     [
         ({"a1": b"x" * 101}, ref("a1", "big.txt", "text/plain"), "size limit"),
         ({"a1": b"MZ\x90"}, ref("a1", "fake.pdf", "application/pdf"), "not a PDF"),
-        ({"a1": b"x"}, ref("a1", "sheet.ods", "application/zip"), "only PDF, DOCX, XLSX, PPTX"),
+        ({"a1": b"x"}, ref("a1", "sheet.numbers", "application/zip"), "only PDF, DOCX, XLSX, PPTX"),
         ({"a1": b"not a zip"}, ref("a1", "broken.xlsx", XLSX_TYPE), "not a XLSX package"),
         ({"a1": b"not a zip"}, ref("a1", "broken.docx", DOCX_TYPE), "not a DOCX package"),
     ],

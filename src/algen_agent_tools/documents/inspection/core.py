@@ -671,6 +671,10 @@ def extractor_for(
         from algen_agent_tools.documents.inspection.pptx import PptxDocumentExtractor
 
         return PptxDocumentExtractor()
+    if suffix in {".odt", ".ods", ".odp"}:
+        from algen_agent_tools.documents.inspection.odf import OdfDocumentExtractor
+
+        return OdfDocumentExtractor()
     if suffix in {".html", ".htm"}:
         from algen_agent_tools.documents.inspection.html import HtmlDocumentExtractor
 
@@ -686,6 +690,6 @@ def extractor_for(
 
         return MsgDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages)
     raise ValueError(
-        "only PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, TXT, Markdown, EML and MSG documents are "
-        "supported"
+        "only PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP, HTML, CSV, TSV, TXT, Markdown, EML and MSG "
+        "documents are supported"
     )
