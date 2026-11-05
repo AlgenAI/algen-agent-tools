@@ -97,6 +97,9 @@ class InboundEmailDetail(InboundEmailSummary):
     """The cc'd addresses alone, read from ``cc``."""
     text_body: str = Field(default="", max_length=MAX_BODY_CHARS)
     body_truncated: bool = False
+    quoted_text_removed: bool = False
+    """``text_body`` is the reply's own text: the history it quoted and its signature were
+    removed (``include="latest"``)."""
     message_id_header: str | None = Field(default=None, max_length=998)
     """The message's own Message-ID header (``<id@host>``), when it has one."""
     in_reply_to: str | None = Field(default=None, max_length=998)

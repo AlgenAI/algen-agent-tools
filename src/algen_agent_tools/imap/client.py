@@ -43,6 +43,7 @@ from algen_agent_tools.imap.protocol import (
     strings,
     text,
     text_part,
+    text_parts,
 )
 from algen_agent_tools.mail.inbound import (
     EmailThread,
@@ -593,10 +594,22 @@ class ImapMailboxClient:
         """One message from its metadata, with the body fetched as plain text."""
         limit = min(max_chars * 6 + 4_096, MAX_BODY_FETCH_BYTES)
         fields = self._summary(response, folder, validity, uid)
-        body = text_part(fields.pop("_parts"))
+        bodies = text_parts(fields.pop("_parts"))
         cc = fields.pop("_cc")
         ids = fields.pop("_ids")
-        content, cut = self._text(connection, uid, body, limit) if body else ("", False)
+        texts: list[str] = []
+        cut = False
+        for body in bodies:
+            # The parts share the byte limit; a part past it is cut or left out.
+            if limit <= 0:
+                cut = True
+                break
+            content, part_cut = self._text(connection, uid, body, limit)
+            limit -= min(body.size, limit)
+            cut = cut or part_cut
+            if content:
+                texts.append(content)
+        content = "\n\n".join(texts)
         bounded, truncated = bounded_body(content, max_chars)
         fields["snippet"] = " ".join(bounded.split())[:SNIPPET_CHARS]
         return InboundEmailDetail(
