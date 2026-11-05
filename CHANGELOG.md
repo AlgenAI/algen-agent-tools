@@ -8,6 +8,25 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a10] - 2026-11-05
+
+More formats and cleaner mail: Outlook `.msg`, OpenDocument and RTF files, content sniffing,
+any common text encoding, long PDFs read in part, and replies without their quoted history.
+Requires `algen-agent-runtime>=0.1.0a23,<0.2`, as 0.2.0a9 did.
+
+### Upgrade notes
+
+- `get_thread` returns each message's own text by default (`include="latest"`); pass
+  `include="full"` for the whole bodies 0.2.0a9 returned.
+- `documents.extract_text` reads the first 50 pages of a longer PDF instead of refusing it, and
+  follows a file's content over its name. A result can now carry the coverage findings
+  `document.pages_skipped` and `document.body_unread` and the security finding
+  `document.embedded_object` (RTF OLE objects, which quarantine).
+- `.msg` needs the new `msg` extra (`pip install "algen-agent-tools[msg]"`, olefile); it is in
+  `all`.
+- The "unsupported document type" message lists more formats; match on `DocumentRefused`, not
+  its text.
+
 ### Added
 
 - Outlook `.msg` files in `documents.extract_text` and `extractor_for` with the new `msg` extra
