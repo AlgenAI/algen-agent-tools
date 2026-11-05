@@ -94,7 +94,7 @@ def test_a_png_is_recognized_as_an_ocr_span() -> None:
 
 def test_images_are_refused_without_a_recognizer() -> None:
     with pytest.raises(
-        ValueError, match="PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, TXT, and Markdown"
+        ValueError, match="PDF, DOCX, XLSX, PPTX, HTML, CSV, TSV, TXT, Markdown and EML"
     ):
         extractor_for("scan.png")
 
@@ -395,7 +395,7 @@ async def test_the_toolkit_reads_an_image_with_a_recognizer() -> None:
 
 
 async def test_the_toolkit_refuses_an_image_without_a_recognizer() -> None:
-    with pytest.raises(DocumentRefused, match="Markdown documents are supported"):
+    with pytest.raises(DocumentRefused, match="EML documents are supported"):
         await run_tool(png(), "scan.png", "image/png")
 
 
