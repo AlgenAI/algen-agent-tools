@@ -46,8 +46,9 @@ discord = []
 # Gmail uses httpx and SMTP the standard library, both already installed with the Runtime;
 # their extras exist so every connector installs the same way.
 # PDFs are read with PyMuPDF (AGPL-3.0). DOCX, XLSX, PPTX, HTML, CSV, TSV, text and Markdown
-# need only the standard library.
-documents = ["PyMuPDF>=1.24,<3"]
+# need only the standard library. PyMuPDF 2.x is held back: it also installs onnxruntime and
+# layout packages that declare no license, none of which the extractors use.
+documents = ["PyMuPDF>=1.24,<2"]
 # OCR for documents with Tesseract (Apache-2.0), never the default: the host installs the
 # tesseract program and builds a TesseractRecognizer.
 ocr = ["pytesseract>=0.3.10,<0.4", "Pillow>=10,<14"]
