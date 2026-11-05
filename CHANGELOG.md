@@ -29,6 +29,12 @@ A tool's name, input schema, side effect and permission are part of the public c
   the `conversationId`, IMAP on Gmail `X-GM-THRID`, and plain IMAP the References chain across
   the configured folders. `get_message` results gain `message_id_header`, `in_reply_to` and
   `references`. Quoted history is not split off yet.
+- IMAP (#43): `imap.list_messages` takes `text_contains` (IMAP `TEXT`, headers and body) and,
+  on Gmail servers only, `gmail_query` (`X-GM-RAW`). The folders setting accepts special-use
+  names (`\Sent`, `\All`, `\Archive`, `\Drafts`, `\Junk`, `\Trash`, `\Flagged`) resolved
+  with `LIST` when the connection opens, and the new `imap.list_folders` (read) lists the
+  readable folders with their special use. With `\All` configured on Gmail, a message that left
+  the inbox is still found by its id. The Gmail page documents `in:sent` and `in:anywhere`.
 
 ### Changed
 

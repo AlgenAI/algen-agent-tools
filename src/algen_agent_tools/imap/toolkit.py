@@ -13,6 +13,7 @@ from algen_agent_tools.attachments import ArtifactSink, AttachmentPolicy
 from algen_agent_tools.documents.toolkit import DocumentReader
 from algen_agent_tools.imap.client import (
     ImapFactory,
+    ImapFolderList,
     ImapMailboxClient,
     ImapMailboxPage,
     ImapSettings,
@@ -60,8 +61,9 @@ def imap_toolkit(
     imap_factory: ImapFactory | None = None,
     client: Any = None,
 ) -> Toolkit:
-    """A read-only toolkit for one IMAP mailbox: ``<name>.list_messages`` and
-    ``<name>.get_message`` and, with an ``artifact_sink``, ``<name>.get_attachment`` (all read).
+    """A read-only toolkit for one IMAP mailbox: ``<name>.list_messages``,
+    ``<name>.list_folders``, ``<name>.get_message``, ``<name>.get_thread`` and, with an
+    ``artifact_sink``, ``<name>.get_attachment`` (all read).
     With ``documents`` (a :class:`~algen_agent_tools.documents.DocumentReader`),
     ``<name>.read_attachment`` (read) returns an attachment's inspected text in one call, without
     the file reaching the model; with an ``artifact_sink`` too, the file is also saved.
@@ -69,7 +71,8 @@ def imap_toolkit(
     Every setting is an ``env://`` reference resolved when the client opens. ``host``,
     ``username`` and ``password`` (an app password) are required; ``port`` defaults to 993 and
     the connection is always TLS. ``folders`` is a comma-separated list of the folders tools may
-    read (default ``INBOX``). ``authserv_id`` names the server whose Authentication-Results
+    read (default ``INBOX``); a special-use name such as ``\\Sent`` or ``\\All`` stands for the
+    server's folder with that flag. ``authserv_id`` names the server whose Authentication-Results
     header ``sender_auth`` trusts (default: Gmail's on a Gmail server, otherwise none).
     ``imap_factory`` replaces the connection, for tests.
     """
@@ -104,6 +107,8 @@ def imap_toolkit(
         since: date | None = None,
         before: date | None = None,
         unread_only: bool = False,
+        text_contains: Annotated[str | None, Field(max_length=200, pattern=_PRINTABLE)] = None,
+        gmail_query: Annotated[str | None, Field(max_length=500, pattern=_PRINTABLE)] = None,
         max_results: Annotated[int, Field(ge=1, le=100)] = 25,
         page_token: Annotated[str | None, Field(max_length=32)] = None,
     ) -> ImapMailboxPage:
@@ -111,7 +116,10 @@ def imap_toolkit(
         short snippet, flags and attachments. Every filter given must match: from_address and
         subject are text the From and Subject headers contain (ASCII), since and before are
         dates (YYYY-MM-DD; since includes the day, before excludes it), unread_only keeps
-        unseen mail. Reading never marks a message as seen. Use next_page_token to continue."""
+        unseen mail, text_contains is text anywhere in the headers or body (ASCII), and
+        gmail_query is a Gmail search such as "has:attachment newer_than:7d" (Gmail servers
+        only). folder is a name from list_folders or a special-use name such as \\Sent. Reading
+        never marks a message as seen. Use next_page_token to continue."""
         mailbox: ImapClient = await toolkit.client()
         page: ImapMailboxPage = await mailbox.transport.list_messages(
             folder=folder,
@@ -120,10 +128,20 @@ def imap_toolkit(
             since=since,
             before=before,
             unread_only=unread_only,
+            text_contains=text_contains,
+            gmail_query=gmail_query,
             max_results=max_results,
             page_token=page_token,
         )
         return page
+
+    @toolkit.tool(read(timeout=60), audit_metadata=AUDIT_METADATA)
+    async def list_folders() -> ImapFolderList:
+        """List the folders this mailbox's tools may read, with each one's special use (\\Sent,
+        \\All, \\Archive, \\Drafts, \\Junk, \\Trash) when the server marks it."""
+        mailbox: ImapClient = await toolkit.client()
+        folders: ImapFolderList = await mailbox.transport.list_folders()
+        return folders
 
     add_mailbox_read_tools(
         toolkit,

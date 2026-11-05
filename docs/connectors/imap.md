@@ -16,18 +16,25 @@ deleted or marked as seen. Send replies with [`smtp.send_email`](smtp.md).
 | Tool | Side effect | Permission | Timeout | Attempts | Approval |
 | --- | --- | --- | --- | --- | --- |
 | `imap.list_messages` | read | `imap.read` | 120 s | Runtime default | agent policy |
+| `imap.list_folders` | read | `imap.read` | 60 s | Runtime default | agent policy |
 | `imap.get_message` | read | `imap.read` | 60 s | Runtime default | agent policy |
 | `imap.get_thread` | read | `imap.read` | 120 s | Runtime default | agent policy |
 | `imap.get_attachment` (with `artifact_sink`) | read | `imap.read` | 120 s | Runtime default | agent policy |
 | `imap.read_attachment` (with `documents`) | read | `imap.read` | 120 s | Runtime default | agent policy |
 
 - `imap.list_messages(folder="INBOX", from_address=None, subject=None, since=None, before=None,
-  unread_only=False, max_results=25, page_token=None)` lists one folder, newest first, at most
-  100 per page. The filters are typed: `from_address` and `subject` are text the From and
-  Subject headers contain (printable ASCII), `since` and `before` are dates (`since` includes
-  the day, `before` excludes it), and every filter given must match. There is no raw IMAP
-  search. Each row has the sender, recipients, subject, a snippet of up to 200 characters, the
+  unread_only=False, text_contains=None, gmail_query=None, max_results=25, page_token=None)`
+  lists one folder, newest first, at most 100 per page. The filters are typed: `from_address`
+  and `subject` are text the From and Subject headers contain, `text_contains` is text anywhere
+  in the headers or body (IMAP `TEXT`), `since` and `before` are dates (`since` includes the
+  day, `before` excludes it), and every filter given must match. Search text is printable
+  ASCII; anything else is refused rather than sent. `gmail_query` is a Gmail search
+  (`X-GM-RAW`, for example `has:attachment newer_than:7d`) and is refused unless the server is
+  Gmail. There is no raw IMAP search. Each row has the sender, recipients, subject, a snippet of up to 200 characters, the
   message's flags (and Gmail labels), its attachments with their `part_id`, and `sender_auth`.
+- `imap.list_folders()` lists the folders the tools may read, each with its special-use flag
+  (`\Sent`, `\All`, `\Archive`, `\Drafts`, `\Junk`, `\Trash`, `\Flagged`) when the server
+  marks one. It never lists folders outside `ALGEN_TOOLS_IMAP_FOLDERS`.
 - `imap.get_message(message_id, max_chars=20000)` reads one message: the same fields plus `cc`
   and the body as plain text (the text part, or the HTML part with markup, scripts and styles
   removed), cut to `max_chars` (at most 100,000) with `body_truncated` set when cut. Only the
@@ -80,6 +87,15 @@ IMAP `LOGIN` command and never appears in an error or a log line.
 `ALGEN_TOOLS_IMAP_FOLDERS` limits which folders the tools may read (comma-separated, printable
 ASCII names; the first is the default). A folder outside the list, or a message id that names
 one, is refused before anything is sent to the server.
+
+An entry may be a special-use name instead of a folder name: `\Sent`, `\All`, `\Archive`,
+`\Drafts`, `\Junk`, `\Trash` or `\Flagged` (RFC 6154). When the connection opens, the
+connector asks the server (`LIST`) which folder has that flag, so `INBOX,\Sent,\All` reads the
+inbox, sent mail and, on Gmail, All Mail, whatever the server calls them. A tool may then name
+the folder by either name. A special-use name the server does not mark is left out. On Gmail,
+adding `\All` also lets `get_message` find a message by its Gmail id after it has left the
+inbox. Message bodies and attachments are always fetched by part within their limits, never as
+whole messages.
 
 ## Agent configuration
 

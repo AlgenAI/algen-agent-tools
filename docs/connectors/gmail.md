@@ -24,7 +24,9 @@ OAuth refresh token.
 - `gmail.list_messages(query="is:unread", max_results=25, page_token=None)` takes a Gmail search
   query and returns message metadata (sender, recipients, subject, a snippet of up to 2,000
   characters, labels, attachments with their `part_id`, and `sender_auth`), at most 100 per
-  page. Message bodies and attachment bytes are not returned.
+  page. Message bodies and attachment bytes are not returned. The query reaches every folder:
+  `in:sent` lists the mailbox's sent mail, `in:anywhere` includes archived mail, spam and
+  trash.
 - `sender_auth` is Gmail's own verdict on the sender: `pass`, `fail` or `unknown`, read from the
   topmost `Authentication-Results` header only when Gmail (`mx.google.com`) stamped it. DMARC
   decides when present; without it only an SPF failure with no DKIM pass is `fail`. Text the

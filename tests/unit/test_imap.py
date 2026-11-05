@@ -182,6 +182,7 @@ def test_the_plugin_describes_read_only_tools_and_its_settings() -> None:
     assert {name: tool.side_effect for name, tool in tools.items()} == {
         "imap.get_message": SideEffect.READ,
         "imap.get_thread": SideEffect.READ,
+        "imap.list_folders": SideEffect.READ,
         "imap.list_messages": SideEffect.READ,
     }
     assert {
@@ -202,6 +203,8 @@ def test_the_plugin_describes_read_only_tools_and_its_settings() -> None:
         "since",
         "before",
         "unread_only",
+        "text_contains",
+        "gmail_query",
         "max_results",
         "page_token",
     }
