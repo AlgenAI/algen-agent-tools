@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from algen_agent_tools._core.auth import OAuthRefresh, RefreshTokenSink
 from algen_agent_tools._core.errors import failure, not_attempted, rejected
 from algen_agent_tools._core.http import HostLockedClient
+from algen_agent_tools._core.schema import Identifier
 from algen_agent_tools.attachments.models import AttachmentUpload
 from algen_agent_tools.mail.inbound import (
     EmailThread,
@@ -218,7 +219,7 @@ def _segment(value: str) -> str:
 class GmailMailboxPage(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     messages: tuple[InboundEmailSummary, ...] = ()
-    next_page_token: str | None = None
+    next_page_token: Identifier | None = None
     result_size_estimate: int = Field(default=0, ge=0)
 
 
@@ -286,7 +287,9 @@ class GmailMailboxClient:
             response = await self._http.post(
                 self._http.url("users/me/messages/send"),
                 headers={"Authorization": f"Bearer {token}"},
-                json={"raw": raw},
+                # threadId files the message in the Gmail thread; Gmail also needs its
+                # In-Reply-To and References headers and a matching subject.
+                json={"raw": raw, **({"threadId": message.thread_id} if message.thread_id else {})},
             )
             response.raise_for_status()
             provider_id = str(response.json()["id"])

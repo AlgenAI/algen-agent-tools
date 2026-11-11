@@ -53,6 +53,14 @@ def crm_toolkit(
 - Nothing connects in the factory or in `register`; the client opens at container start or on
   first use, and resolves its secrets then.
 - The docstring is what the model reads: say what the action does and when to use it.
+- Declare id fields, in inputs and results, as identifiers: a chat, message, thread,
+  attachment or page id, or an order or tracking number, that may be a digit string. Use
+  `id_field(pattern)` from `algen_agent_tools.attachments` for an input id, or
+  `Field(json_schema_extra={"format": "identifier"})`. The Runtime's `pii` guardrail (0.2.0b2 and
+  later) then leaves a one-token value there alone; without it a ten-digit chat id can read as a
+  phone number, and a redacted argument refuses the call. Address fields declare
+  `{"format": "email"}` for the same reason. Earlier Runtimes ignore both. Never mark free text
+  (a message, subject, query or name): it is what the guardrail screens.
 
 When a connector belongs to a family, build on the family's shared tools instead of writing
 them again, so every platform offers the same names and inputs:

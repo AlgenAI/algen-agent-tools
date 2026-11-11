@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from enum import StrEnum
+from itertools import islice
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 
@@ -148,6 +149,8 @@ class ExtractedDocument(BaseModel):
     """Images or scanned pages hold text that only OCR can read. Derived when omitted."""
     parts: tuple[DocumentPart, ...] = ()
     """The attachments of an email that were read; their text follows the body's."""
+    page_window: tuple[int, int] | None = None
+    """For a PDF, the first and last page read (inclusive); ``None`` for other formats."""
 
     @model_validator(mode="before")
     @classmethod
@@ -367,11 +370,17 @@ class PlainTextDocumentExtractor:
         )
 
 
+PDF_MAX_PAGES = 50
+"""The most PDF pages one ``extract_text`` call reads: the default ``max_pages``."""
+
+
 class PdfDocumentExtractor:
     """Inspect PDF text spans before producing downstream-safe plain text.
 
-    A PDF longer than ``max_pages`` is refused, or with ``on_excess="truncate"`` read up to
-    there and reported as a ``document.pages_skipped`` coverage finding.
+    ``max_pages`` pages are read from ``start_page`` on (1-based). A PDF with pages after that
+    window is refused, or with ``on_excess="truncate"`` read up to there and reported as a
+    ``document.pages_skipped`` coverage finding. Pages before ``start_page`` are reported the
+    same way (on page 1), and a ``start_page`` past the last page is refused.
 
     With an ``ocr`` recognizer, a page that has images and fewer than ``ocr_min_page_chars``
     characters of text is rendered (``ocr_dpi``, at most ``ocr_max_pixels`` pixels) and
@@ -382,7 +391,8 @@ class PdfDocumentExtractor:
         self,
         *,
         max_bytes: int = 10_000_000,
-        max_pages: int = 50,
+        max_pages: int = PDF_MAX_PAGES,
+        start_page: int = 1,
         on_excess: Literal["refuse", "truncate"] = "refuse",
         max_characters: int = 250_000,
         tiny_font_points: float = 2.0,
@@ -398,8 +408,13 @@ class PdfDocumentExtractor:
             dpi=ocr_dpi,
             max_pixels=ocr_max_pixels,
         )
+        if max_pages < 1:
+            raise ValueError("max_pages must be 1 or more")
+        if start_page < 1:
+            raise ValueError("start_page must be 1 or more")
         self._max_bytes = max_bytes
         self._max_pages = max_pages
+        self._start_page = start_page
         self._on_excess = on_excess
         self._max_characters = max_characters
         self._tiny_font_points = tiny_font_points
@@ -422,26 +437,42 @@ class PdfDocumentExtractor:
                 "install algen-agent-tools[documents] for PDF inspection", name="fitz"
             ) from exc
         document = fitz.open(stream=data, filetype="pdf")
-        excess = document.page_count > self._max_pages
+        first = self._start_page
+        last = first + self._max_pages - 1
+        excess = document.page_count > last
         if document.page_count < 1 or (excess and self._on_excess == "refuse"):
-            raise ValueError(f"PDF page count must be between 1 and {self._max_pages}")
+            if first == 1:
+                raise ValueError(f"PDF page count must be between 1 and {self._max_pages}")
+            raise ValueError(f"PDF has pages after page {last}, the end of the page window")
+        if first > document.page_count:
+            raise ValueError(
+                f"start_page {first} is past the PDF's last page ({document.page_count})"
+            )
+        last = min(last, document.page_count)
         spans: list[DocumentSpan] = []
         findings: list[DocumentSecurityFinding] = []
         image_count = 0
         ocr_pages: list[int] = []
         unread_image_pages: list[int] = []
+        if first > 1:
+            findings.append(
+                DocumentSecurityFinding(
+                    kind="document.pages_skipped",
+                    severity=FindingSeverity.LOW,
+                    message=f"Pages before page {first} were not read.",
+                    page=1,
+                )
+            )
         if excess:
             findings.append(
                 DocumentSecurityFinding(
                     kind="document.pages_skipped",
                     severity=FindingSeverity.LOW,
-                    message=f"Pages after page {self._max_pages} were not read.",
-                    page=self._max_pages + 1,
+                    message=f"Pages after page {last} were not read.",
+                    page=last + 1,
                 )
             )
-        for page_index, page in enumerate(document, start=1):
-            if page_index > self._max_pages:
-                break
+        for page_index, page in enumerate(islice(document, first - 1, last), start=first):
             page_images = len(page.get_images(full=True))
             image_count += page_images
             first_span = len(spans)
@@ -581,6 +612,7 @@ class PdfDocumentExtractor:
             disposition=disposition,
             page_count=document.page_count,
             image_count=image_count,
+            page_window=(first, last),
         )
 
 
@@ -636,12 +668,18 @@ def extractor_for(
     ocr: TextRecognizer | None = None,
     ocr_max_pages: int = 3,
     converter: DocumentConverter | None = None,
+    start_page: int = 1,
+    max_pages: int = PDF_MAX_PAGES,
 ) -> DocumentExtractor:
     """The extractor for ``filename``'s suffix, or with ``data``, for the type the content's
     signature declares when it has one (a ``scan.pdf`` that is really a JPEG is read as an
     image, a renamed ``.docx`` as Word). An email (``.eml``, or Outlook ``.msg`` with the
     ``msg`` extra) has its attachments read by the extractors for their own file names. A PDF
     longer than its page limit is read up to the limit (``document.pages_skipped``).
+
+    For a PDF, ``max_pages`` pages (1 to ``PDF_MAX_PAGES``) are read from ``start_page`` on;
+    pages outside that window are reported as ``document.pages_skipped``. A ``start_page``
+    other than 1 for any other format is refused.
 
     With an ``ocr`` recognizer, images (PNG, JPEG, WebP, GIF, BMP, TIFF) are accepted and
     scanned PDF pages are recognized, up to ``ocr_max_pages`` pages per PDF. Without one,
@@ -656,10 +694,24 @@ def extractor_for(
     sniffed = sniff_suffix(data) if data is not None else None
     if sniffed is not None and _SAME.get(sniffed, sniffed) != _SAME.get(suffix, suffix):
         suffix = sniffed
+    if not 1 <= max_pages <= PDF_MAX_PAGES:
+        raise ValueError(f"max_pages must be between 1 and {PDF_MAX_PAGES}")
+    if start_page < 1:
+        raise ValueError("start_page must be 1 or more")
     if suffix == ".pdf":
         if ocr is None:
-            return PdfDocumentExtractor(on_excess="truncate")
-        return PdfDocumentExtractor(on_excess="truncate", ocr=ocr, ocr_max_pages=ocr_max_pages)
+            return PdfDocumentExtractor(
+                on_excess="truncate", start_page=start_page, max_pages=max_pages
+            )
+        return PdfDocumentExtractor(
+            on_excess="truncate",
+            start_page=start_page,
+            max_pages=max_pages,
+            ocr=ocr,
+            ocr_max_pages=ocr_max_pages,
+        )
+    if start_page != 1:
+        raise ValueError("start_page applies to PDF documents only")
     if ocr is not None:
         from algen_agent_tools.documents.inspection.image import (
             IMAGE_MEDIA_TYPES,

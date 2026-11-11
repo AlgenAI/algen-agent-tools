@@ -13,6 +13,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from algen_agent_tools._core.schema import Identifier
+
 MAX_BODY_CHARS = 100_000
 MAX_THREAD_MESSAGES = 50
 MAX_ATTACHMENTS = 20
@@ -24,11 +26,11 @@ class InboundEmailAttachment(BaseModel):
     """Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
-    provider_attachment_id: str = Field(min_length=1, max_length=2_000)
+    provider_attachment_id: Identifier = Field(min_length=1, max_length=2_000)
     filename: str = Field(min_length=1, max_length=255)
     media_type: str = Field(default="application/octet-stream", min_length=3, max_length=255)
     size: int = Field(default=0, ge=0)
-    part_id: str | None = Field(default=None, max_length=64)
+    part_id: Identifier | None = Field(default=None, max_length=64)
     """The attachment's stable place in the message; pass it to ``get_attachment``."""
     is_inline: bool = Field(
         default=False,
@@ -36,7 +38,7 @@ class InboundEmailAttachment(BaseModel):
         "or a Content-ID without one), such as a signature logo or a pasted picture. Inline "
         "parts can still be real documents: some mail clients mark attached PDFs inline.",
     )
-    content_id: str | None = Field(
+    content_id: Identifier | None = Field(
         default=None,
         max_length=998,
         description="The part's Content-ID without angle brackets, as the HTML body's cid: "
@@ -63,8 +65,8 @@ def _addresses(header: str) -> list[tuple[str, str]]:
 
 class InboundEmailSummary(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
-    provider_message_id: str
-    thread_id: str | None = None
+    provider_message_id: Identifier
+    thread_id: Identifier | None = None
     sender: str = ""
     """The sender as display text (``Name <address>``)."""
     recipients: str = ""
@@ -203,11 +205,11 @@ class InboundEmailDetail(InboundEmailSummary):
     quoted_text_removed: bool = False
     """``text_body`` is the reply's own text: the history it quoted and its signature were
     removed (``include="latest"``)."""
-    message_id_header: str | None = Field(default=None, max_length=998)
+    message_id_header: Identifier | None = Field(default=None, max_length=998)
     """The message's own Message-ID header (``<id@host>``), when it has one."""
-    in_reply_to: str | None = Field(default=None, max_length=998)
+    in_reply_to: Identifier | None = Field(default=None, max_length=998)
     """The Message-ID this message replies to."""
-    references: tuple[str, ...] = Field(default=(), max_length=100)
+    references: tuple[Identifier, ...] = Field(default=(), max_length=100)
     """The Message-IDs of the thread so far, oldest first, from the References header."""
 
 
@@ -215,7 +217,7 @@ class EmailThread(BaseModel):
     """The messages of one thread, oldest first."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
-    thread_id: str
+    thread_id: Identifier
     messages: tuple[InboundEmailDetail, ...] = Field(default=(), max_length=MAX_THREAD_MESSAGES)
     truncated: bool = False
     """The thread has more messages than were returned; the newest are kept."""

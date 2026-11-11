@@ -77,6 +77,11 @@ security:
   trusted_plugin_prefixes: [algen_agent_tools]
 ```
 
+Chat, message, sender, attachment and page ids, in the tools' arguments and results, declare
+`"format": "identifier"`. With Runtime 0.2.0b2 or later the default `pii` guardrail leaves them
+alone, so a private chat id such as `9876543210` is not read as a phone number and does not
+refuse `send_message`. Message text is still screened. Earlier Runtimes ignore the annotation.
+
 To save files, build the toolkit in code with the deployment's artifact store:
 
 ```python

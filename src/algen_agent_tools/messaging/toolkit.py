@@ -11,6 +11,7 @@ from algen_agent_runtime.tools.authoring import Toolkit, external, read
 from algen_agent_runtime.tools.contracts import ToolContext
 from pydantic import Field
 
+from algen_agent_tools._core.schema import Identifier
 from algen_agent_tools.attachments import (
     ArtifactSink,
     AttachmentPolicy,
@@ -64,7 +65,7 @@ def messaging_toolkit(
     toolkit = Toolkit(name, env=tuple(env), client=client)
     conversation = id_field(platform.conversation_pattern, max_length=256)
     page_size = Annotated[int, Field(ge=1, le=platform.max_page_size)]
-    page_token = Annotated[str | None, Field(max_length=2_000)]
+    page_token = Annotated[Identifier | None, Field(max_length=2_000)]
     capabilities = platform.capabilities
 
     if Capability.CONVERSATIONS in capabilities:

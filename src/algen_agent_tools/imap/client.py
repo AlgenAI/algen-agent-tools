@@ -26,6 +26,7 @@ from algen_agent_runtime.exceptions.errors import PolicyDeniedError
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 from algen_agent_tools._core.errors import failure
+from algen_agent_tools._core.schema import Identifier
 from algen_agent_tools.attachments.models import AttachmentUpload
 from algen_agent_tools.imap.protocol import (
     BodyPart,
@@ -75,6 +76,10 @@ _FOLDER_ID = re.compile(r"^([0-9]{1,10})\.([0-9]{1,10})\.([A-Za-z0-9_-]{1,400})$
 _PAGE_TOKEN = re.compile(r"^([0-9]{1,10})\.([0-9]{1,10})$")
 _SECTION = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){0,9}$")
 _THREAD_ROOT = re.compile(r"^r\.([A-Za-z0-9_-]{4,1400})$")
+_NO_UTF8_SEARCH = (
+    "this IMAP server does not search non-ASCII text (SEARCH CHARSET UTF-8); search with ASCII "
+    "text instead"
+)
 SPECIAL_USE = ("\\All", "\\Archive", "\\Drafts", "\\Flagged", "\\Junk", "\\Sent", "\\Trash")
 """RFC 6154 special-use folders a ``folders`` setting may name instead of a folder."""
 
@@ -134,7 +139,7 @@ class ImapFolderList(BaseModel):
 class ImapMailboxPage(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     messages: tuple[InboundEmailSummary, ...] = ()
-    next_page_token: str | None = None
+    next_page_token: Identifier | None = None
     result_size_estimate: int = Field(default=0, ge=0)
 
 
@@ -183,6 +188,20 @@ def thread_key(ids: dict[str, Any]) -> str | None:
     if root is None:
         return None
     return "r." + base64.urlsafe_b64encode(root.encode()).decode().rstrip("=")
+
+
+def _search_literal(value: str) -> bytes:
+    """Search text that is not ASCII, as the UTF-8 octets of an IMAP literal. A literal is sent
+    by length, so it cannot end the command; control characters are still refused."""
+    if any(ord(char) < 0x20 or ord(char) == 0x7F for char in value):
+        raise ValueError("IMAP search text cannot contain control characters")
+    return value.encode("utf-8")
+
+
+def _uids(data: list[Any]) -> set[int]:
+    """The UIDs in a SEARCH response."""
+    found = b" ".join(item for item in data if isinstance(item, bytes)).split()
+    return {int(item) for item in found if item.isdigit()}
 
 
 def _thread_root(thread_id: str) -> str | None:
@@ -384,6 +403,28 @@ class ImapMailboxClient:
             raise EmailDeliveryError(f"IMAP {command} failed")
         return list(data or ())
 
+    @staticmethod
+    def _search_utf8(connection: Any, criteria: list[str], key: str, literal: bytes) -> set[int]:
+        """The UIDs matching ``criteria`` and ``key`` with ``literal`` (UTF-8 text), searched
+        with ``CHARSET UTF-8``. A server without UTF-8 search is a refusal, not a failure."""
+        connection.literal = literal
+        try:
+            status, data = connection.uid("SEARCH", "CHARSET", "UTF-8", *criteria, key)
+        except imaplib.IMAP4.abort:
+            raise
+        except imaplib.IMAP4.error as exc:
+            if "CHARSET" in str(exc).upper():
+                raise PolicyDeniedError(_NO_UTF8_SEARCH) from None
+            raise
+        finally:
+            connection.literal = None
+        if status != "OK":
+            detail = b" ".join(item for item in data or () if isinstance(item, bytes))
+            if b"BADCHARSET" in detail.upper():
+                raise PolicyDeniedError(_NO_UTF8_SEARCH)
+            raise EmailDeliveryError("IMAP SEARCH failed")
+        return _uids(data)
+
     def _locate(self, connection: Any, message_id: str) -> tuple[str, int, int]:
         """The folder, its UIDVALIDITY and the message's UID, with the folder open."""
         found = _FOLDER_ID.fullmatch(message_id)
@@ -503,15 +544,23 @@ class ImapMailboxClient:
         """Messages in ``folder`` that match every filter given, newest first.
 
         ``text_contains`` is text the headers or body contain (IMAP ``TEXT``); ``gmail_query``
-        is a Gmail search (``X-GM-RAW``), only on a Gmail server.
+        is a Gmail search (``X-GM-RAW``), only on a Gmail server. ``from_address``,
+        ``subject`` and ``text_contains`` may be any text without control characters: text
+        that is not ASCII is searched with ``SEARCH CHARSET UTF-8`` and a literal, and a server
+        that answers ``BADCHARSET`` raises :class:`PolicyDeniedError`.
         """
         if not 1 <= max_results <= 100:
             raise ValueError("max_results must be between 1 and 100")
         criteria: list[str] = []
-        if from_address:
-            criteria += ["FROM", quote(from_address)]
-        if subject:
-            criteria += ["SUBJECT", quote(subject)]
+        # Non-ASCII text goes as a UTF-8 literal, one per SEARCH (imaplib sends one literal, at
+        # the end of the command), so each such filter is its own search.
+        literals: list[tuple[str, bytes]] = []
+        for key, value in (("FROM", from_address), ("SUBJECT", subject)):
+            if value:
+                if value.isascii():
+                    criteria += [key, quote(value)]
+                else:
+                    literals.append((key, _search_literal(value)))
         if since is not None:
             criteria += ["SINCE", search_date(since)]
         if before is not None:
@@ -519,7 +568,10 @@ class ImapMailboxClient:
         if unread_only:
             criteria.append("UNSEEN")
         if text_contains:
-            criteria += ["TEXT", quote(text_contains)]
+            if text_contains.isascii():
+                criteria += ["TEXT", quote(text_contains)]
+            else:
+                literals.append(("TEXT", _search_literal(text_contains)))
         if gmail_query:
             criteria += ["X-GM-RAW", quote(gmail_query)]
         cursor = _PAGE_TOKEN.fullmatch(page_token) if page_token else None
@@ -542,9 +594,15 @@ class ImapMailboxClient:
                 if last <= 1:
                     return ImapMailboxPage()
                 search += ["UID", f"1:{last - 1}"]
-            data = self._uid(connection, "SEARCH", *(search or ["ALL"]))
-            found = b" ".join(item for item in data if isinstance(item, bytes)).split()
-            uids = sorted({int(item) for item in found if item.isdigit()}, reverse=True)
+            if literals:
+                matched: set[int] | None = None
+                for key, literal in literals:
+                    hits = self._search_utf8(connection, search, key, literal)
+                    matched = hits if matched is None else matched & hits
+                uids = sorted(matched or (), reverse=True)
+            else:
+                data = self._uid(connection, "SEARCH", *(search or ["ALL"]))
+                uids = sorted(_uids(data), reverse=True)
             page = uids[:max_results]
             rows: list[InboundEmailSummary] = []
             metadata = self._metadata(connection, page) if page else {}

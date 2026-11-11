@@ -59,7 +59,10 @@ OAuth refresh token.
   toolkit is built with `documents` (see [Reading attachments](#reading-attachments)). It
   returns the attachment's text in one call, without the file reaching the model.
 - `gmail.send_email` takes the same input as [`smtp.send_email`](smtp.md) and sends from
-  `ALGEN_TOOLS_GMAIL_SENDER`.
+  `ALGEN_TOOLS_GMAIL_SENDER`. A reply also takes `thread_id`, the replied-to message's
+  `thread_id`, sent as `threadId` so Gmail files the reply in that thread. Gmail threads it
+  only with `in_reply_to` and a matching subject, so `thread_id` without `in_reply_to` is
+  refused.
 
 With `pii` at the tool boundary (the default), `list_messages` results reach the model with
 addresses redacted; leaving it out (below) shows them.
@@ -95,6 +98,12 @@ guardrails; addresses in the free text (`sender`, `recipients`, the snippet, the
 redacted. Before 0.1.0a19 an agent that must read the addresses left `pii` out of its tool
 boundaries.
 
+The message, thread, attachment and page ids, and the Message-ID headers (`message_id_header`,
+`in_reply_to`, `references`, an attachment's `content_id`), declare `"format": "identifier"`.
+With Runtime 0.2.0b2 or later `pii` leaves them alone, so a `<id@host>` Message-ID or a
+digit-string IMAP id is not redacted as an address or a phone number. The same holds for the
+Outlook and IMAP connectors.
+
 Keep the agent's approval policy on (the default asks before every external call), and use
 `allowed_domains` (or the `ALGEN_TOOLS_GMAIL_ALLOWED_DOMAINS` setting, comma-separated) to bound
 who it can write to.
@@ -109,7 +118,9 @@ removed only after a line that clearly starts quoted history:
 - an attribution line, `On <date>, <name> wrote:` (Gmail, Apple Mail, Thunderbird; also wrapped
   over two lines, and in French, German, Spanish, Italian and Dutch);
 - an Outlook header block (`From:` then `Sent:`/`Date:` and `To:`/`Subject:`), optionally after
-  a `____` rule, or `-----Original Message-----`;
+  a `____` rule, or `-----Original Message-----`; Japanese (`差出人:`, `送信日時:`,
+  `宛先:`/`件名:`) and simplified Chinese (`发件人:`, `发送时间:`, `收件人:`/`主题:`) labels
+  count too, with an ASCII or full-width colon;
 - a run of `>` lines with nothing but blank lines after it (inline answers between quoted lines
   are kept);
 - a signature after the standard `-- ` line, or a final `Sent from my …` line.

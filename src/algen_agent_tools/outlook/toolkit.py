@@ -5,6 +5,7 @@ from typing import Annotated, Any
 from algen_agent_runtime.tools.authoring import Toolkit, read
 from pydantic import Field, SecretStr
 
+from algen_agent_tools._core.schema import Identifier
 from algen_agent_tools._env import SecretResolver, env_names, resolve_optional
 from algen_agent_tools.attachments import ArtifactSink, AttachmentPolicy
 from algen_agent_tools.documents.toolkit import DocumentReader
@@ -100,7 +101,7 @@ def outlook_toolkit(
         search: Annotated[str | None, Field(max_length=500)] = None,
         unread_only: bool = False,
         max_results: Annotated[int, Field(ge=1, le=50)] = 25,
-        page_token: Annotated[str | None, Field(max_length=4_000)] = None,
+        page_token: Annotated[Identifier | None, Field(max_length=4_000)] = None,
     ) -> OutlookMailboxPage:
         """List messages in one mailbox folder, newest first: sender, recipients, subject, a
         short preview, categories and attachments. search is Outlook search text (for example
@@ -129,6 +130,8 @@ def outlook_toolkit(
         provider="Outlook",
         attachments=artifact_loader is not None,
         allowed_domains=allowed_domains,
+        threading_note="On Outlook the reply is sent as a reply to that message, which must be "
+        "in this mailbox; Outlook sets References itself.",
     )
     return toolkit
 

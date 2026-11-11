@@ -93,6 +93,12 @@ class SmtpEmailSender:
         self._smtp_factory = smtp_factory or self._open_client
 
     async def send(self, message: EmailMessage, *, idempotency_key: str) -> EmailDeliveryReceipt:
+        if message.thread_id is not None:
+            raise not_attempted(
+                EmailDeliveryError(
+                    "SMTP has no provider threads; thread a reply with in_reply_to and references"
+                )
+            )
         attachments: list[tuple[EmailAttachmentReference, bytes]] = []
         total_bytes = 0
         for reference in message.attachments:

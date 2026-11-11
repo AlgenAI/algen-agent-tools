@@ -27,10 +27,12 @@ deleted or marked as seen. Send replies with [`smtp.send_email`](smtp.md).
   lists one folder, newest first, at most 100 per page. The filters are typed: `from_address`
   and `subject` are text the From and Subject headers contain, `text_contains` is text anywhere
   in the headers or body (IMAP `TEXT`), `since` and `before` are dates (`since` includes the
-  day, `before` excludes it), and every filter given must match. Search text is printable
-  ASCII; anything else is refused rather than sent. `gmail_query` is a Gmail search
-  (`X-GM-RAW`, for example `has:attachment newer_than:7d`) and is refused unless the server is
-  Gmail. There is no raw IMAP search. Each row has the sender, recipients, subject, a snippet of up to 200 characters, the
+  day, `before` excludes it), and every filter given must match. ASCII search text is sent
+  as a quoted string. Text that is not ASCII (`Grüße`, `注文`) is sent as a UTF-8 literal with
+  `SEARCH CHARSET UTF-8`, one search per such filter; a server that answers `BADCHARSET` is
+  a refusal (`PolicyDeniedError`), not a failure. Control characters are refused.
+  `gmail_query` is a Gmail search (`X-GM-RAW`, for example `has:attachment newer_than:7d`),
+  printable ASCII only, and is refused unless the server is Gmail. There is no raw IMAP search. Each row has the sender, recipients, subject, a snippet of up to 200 characters, the
   message's flags (and Gmail labels), its attachments with their `part_id`, and `sender_auth`.
   Attachments are listed as for [Gmail](gmail.md#tools): up to 20, with `attachment_count`,
   `attachments_truncated`, `is_inline` and `content_id` (from the part's `BODYSTRUCTURE`), and a
@@ -122,7 +124,8 @@ policy leaves alone with Runtime 0.1.0a19 or later; addresses in free text are s
   changes. The connector sends only `LOGIN`, `EXAMINE`, `UID SEARCH`, `UID FETCH` and
   `LOGOUT`.
 - Every argument is sent as an IMAP quoted string of printable ASCII, so input cannot end a
-  command or start a literal. Attachment ids must be part numbers listed in the message's own
+  command or start a literal; the one exception is non-ASCII search text, sent as a literal
+  whose length the connector declares. Attachment ids must be part numbers listed in the message's own
   structure.
 - Bodies and attachments are fetched by part with byte limits (`BODY.PEEK[<part>]<0.n>`).
 - One connection per toolkit, used by one call at a time; `imaplib` blocks, so each call runs in

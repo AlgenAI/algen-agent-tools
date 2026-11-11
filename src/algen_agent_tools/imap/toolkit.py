@@ -8,6 +8,7 @@ from algen_agent_runtime.exceptions.errors import ConfigurationError
 from algen_agent_runtime.tools.authoring import Toolkit, read
 from pydantic import Field, SecretStr, ValidationError
 
+from algen_agent_tools._core.schema import Identifier
 from algen_agent_tools._env import SecretResolver, env_names, resolve_optional, split_list
 from algen_agent_tools.attachments import ArtifactSink, AttachmentPolicy
 from algen_agent_tools.documents.toolkit import DocumentReader
@@ -32,7 +33,10 @@ DEFAULT_ENV = env_names(HOST, PORT, USERNAME, PASSWORD, FOLDERS, AUTHSERV_ID)
 LIST_TIMEOUT_SECONDS = 120
 
 _PRINTABLE = r"^[ -~]*$"
-"""Search text is sent as an IMAP quoted string, which holds printable ASCII only."""
+"""A Gmail query is sent as an IMAP quoted string, which holds printable ASCII only."""
+_SEARCH_TEXT = r"^[^\x00-\x1f\x7f]*$"
+"""Header and body search text: any text without control characters. ASCII is sent as a quoted
+string, anything else as a UTF-8 literal with ``CHARSET UTF-8``."""
 
 
 @dataclass(frozen=True)
@@ -102,23 +106,23 @@ def imap_toolkit(
     @toolkit.tool(read(timeout=LIST_TIMEOUT_SECONDS), audit_metadata=AUDIT_METADATA)
     async def list_messages(
         folder: Annotated[str, Field(min_length=1, max_length=200)] = "INBOX",
-        from_address: Annotated[str | None, Field(max_length=320, pattern=_PRINTABLE)] = None,
-        subject: Annotated[str | None, Field(max_length=200, pattern=_PRINTABLE)] = None,
+        from_address: Annotated[str | None, Field(max_length=320, pattern=_SEARCH_TEXT)] = None,
+        subject: Annotated[str | None, Field(max_length=200, pattern=_SEARCH_TEXT)] = None,
         since: date | None = None,
         before: date | None = None,
         unread_only: bool = False,
-        text_contains: Annotated[str | None, Field(max_length=200, pattern=_PRINTABLE)] = None,
+        text_contains: Annotated[str | None, Field(max_length=200, pattern=_SEARCH_TEXT)] = None,
         gmail_query: Annotated[str | None, Field(max_length=500, pattern=_PRINTABLE)] = None,
         max_results: Annotated[int, Field(ge=1, le=100)] = 25,
-        page_token: Annotated[str | None, Field(max_length=32)] = None,
+        page_token: Annotated[Identifier | None, Field(max_length=32)] = None,
     ) -> ImapMailboxPage:
         """List messages in one mailbox folder, newest first: sender, recipients, subject, a
         short snippet, flags and attachments. Every filter given must match: from_address and
-        subject are text the From and Subject headers contain (ASCII), since and before are
-        dates (YYYY-MM-DD; since includes the day, before excludes it), unread_only keeps
-        unseen mail, text_contains is text anywhere in the headers or body (ASCII), and
-        gmail_query is a Gmail search such as "has:attachment newer_than:7d" (Gmail servers
-        only). folder is a name from list_folders or a special-use name such as \\Sent. Reading
+        subject are text the From and Subject headers contain, since and before are dates
+        (YYYY-MM-DD; since includes the day, before excludes it), unread_only keeps unseen
+        mail, text_contains is text anywhere in the headers or body, and gmail_query is a Gmail
+        search such as "has:attachment newer_than:7d" (ASCII; Gmail servers only). Text that
+        is not ASCII needs a server that searches UTF-8; one that does not refuses it. folder is a name from list_folders or a special-use name such as \\Sent. Reading
         never marks a message as seen. Use next_page_token to continue."""
         mailbox: ImapClient = await toolkit.client()
         page: ImapMailboxPage = await mailbox.transport.list_messages(

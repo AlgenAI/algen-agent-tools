@@ -143,12 +143,18 @@ async def test_list_folders_returns_the_readable_folders_and_their_flags(
     ]
 
 
-@pytest.mark.parametrize("field", ["text_contains", "gmail_query"])
-async def test_search_text_must_be_printable_ascii(field: str) -> None:
+async def test_a_gmail_query_must_be_printable_ascii() -> None:
     toolkit = imap_toolkit()
     tool = next(t for t in toolkit.tools if t.definition.name == "imap.list_messages")
     with pytest.raises(ValidationError):
-        await tool.execute({field: "Rechnung für März"}, fake_tool_context(tool))
+        await tool.execute({"gmail_query": "Rechnung für März"}, fake_tool_context(tool))
+
+
+@pytest.mark.parametrize("field", ["from_address", "subject", "text_contains", "gmail_query"])
+async def test_search_text_cannot_hold_control_characters(field: str) -> None:
+    # Non-ASCII text is searched with CHARSET UTF-8 (tests/unit/test_imap_utf8.py).
+    toolkit = imap_toolkit()
+    tool = next(t for t in toolkit.tools if t.definition.name == "imap.list_messages")
     with pytest.raises(ValidationError):
         await tool.execute({field: 'a"\r\nb'}, fake_tool_context(tool))
 

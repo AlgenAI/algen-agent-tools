@@ -19,6 +19,14 @@ Send email over SMTP from the deployment's own address.
 and/or `html_body`. It returns the delivery receipt: provider, Message-ID, accepted and rejected
 recipients.
 
+To reply in a thread, pass `in_reply_to` (the `message_id_header` of the message replied to)
+and `references` (that message's `references`, oldest first), as `get_message` returns them on
+every mail connector. They are sent as the `In-Reply-To` and `References` headers; the
+connector adds `in_reply_to` at the end of References when it is not there. Each is an
+RFC 5322 Message-ID (`<id@host>`, at most 980 characters), with at most 100 references
+(20,000 characters in all); anything else is refused before sending. Keep the subject
+(`Re: ...`) so mail clients group the reply.
+
 ## Agent configuration
 
 The default guardrails work: no guardrail setting is needed.

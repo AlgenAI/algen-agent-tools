@@ -8,6 +8,59 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Changed
+
+- Tool contract (additive): id fields declare `"format": "identifier"`, the annotation Runtime
+  0.2.0b2's `pii` guardrail honours (Runtime RT-B13, RT-G08). With it, a digit-string chat or
+  message id is no longer read as a phone, Aadhaar or card number, so a ten-digit Telegram
+  private-chat id does not refuse `send_message`, and `<id@host>` Message-IDs reach the model.
+  Free text (message text, subjects, bodies, names) is still screened. Runtime 0.1.0a23 and
+  0.2.0b1 ignore the annotation, so the supported range is unchanged.
+  - Inputs: every id built with `id_field` (`conversation_id`, `message_id`,
+    `reply_to_message_id`, `thread_id`, `attachment_id` of the messaging and mail tools), and
+    `page_token` of `list_messages` on Telegram, Discord, Gmail, Outlook and IMAP.
+  - Results: `Participant.id`, `Conversation.id`, `InboundMessage.message_id` and
+    `reply_to_message_id`, `MessageAttachment.attachment_id`, `DeliveryReceipt` ids,
+    `next_page_token`; mail `provider_message_id`, `thread_id`, `provider_attachment_id`,
+    `part_id`, `content_id`, `message_id_header`, `in_reply_to`, `references`, and
+    `EmailDeliveryReceipt.provider_message_id`.
+  - `connectors.json` is regenerated with the annotations.
+- Tool contract (additive): `send_email` on SMTP, Gmail and Outlook takes optional `in_reply_to`
+  and `references` (RFC 5322 Message-IDs, at most 980 characters each, at most 100 references and
+  20,000 characters in all) so replies thread. They are sent as `In-Reply-To` and `References`
+  headers, with `in_reply_to` added at the end of References, and long ids are folded, never
+  encoded. `gmail.send_email` also takes `thread_id`, sent as `threadId`; it needs `in_reply_to`.
+  `outlook.send_email` with `in_reply_to` replies through Graph `messages/{id}/reply` to the
+  mailbox's message with that Message-ID, and is refused, not attempted, when no such message is
+  found. SMTP and Outlook refuse a `thread_id`. New exports: `MessageId`, `ThreadedOutgoingEmail`,
+  `ThreadedOutgoingEmailWithAttachments`, and `add_send_tool(thread_ids=, threading_note=)`.
+  (TL-G12)
+- Tool contract: `imap.list_messages` accepts non-ASCII `from_address`, `subject` and
+  `text_contains`, searched with `SEARCH CHARSET UTF-8` and a literal; control characters are still
+  refused. A server without UTF-8 search refuses it with `PolicyDeniedError`. `FakeImapServer` gains
+  `utf8_search`. (TL-G16)
+- Tool contract (additive): `documents.extract_text` takes `start_page` (1 to 10,000) and
+  `max_pages` (1 to 50) to read a PDF past page 50 in windows. The result's new `page_window`
+  (`first`, `last`; `None` for other formats) gives the pages read, and pages before or after the
+  window are reported as `document.pages_skipped`. A `start_page` other than 1 is refused for
+  formats other than PDF. The defaults keep the current behaviour. (TL-G04)
+- DOCX inspection reports unaccepted tracked changes as a `document.tracked_changes` finding
+  (security, medium, so the document is at least `review`), with the number of insertions,
+  deletions and moves. The text reads the changes as accepted. (TL-G01)
+- Quoted-history removal (`include="latest"`) recognises Japanese and simplified Chinese Outlook
+  header blocks, with ASCII or full-width colons. (TL-G14)
+
+### Fixed
+
+- `FakeImapServer` serves 8bit bodies in any charset; before, such a message failed the whole
+  listing with `UnicodeEncodeError`. BODYSTRUCTURE sizes now equal the served bytes. (TL-B01)
+- DOCX text moved with tracked changes (`w:moveFrom`) no longer appears twice; only its new place
+  is read.
+
+### Documentation
+
+- README and the docs page header state Runtime `>=0.1.0a23,<0.3`, matching `pyproject.toml`. (D1)
+
 ## [0.2.0a11] - 2026-11-11
 
 Runs on Runtime 0.2: the supported range is `algen-agent-runtime>=0.1.0a23,<0.3`, tested on

@@ -258,3 +258,46 @@ def test_document_page_background_is_respected() -> None:
         archive.writestr("word/document.xml", document)
 
     assert _extract(buffer.getvalue()).disposition == DocumentDisposition.PASS
+
+
+def _tracked(kind: str, text: str) -> str:
+    tag = "w:delText" if kind == "del" else "w:t"
+    return f'<w:{kind} w:id="1" w:author="Ana"><w:r><{tag}>{text}</{tag}></w:r></w:{kind}>'
+
+
+def test_tracked_changes_are_reported_and_read_as_accepted() -> None:
+    # A pending insertion, a deletion and a move (Word writes moved-away text as w:t).
+    extracted = _extract(
+        _docx(
+            f"<w:p>{_run('Fee:')}{_tracked('del', 'USD 900')}{_tracked('ins', 'USD 1,200')}</w:p>"
+            f"<w:p>{_tracked('moveFrom', 'Clause 7')}{_run('Term: 12 months')}</w:p>"
+            f"<w:p>{_tracked('moveTo', 'Clause 7')}</w:p>"
+            # A paragraph mark's own revision holds no text and is not counted.
+            "<w:p><w:pPr><w:rPr><w:ins w:id='9' w:author='Ana'/></w:rPr></w:pPr></w:p>"
+        )
+    )
+
+    assert extracted.sanitized_text == "Fee: USD 1,200\nTerm: 12 months\nClause 7"
+    assert extracted.disposition == DocumentDisposition.REVIEW
+    [finding] = [item for item in extracted.findings if item.kind == "document.tracked_changes"]
+    assert finding.severity == "medium"
+    assert finding.category == "security"
+    assert "1 insertion, 1 deletion, 1 move" in finding.message
+
+
+def test_tracked_changes_in_headers_and_footers_are_counted() -> None:
+    footer = f'<w:ftr xmlns:w="{_W_NS}"><w:p>{_tracked("ins", "Draft")}{_tracked("ins", "2")}</w:p></w:ftr>'
+    extracted = _extract(
+        _docx(f"<w:p>{_run('Body')}</w:p>", extra={"word/footer1.xml": footer.encode()})
+    )
+
+    [finding] = [item for item in extracted.findings if item.kind == "document.tracked_changes"]
+    assert "(2 insertions)" in finding.message
+    assert extracted.sanitized_text == "Body\nDraft 2"
+
+
+def test_a_document_without_tracked_changes_has_no_finding() -> None:
+    extracted = _extract(_docx(f"<w:p>{_run('Final text')}</w:p>"))
+
+    assert extracted.disposition == DocumentDisposition.PASS
+    assert not extracted.findings

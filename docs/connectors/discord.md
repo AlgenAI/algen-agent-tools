@@ -78,3 +78,7 @@ agents:
 security:
   trusted_plugin_prefixes: [algen_agent_tools]
 ```
+
+Channel, message, user and attachment ids (snowflakes), in the tools' arguments and results,
+declare `"format": "identifier"`, so with Runtime 0.2.0b2 or later the default `pii` guardrail
+does not read one as a card, phone or Aadhaar number. Message text is still screened.
