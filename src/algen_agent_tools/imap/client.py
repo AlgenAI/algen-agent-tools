@@ -50,8 +50,12 @@ from algen_agent_tools.mail.inbound import (
     InboundEmailAttachment,
     InboundEmailDetail,
     InboundEmailSummary,
+    attachment_manifest,
     bounded_body,
+    generated_filename,
     html_to_text,
+    is_inline_part,
+    normalized_content_id,
     thread_headers,
     thread_of,
 )
@@ -194,6 +198,25 @@ def _auth_results(headers: Message) -> list[str]:
         return [str(value) for value in headers.get_all("Authentication-Results") or ()]
     except (ValueError, TypeError, IndexError, AttributeError, LookupError):
         return []
+
+
+def _attachments(parts: list[BodyPart]) -> dict[str, Any]:
+    """The attachment fields of a summary: every attachment part, the first 20 listed."""
+    found: list[InboundEmailAttachment] = []
+    for position, part in enumerate(attachment_parts(parts), 1):
+        content_id = normalized_content_id(part.content_id)
+        found.append(
+            InboundEmailAttachment(
+                provider_attachment_id=part.section,
+                part_id=part.section,
+                filename=part.filename or generated_filename(position, part.media_type),
+                media_type=part.media_type,
+                size=part.size * 3 // 4 if part.encoding == "base64" else part.size,
+                is_inline=is_inline_part(part.disposition, content_id),
+                content_id=content_id,
+            )
+        )
+    return attachment_manifest(found)
 
 
 class ImapMailboxClient:
@@ -452,16 +475,7 @@ class ImapMailboxClient:
                     *strings(response.get("X-GM-LABELS")),
                 )
             )[:50],
-            "attachments": tuple(
-                InboundEmailAttachment(
-                    provider_attachment_id=part.section,
-                    part_id=part.section,
-                    filename=part.filename or "message.eml",
-                    media_type=part.media_type,
-                    size=part.size * 3 // 4 if part.encoding == "base64" else part.size,
-                )
-                for part in attachment_parts(parts)[:20]
-            ),
+            **_attachments(parts),
             "sender_auth": topmost_verdict(_auth_results(headers), trusted)
             if trusted
             else "unknown",
@@ -677,7 +691,10 @@ class ImapMailboxClient:
             if not responses:
                 raise EmailDeliveryError("IMAP message was not found")
             parts = attachment_parts(body_parts(responses[0].get("BODYSTRUCTURE")))
-            part = next((item for item in parts if item.section == attachment), None)
+            position, part = next(
+                ((n, item) for n, item in enumerate(parts, 1) if item.section == attachment),
+                (0, None),
+            )
             if part is None:
                 raise EmailDeliveryError("IMAP message has no such attachment")
             if part.size > limit:
@@ -689,7 +706,7 @@ class ImapMailboxClient:
             if len(content) > maximum:
                 raise EmailDeliveryError("IMAP attachment exceeds the configured size limit")
             return AttachmentUpload(
-                filename=part.filename or "message.eml",
+                filename=part.filename or generated_filename(position, part.media_type),
                 media_type=part.media_type,
                 data=content,
             )

@@ -241,7 +241,10 @@ async def test_list_messages_pages_newest_first_without_marking_anything_seen(
         "filename": "cv.pdf",
         "media_type": "application/pdf",
         "part_id": "2",
+        "is_inline": False,
+        "content_id": None,
     }
+    assert (row["attachment_count"], row["attachments_truncated"]) == (1, False)
 
     assert first.flags == []
     # Only reads: folders open read-only (EXAMINE) and bodies are fetched with BODY.PEEK.
@@ -500,7 +503,7 @@ async def test_a_forwarded_email_is_one_attachment() -> None:
     mailbox = client(server)
     [row] = (await mailbox.list_messages()).messages
     assert [(a.part_id, a.filename, a.media_type) for a in row.attachments] == [
-        ("2", "message.eml", "message/rfc822")
+        ("2", "attachment-1.eml", "message/rfc822")
     ]
     upload = await mailbox.get_attachment(row.provider_message_id, "2")
     assert b"Please consider this candidate." in upload.data

@@ -3,8 +3,11 @@ reads."""
 
 from __future__ import annotations
 
+import mimetypes
 import re
+from collections.abc import Sequence
 from email.utils import getaddresses
+from functools import cache
 from html.parser import HTMLParser
 from typing import Annotated, Any, Literal
 
@@ -12,6 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 MAX_BODY_CHARS = 100_000
 MAX_THREAD_MESSAGES = 50
+MAX_ATTACHMENTS = 20
+"""The most attachments a message summary lists; ``attachment_count`` still counts them all."""
 _MESSAGE_ID = re.compile(r"<[^<>\s]{1,995}>")
 
 
@@ -25,6 +30,18 @@ class InboundEmailAttachment(BaseModel):
     size: int = Field(default=0, ge=0)
     part_id: str | None = Field(default=None, max_length=64)
     """The attachment's stable place in the message; pass it to ``get_attachment``."""
+    is_inline: bool = Field(
+        default=False,
+        description="The message shows this part in its body (an inline Content-Disposition, "
+        "or a Content-ID without one), such as a signature logo or a pasted picture. Inline "
+        "parts can still be real documents: some mail clients mark attached PDFs inline.",
+    )
+    content_id: str | None = Field(
+        default=None,
+        max_length=998,
+        description="The part's Content-ID without angle brackets, as the HTML body's cid: "
+        "links name it.",
+    )
 
 
 _ADDRESS = re.compile(r"[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+")
@@ -62,6 +79,16 @@ class InboundEmailSummary(BaseModel):
     snippet: str = Field(default="", max_length=2_000)
     labels: tuple[str, ...] = ()
     attachments: tuple[InboundEmailAttachment, ...] = ()
+    attachment_count: int = Field(
+        default=0,
+        ge=0,
+        description="Every attachment part of the message, including any not listed in "
+        "attachments.",
+    )
+    attachments_truncated: bool = Field(
+        default=False,
+        description="The message has more attachments than attachments lists.",
+    )
     sender_auth: Literal["pass", "fail", "unknown"] = "unknown"
     """The receiving server's SPF/DKIM/DMARC verdict on the sender, when the connector can read
     it; see :mod:`algen_agent_tools.mail.sender_auth`. ``unknown`` is never a failure."""
@@ -73,6 +100,10 @@ class InboundEmailSummary(BaseModel):
         if not isinstance(data, dict):
             return data
         data = dict(data)
+        listed = len(data.get("attachments") or ())
+        data.setdefault("attachment_count", listed)
+        if "attachments_truncated" not in data and isinstance(data["attachment_count"], int):
+            data["attachments_truncated"] = data["attachment_count"] > listed
         if "sender_address" not in data:
             found = _addresses(str(data.get("sender") or ""))
             if found:
@@ -87,6 +118,78 @@ class InboundEmailSummary(BaseModel):
                 address for _, address in _addresses(str(data.get("cc") or ""))
             )[:100]
         return data
+
+    @model_validator(mode="after")
+    def _counted(self) -> InboundEmailSummary:
+        if self.attachment_count < len(self.attachments):
+            raise ValueError("attachment_count cannot be less than the attachments listed")
+        return self
+
+
+# Types the standard library's built-in table does not name.
+_EXTENSIONS = {
+    "application/msword": ".doc",
+    "application/vnd.ms-excel": ".xls",
+    "application/vnd.ms-outlook": ".msg",
+    "application/vnd.ms-powerpoint": ".ppt",
+    "application/vnd.oasis.opendocument.presentation": ".odp",
+    "application/vnd.oasis.opendocument.spreadsheet": ".ods",
+    "application/vnd.oasis.opendocument.text": ".odt",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/rtf": ".rtf",
+    "image/heic": ".heic",
+    "image/webp": ".webp",
+    "text/calendar": ".ics",
+    "text/csv": ".csv",
+    "text/markdown": ".md",
+    "text/rtf": ".rtf",
+}
+
+
+@cache
+def _builtin_types() -> mimetypes.MimeTypes:
+    # The built-in table only, so a name does not depend on the host's mime.types files.
+    return mimetypes.MimeTypes()
+
+
+def generated_filename(position: int, media_type: str) -> str:
+    """The name a connector gives the ``position``-th (from 1) attachment part of a message when
+    the part declares none, typed from its media type: ``attachment-2.pdf``. The same part gets
+    the same name in a listing and in ``get_attachment``."""
+    media_type = media_type.partition(";")[0].strip().casefold()
+    extension = (
+        _EXTENSIONS.get(media_type)
+        or _builtin_types().guess_extension(media_type, strict=False)
+        or ".bin"
+    )
+    return f"attachment-{position}{extension}"
+
+
+def normalized_content_id(value: str | None) -> str | None:
+    """A Content-ID header value without its angle brackets, whitespace or control characters,
+    or ``None`` when there is none."""
+    cleaned = re.sub(r"[\x00-\x20\x7f]", "", value or "").removeprefix("<").removesuffix(">")
+    return cleaned[:998] or None
+
+
+def is_inline_part(disposition: str | None, content_id: str | None) -> bool:
+    """Whether a part is shown in the message body: its Content-Disposition says ``inline``, or
+    it has a Content-ID and no disposition (an image a ``multipart/related`` body refers to)."""
+    disposition = (disposition or "").strip().casefold()
+    return disposition == "inline" or (not disposition and content_id is not None)
+
+
+def attachment_manifest(found: Sequence[InboundEmailAttachment]) -> dict[str, Any]:
+    """The attachment fields of an :class:`InboundEmailSummary` from every attachment part of a
+    message: the first :data:`MAX_ATTACHMENTS` of them, their total count and whether some were
+    left out."""
+    return {
+        "attachments": tuple(found[:MAX_ATTACHMENTS]),
+        "attachment_count": len(found),
+        "attachments_truncated": len(found) > MAX_ATTACHMENTS,
+    }
 
 
 class InboundEmailDetail(InboundEmailSummary):

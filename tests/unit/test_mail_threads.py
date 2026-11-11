@@ -150,6 +150,8 @@ def outlook(value: list[dict[str, Any]], **extra: Any) -> tuple[OutlookMailboxCl
         if request.url.host == "login.microsoftonline.com":
             return httpx.Response(200, json={"access_token": "token", "expires_in": 3600})
         requests.append(request)
+        if request.url.path.endswith("/attachments"):
+            return httpx.Response(200, json={"value": []})
         return httpx.Response(200, json={"value": value, **extra})
 
     client = OutlookMailboxClient(

@@ -24,8 +24,11 @@ from algen_agent_tools.mail.inbound import (
     InboundEmailAttachment,
     InboundEmailDetail,
     InboundEmailSummary,
+    attachment_manifest,
     bounded_body,
+    generated_filename,
     html_to_text,
+    normalized_content_id,
     thread_headers,
     thread_of,
 )
@@ -48,6 +51,14 @@ _SUMMARY_FIELDS = (
 )
 _DETAIL_FIELDS = f"{_SUMMARY_FIELDS},ccRecipients,body,internetMessageId,internetMessageHeaders"
 _TEXT_BODY = 'outlook.body-content-type="text"'
+_ATTACHMENT_FIELDS = "id,name,contentType,size,isInline"
+_ATTACHMENT_PAGES = 5
+"""The most pages of attachment descriptors a summary reads to count a message's attachments."""
+
+
+def _name(item: Mapping[str, Any]) -> str:
+    """An attachment's declared file name without any path, or an empty string."""
+    return re.split(r"[/\\]", str(item.get("name") or ""))[-1].strip()
 
 
 class OutlookSettings(BaseModel):
@@ -261,25 +272,50 @@ class OutlookMailboxClient:
             "_size": len(payload),
         }
 
-    async def _attachments(self, message_id: str) -> tuple[InboundEmailAttachment, ...]:
-        response = await self._http.get(
-            self._url(f"messages/{_segment(message_id)}/attachments"),
-            headers=await self._headers(),
-            params={"$select": "id,name,contentType,size"},
-        )
-        response.raise_for_status()
-        return tuple(
-            InboundEmailAttachment(
-                provider_attachment_id=str(item["id"]),
-                filename=re.split(r"[/\\]", str(item.get("name") or "attachment"))[-1]
-                or "attachment",
-                media_type=str(item.get("contentType") or "application/octet-stream"),
-                size=max(0, int(item.get("size") or 0)),
-            )
-            for item in response.json().get("value", [])[:20]
-        )
+    async def _attachment_items(self, message_id: str) -> tuple[list[Mapping[str, Any]], bool]:
+        """The message's attachment descriptors, in Graph's order, following at most
+        :data:`_ATTACHMENT_PAGES` pages, and whether Graph had more."""
+        url = self._url(f"messages/{_segment(message_id)}/attachments")
+        params: dict[str, str] | None = {"$select": _ATTACHMENT_FIELDS}
+        items: list[Mapping[str, Any]] = []
+        for _ in range(_ATTACHMENT_PAGES):
+            response = await self._http.get(url, headers=await self._headers(), params=params)
+            response.raise_for_status()
+            listing = response.json()
+            items.extend(item for item in listing.get("value", []) if isinstance(item, Mapping))
+            next_link = listing.get("@odata.nextLink")
+            if not next_link:
+                return items, False
+            url, params = str(next_link), None  # Graph's link carries the query
+        return items, True
 
-    async def _summary(self, item: Mapping[str, Any]) -> dict[str, Any]:
+    async def _attachments(self, message_id: str) -> dict[str, Any]:
+        items, more = await self._attachment_items(message_id)
+        found: list[InboundEmailAttachment] = []
+        for position, item in enumerate(items, 1):
+            media_type = str(item.get("contentType") or "application/octet-stream")
+            content_id = normalized_content_id(str(item.get("contentId") or ""))
+            found.append(
+                InboundEmailAttachment(
+                    provider_attachment_id=str(item["id"]),
+                    filename=_name(item) or generated_filename(position, media_type),
+                    media_type=media_type,
+                    size=max(0, int(item.get("size") or 0)),
+                    is_inline=bool(item.get("isInline")),
+                    content_id=content_id,
+                )
+            )
+        manifest = attachment_manifest(found)
+        if more:  # Graph has further pages: the count is a lower bound
+            manifest["attachments_truncated"] = True
+        return manifest
+
+    async def _summary(
+        self, item: Mapping[str, Any], *, inline_too: bool = False
+    ) -> dict[str, Any]:
+        """``inline_too`` reads the attachments even when ``hasAttachments`` is false, which Graph
+        reports for a message whose only attachments are inline (a pasted picture, or a PDF
+        Apple Mail marked inline). A listing does not, to keep to one request per message."""
         message_id = str(item["id"])
         return {
             "provider_message_id": message_id,
@@ -290,9 +326,11 @@ class OutlookMailboxClient:
             "received_at_ms": _received_ms(item.get("receivedDateTime")),
             "snippet": str(item.get("bodyPreview") or "")[:2_000],
             "labels": tuple(str(label) for label in item.get("categories") or ()),
-            "attachments": await self._attachments(message_id)
-            if item.get("hasAttachments")
-            else (),
+            **(
+                await self._attachments(message_id)
+                if inline_too or item.get("hasAttachments")
+                else {}
+            ),
         }
 
     async def list_messages(
@@ -346,7 +384,7 @@ class OutlookMailboxClient:
             for header in item.get("internetMessageHeaders") or ()
         }
         return InboundEmailDetail(
-            **await self._summary(item),
+            **await self._summary(item, inline_too=True),
             cc=_addresses(item.get("ccRecipients")),
             text_body=text,
             body_truncated=truncated,
@@ -421,12 +459,14 @@ class OutlookMailboxClient:
             if int(item.get("size") or 0) > self._settings.max_download_bytes:
                 raise EmailDeliveryError("Outlook attachment exceeds the configured size limit")
             data = base64.b64decode(str(item["contentBytes"]), validate=True)
-            name = re.split(r"[/\\]", str(item.get("name") or ""))[-1] or "attachment"
-            return AttachmentUpload(
-                filename=name,
-                media_type=str(item.get("contentType") or "application/octet-stream"),
-                data=data,
-            )
+            media_type = str(item.get("contentType") or "application/octet-stream")
+            name = _name(item)
+            if not name:  # the name the listing gave it, from its place in the message
+                items, _ = await self._attachment_items(provider_message_id)
+                ids = [str(entry.get("id")) for entry in items]
+                position = ids.index(attachment) + 1 if attachment in ids else 1
+                name = generated_filename(position, media_type)
+            return AttachmentUpload(filename=name, media_type=media_type, data=data)
         except EmailDeliveryError:
             raise
         except (httpx.HTTPError, KeyError, TypeError, ValueError, binascii.Error) as exc:

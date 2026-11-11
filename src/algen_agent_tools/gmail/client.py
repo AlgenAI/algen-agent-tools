@@ -23,8 +23,12 @@ from algen_agent_tools.mail.inbound import (
     InboundEmailAttachment,
     InboundEmailDetail,
     InboundEmailSummary,
+    attachment_manifest,
     bounded_body,
+    generated_filename,
     html_to_text,
+    is_inline_part,
+    normalized_content_id,
     thread_headers,
     thread_of,
 )
@@ -77,24 +81,65 @@ def _filename(part: Mapping[str, Any]) -> str:
     return re.split(r"[/\\]", str(part.get("filename") or ""))[-1]
 
 
-def _gmail_attachments(payload: Mapping[str, Any]) -> tuple[InboundEmailAttachment, ...]:
-    attachments: list[InboundEmailAttachment] = []
+def _part_header(part: Mapping[str, Any], name: str) -> str | None:
+    for item in part.get("headers") or ():
+        if isinstance(item, Mapping) and str(item.get("name", "")).casefold() == name:
+            return str(item.get("value", ""))
+    return None
+
+
+def _disposition(part: Mapping[str, Any]) -> str:
+    return (_part_header(part, "content-disposition") or "").partition(";")[0].strip().casefold()
+
+
+def _media_type(part: Mapping[str, Any]) -> str:
+    return str(part.get("mimeType") or "application/octet-stream")
+
+
+def _is_body_text(part: Mapping[str, Any]) -> bool:
+    """A part that holds the message's own text rather than a file."""
+    return (
+        _media_type(part).casefold() in ("text/plain", "text/html")
+        and not _filename(part)
+        and _disposition(part) != "attachment"
+    )
+
+
+def _attachment_parts(payload: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """Every leaf part of a message that is a file, named or not, inline or not, in order."""
+    found: list[Mapping[str, Any]] = []
     for part in _parts(payload):
         body = part.get("body") or {}
-        attachment_id = str(body.get("attachmentId") or "")
-        filename = _filename(part)
-        if not attachment_id or not filename:
+        if (
+            part.get("parts")
+            or _media_type(part).casefold().startswith("multipart/")
+            or not (body.get("attachmentId") or body.get("data"))
+            or _is_body_text(part)
+            or not (body.get("attachmentId") or part.get("partId"))
+        ):
             continue
+        found.append(part)
+    return found
+
+
+def _gmail_attachments(payload: Mapping[str, Any]) -> dict[str, Any]:
+    attachments: list[InboundEmailAttachment] = []
+    for position, part in enumerate(_attachment_parts(payload), 1):
+        body = part.get("body") or {}
+        media_type = _media_type(part)
+        content_id = normalized_content_id(_part_header(part, "content-id"))
         attachments.append(
             InboundEmailAttachment(
-                provider_attachment_id=attachment_id,
-                filename=filename,
-                media_type=str(part.get("mimeType") or "application/octet-stream"),
+                provider_attachment_id=str(body.get("attachmentId") or part.get("partId")),
+                filename=_filename(part) or generated_filename(position, media_type),
+                media_type=media_type,
                 size=max(0, int(body.get("size") or 0)),
                 part_id=str(part.get("partId") or "")[:64] or None,
+                is_inline=is_inline_part(_disposition(part) or None, content_id),
+                content_id=content_id,
             )
         )
-    return tuple(attachments[:20])
+    return attachment_manifest(attachments)
 
 
 def _decode(data: str) -> bytes:
@@ -111,7 +156,7 @@ def _body_text(payload: Mapping[str, Any]) -> str:
     for part in _parts(payload):
         media_type = str(part.get("mimeType") or "").casefold()
         data = (part.get("body") or {}).get("data")
-        if media_type in found and data and not _filename(part):
+        if media_type in found and data and _is_body_text(part):
             found[media_type].append(_decode(str(data)).decode("utf-8", errors="replace"))
     plain = [text.replace("\r\n", "\n").strip() for text in found["text/plain"][:MAX_TEXT_PARTS]]
     if any(plain):
@@ -137,7 +182,7 @@ def _summary_fields(payload: Mapping[str, Any]) -> dict[str, Any]:
         "received_at_ms": max(0, int(payload.get("internalDate", 0))),
         "snippet": str(payload.get("snippet", ""))[:2_000],
         "labels": tuple(str(item) for item in payload.get("labelIds", [])),
-        "attachments": _gmail_attachments(payload.get("payload", {})),
+        **_gmail_attachments(payload.get("payload", {})),
         "sender_auth": topmost_verdict(
             [
                 str(item.get("value", ""))
@@ -350,21 +395,26 @@ class GmailMailboxClient:
             payload = await self._message(provider_message_id)
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
             raise EmailDeliveryError(failure("Gmail", "attachment download", exc)) from exc
-        for part in _parts(payload.get("payload", {})):
+        for position, part in enumerate(_attachment_parts(payload.get("payload", {})), 1):
             body = part.get("body") or {}
             attachment_id = str(body.get("attachmentId") or "")
-            filename = _filename(part)
-            if (
-                attachment_id
-                and filename
-                and attachment in (str(part.get("partId")), attachment_id)
-            ):
+            if attachment not in (str(part.get("partId")), attachment_id):
+                continue
+            if attachment_id:
                 data = await self.download_attachment(provider_message_id, attachment_id)
-                return AttachmentUpload(
-                    filename=filename,
-                    media_type=str(part.get("mimeType") or "application/octet-stream"),
-                    data=data,
-                )
+            else:  # a small part Gmail returns with the message itself
+                try:
+                    data = _decode(str(body["data"]))
+                except (KeyError, ValueError) as exc:
+                    raise EmailDeliveryError(failure("Gmail", "attachment download", exc)) from exc
+                if len(data) > self._settings.max_attachment_bytes:
+                    raise EmailDeliveryError("Gmail attachment exceeds the configured size limit")
+            media_type = _media_type(part)
+            return AttachmentUpload(
+                filename=_filename(part) or generated_filename(position, media_type),
+                media_type=media_type,
+                data=data,
+            )
         raise EmailDeliveryError("Gmail message has no such attachment")
 
     async def download_attachment(

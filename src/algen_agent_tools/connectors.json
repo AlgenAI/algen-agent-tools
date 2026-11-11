@@ -3493,16 +3493,40 @@
             "additionalProperties": false,
             "description": "One message with its body as bounded plain text.",
             "properties": {
+              "attachment_count": {
+                "default": 0,
+                "description": "Every attachment part of the message, including any not listed in attachments.",
+                "minimum": 0,
+                "type": "integer"
+              },
               "attachments": {
                 "default": [],
                 "items": {
                   "additionalProperties": false,
                   "description": "Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand.",
                   "properties": {
+                    "content_id": {
+                      "anyOf": [
+                        {
+                          "maxLength": 998,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The part's Content-ID without angle brackets, as the HTML body's cid: links name it."
+                    },
                     "filename": {
                       "maxLength": 255,
                       "minLength": 1,
                       "type": "string"
+                    },
+                    "is_inline": {
+                      "default": false,
+                      "description": "The message shows this part in its body (an inline Content-Disposition, or a Content-ID without one), such as a signature logo or a pasted picture. Inline parts can still be real documents: some mail clients mark attached PDFs inline.",
+                      "type": "boolean"
                     },
                     "media_type": {
                       "default": "application/octet-stream",
@@ -3540,6 +3564,11 @@
                   "type": "object"
                 },
                 "type": "array"
+              },
+              "attachments_truncated": {
+                "default": false,
+                "description": "The message has more attachments than attachments lists.",
+                "type": "boolean"
               },
               "body_truncated": {
                 "default": false,
@@ -3751,16 +3780,40 @@
                   "additionalProperties": false,
                   "description": "One message with its body as bounded plain text.",
                   "properties": {
+                    "attachment_count": {
+                      "default": 0,
+                      "description": "Every attachment part of the message, including any not listed in attachments.",
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "attachments": {
                       "default": [],
                       "items": {
                         "additionalProperties": false,
                         "description": "Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand.",
                         "properties": {
+                          "content_id": {
+                            "anyOf": [
+                              {
+                                "maxLength": 998,
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "The part's Content-ID without angle brackets, as the HTML body's cid: links name it."
+                          },
                           "filename": {
                             "maxLength": 255,
                             "minLength": 1,
                             "type": "string"
+                          },
+                          "is_inline": {
+                            "default": false,
+                            "description": "The message shows this part in its body (an inline Content-Disposition, or a Content-ID without one), such as a signature logo or a pasted picture. Inline parts can still be real documents: some mail clients mark attached PDFs inline.",
+                            "type": "boolean"
                           },
                           "media_type": {
                             "default": "application/octet-stream",
@@ -3798,6 +3851,11 @@
                         "type": "object"
                       },
                       "type": "array"
+                    },
+                    "attachments_truncated": {
+                      "default": false,
+                      "description": "The message has more attachments than attachments lists.",
+                      "type": "boolean"
                     },
                     "body_truncated": {
                       "default": false,
@@ -4017,16 +4075,40 @@
                 "items": {
                   "additionalProperties": false,
                   "properties": {
+                    "attachment_count": {
+                      "default": 0,
+                      "description": "Every attachment part of the message, including any not listed in attachments.",
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "attachments": {
                       "default": [],
                       "items": {
                         "additionalProperties": false,
                         "description": "Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand.",
                         "properties": {
+                          "content_id": {
+                            "anyOf": [
+                              {
+                                "maxLength": 998,
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "The part's Content-ID without angle brackets, as the HTML body's cid: links name it."
+                          },
                           "filename": {
                             "maxLength": 255,
                             "minLength": 1,
                             "type": "string"
+                          },
+                          "is_inline": {
+                            "default": false,
+                            "description": "The message shows this part in its body (an inline Content-Disposition, or a Content-ID without one), such as a signature logo or a pasted picture. Inline parts can still be real documents: some mail clients mark attached PDFs inline.",
+                            "type": "boolean"
                           },
                           "media_type": {
                             "default": "application/octet-stream",
@@ -4064,6 +4146,11 @@
                         "type": "object"
                       },
                       "type": "array"
+                    },
+                    "attachments_truncated": {
+                      "default": false,
+                      "description": "The message has more attachments than attachments lists.",
+                      "type": "boolean"
                     },
                     "labels": {
                       "default": [],
@@ -4545,16 +4632,40 @@
             "additionalProperties": false,
             "description": "One message with its body as bounded plain text.",
             "properties": {
+              "attachment_count": {
+                "default": 0,
+                "description": "Every attachment part of the message, including any not listed in attachments.",
+                "minimum": 0,
+                "type": "integer"
+              },
               "attachments": {
                 "default": [],
                 "items": {
                   "additionalProperties": false,
                   "description": "Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand.",
                   "properties": {
+                    "content_id": {
+                      "anyOf": [
+                        {
+                          "maxLength": 998,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The part's Content-ID without angle brackets, as the HTML body's cid: links name it."
+                    },
                     "filename": {
                       "maxLength": 255,
                       "minLength": 1,
                       "type": "string"
+                    },
+                    "is_inline": {
+                      "default": false,
+                      "description": "The message shows this part in its body (an inline Content-Disposition, or a Content-ID without one), such as a signature logo or a pasted picture. Inline parts can still be real documents: some mail clients mark attached PDFs inline.",
+                      "type": "boolean"
                     },
                     "media_type": {
                       "default": "application/octet-stream",
@@ -4592,6 +4703,11 @@
                   "type": "object"
                 },
                 "type": "array"
+              },
+              "attachments_truncated": {
+                "default": false,
+                "description": "The message has more attachments than attachments lists.",
+                "type": "boolean"
               },
               "body_truncated": {
                 "default": false,
@@ -4803,16 +4919,40 @@
                   "additionalProperties": false,
                   "description": "One message with its body as bounded plain text.",
                   "properties": {
+                    "attachment_count": {
+                      "default": 0,
+                      "description": "Every attachment part of the message, including any not listed in attachments.",
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "attachments": {
                       "default": [],
                       "items": {
                         "additionalProperties": false,
                         "description": "Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand.",
                         "properties": {
+                          "content_id": {
+                            "anyOf": [
+                              {
+                                "maxLength": 998,
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "The part's Content-ID without angle brackets, as the HTML body's cid: links name it."
+                          },
                           "filename": {
                             "maxLength": 255,
                             "minLength": 1,
                             "type": "string"
+                          },
+                          "is_inline": {
+                            "default": false,
+                            "description": "The message shows this part in its body (an inline Content-Disposition, or a Content-ID without one), such as a signature logo or a pasted picture. Inline parts can still be real documents: some mail clients mark attached PDFs inline.",
+                            "type": "boolean"
                           },
                           "media_type": {
                             "default": "application/octet-stream",
@@ -4850,6 +4990,11 @@
                         "type": "object"
                       },
                       "type": "array"
+                    },
+                    "attachments_truncated": {
+                      "default": false,
+                      "description": "The message has more attachments than attachments lists.",
+                      "type": "boolean"
                     },
                     "body_truncated": {
                       "default": false,
@@ -5202,16 +5347,40 @@
                 "items": {
                   "additionalProperties": false,
                   "properties": {
+                    "attachment_count": {
+                      "default": 0,
+                      "description": "Every attachment part of the message, including any not listed in attachments.",
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "attachments": {
                       "default": [],
                       "items": {
                         "additionalProperties": false,
                         "description": "Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand.",
                         "properties": {
+                          "content_id": {
+                            "anyOf": [
+                              {
+                                "maxLength": 998,
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "The part's Content-ID without angle brackets, as the HTML body's cid: links name it."
+                          },
                           "filename": {
                             "maxLength": 255,
                             "minLength": 1,
                             "type": "string"
+                          },
+                          "is_inline": {
+                            "default": false,
+                            "description": "The message shows this part in its body (an inline Content-Disposition, or a Content-ID without one), such as a signature logo or a pasted picture. Inline parts can still be real documents: some mail clients mark attached PDFs inline.",
+                            "type": "boolean"
                           },
                           "media_type": {
                             "default": "application/octet-stream",
@@ -5249,6 +5418,11 @@
                         "type": "object"
                       },
                       "type": "array"
+                    },
+                    "attachments_truncated": {
+                      "default": false,
+                      "description": "The message has more attachments than attachments lists.",
+                      "type": "boolean"
                     },
                     "labels": {
                       "default": [],
@@ -5702,16 +5876,40 @@
             "additionalProperties": false,
             "description": "One message with its body as bounded plain text.",
             "properties": {
+              "attachment_count": {
+                "default": 0,
+                "description": "Every attachment part of the message, including any not listed in attachments.",
+                "minimum": 0,
+                "type": "integer"
+              },
               "attachments": {
                 "default": [],
                 "items": {
                   "additionalProperties": false,
                   "description": "Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand.",
                   "properties": {
+                    "content_id": {
+                      "anyOf": [
+                        {
+                          "maxLength": 998,
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "The part's Content-ID without angle brackets, as the HTML body's cid: links name it."
+                    },
                     "filename": {
                       "maxLength": 255,
                       "minLength": 1,
                       "type": "string"
+                    },
+                    "is_inline": {
+                      "default": false,
+                      "description": "The message shows this part in its body (an inline Content-Disposition, or a Content-ID without one), such as a signature logo or a pasted picture. Inline parts can still be real documents: some mail clients mark attached PDFs inline.",
+                      "type": "boolean"
                     },
                     "media_type": {
                       "default": "application/octet-stream",
@@ -5749,6 +5947,11 @@
                   "type": "object"
                 },
                 "type": "array"
+              },
+              "attachments_truncated": {
+                "default": false,
+                "description": "The message has more attachments than attachments lists.",
+                "type": "boolean"
               },
               "body_truncated": {
                 "default": false,
@@ -5960,16 +6163,40 @@
                   "additionalProperties": false,
                   "description": "One message with its body as bounded plain text.",
                   "properties": {
+                    "attachment_count": {
+                      "default": 0,
+                      "description": "Every attachment part of the message, including any not listed in attachments.",
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "attachments": {
                       "default": [],
                       "items": {
                         "additionalProperties": false,
                         "description": "Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand.",
                         "properties": {
+                          "content_id": {
+                            "anyOf": [
+                              {
+                                "maxLength": 998,
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "The part's Content-ID without angle brackets, as the HTML body's cid: links name it."
+                          },
                           "filename": {
                             "maxLength": 255,
                             "minLength": 1,
                             "type": "string"
+                          },
+                          "is_inline": {
+                            "default": false,
+                            "description": "The message shows this part in its body (an inline Content-Disposition, or a Content-ID without one), such as a signature logo or a pasted picture. Inline parts can still be real documents: some mail clients mark attached PDFs inline.",
+                            "type": "boolean"
                           },
                           "media_type": {
                             "default": "application/octet-stream",
@@ -6007,6 +6234,11 @@
                         "type": "object"
                       },
                       "type": "array"
+                    },
+                    "attachments_truncated": {
+                      "default": false,
+                      "description": "The message has more attachments than attachments lists.",
+                      "type": "boolean"
                     },
                     "body_truncated": {
                       "default": false,
@@ -6248,16 +6480,40 @@
                 "items": {
                   "additionalProperties": false,
                   "properties": {
+                    "attachment_count": {
+                      "default": 0,
+                      "description": "Every attachment part of the message, including any not listed in attachments.",
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "attachments": {
                       "default": [],
                       "items": {
                         "additionalProperties": false,
                         "description": "Bounded Gmail attachment descriptor; bytes are fetched only on explicit demand.",
                         "properties": {
+                          "content_id": {
+                            "anyOf": [
+                              {
+                                "maxLength": 998,
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "The part's Content-ID without angle brackets, as the HTML body's cid: links name it."
+                          },
                           "filename": {
                             "maxLength": 255,
                             "minLength": 1,
                             "type": "string"
+                          },
+                          "is_inline": {
+                            "default": false,
+                            "description": "The message shows this part in its body (an inline Content-Disposition, or a Content-ID without one), such as a signature logo or a pasted picture. Inline parts can still be real documents: some mail clients mark attached PDFs inline.",
+                            "type": "boolean"
                           },
                           "media_type": {
                             "default": "application/octet-stream",
@@ -6295,6 +6551,11 @@
                         "type": "object"
                       },
                       "type": "array"
+                    },
+                    "attachments_truncated": {
+                      "default": false,
+                      "description": "The message has more attachments than attachments lists.",
+                      "type": "boolean"
                     },
                     "labels": {
                       "default": [],
