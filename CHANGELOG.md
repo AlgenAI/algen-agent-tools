@@ -14,6 +14,7 @@ A tool's name, input schema, side effect and permission are part of the public c
   `0.1.0a23` and the `0.2.0b1` beta. Runtime 0.2 refuses a tool call whose arguments a policy
   redacted when the call is planned, with `policy.redacted`, instead of when it runs; nothing is
   sent either way.
+- `connectors.json` records the new Runtime range (`runtime_requirement`).
 
 ## [0.2.0a10] - 2026-11-05
 
