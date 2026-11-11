@@ -42,7 +42,9 @@ the calling tenant, bounds the call and governs it as a tool.
 
 The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`,
 `.odp`, `.rtf`, `.html`,
-`.htm`, `.csv`, `.tsv`, `.txt`, `.md`, `.eml` or `.msg`. Any other suffix is refused. When the
+`.htm`, `.csv`, `.tsv`, `.txt`, `.md`, `.eml` or `.msg`, and with a host-supplied converter
+`.doc`, `.xls` and `.ppt` (see [Legacy Office files](#legacy-office-files)). Any other suffix is
+refused. When the
 content's own signature names another type, the content wins: a `scan.pdf` that is really a
 JPEG is read as an image (with OCR), a `.docx` renamed `.doc` as Word, a PDF named `.txt` as a
 PDF. Text formats have no signature, so they go by their name. Text, CSV, TSV, Markdown and HTML
@@ -103,6 +105,68 @@ reported. An embedded OLE object, a common exploit carrier, is `document.embedde
 (security), and a field that loads a remote file (`INCLUDEPICTURE`, `INCLUDETEXT`) is
 `document.external_reference`. Pictures are coverage findings. A Word file saved as RTF but named
 `.doc` is recognised by its content.
+
+## Legacy Office files
+
+Legacy binary Word (`.doc`), Excel (`.xls`) and PowerPoint (`.ppt`) files are refused unless the
+host passes a converter: this package parses no legacy binary format and ships no converter.
+Without one, the refusal says to save the file as DOCX, XLSX, PPTX or PDF, and in an email such
+an attachment is `document.attachment_unread` (coverage). A converter is any object with a
+`convert` method that turns the legacy bytes into PDF, DOCX, XLSX, PPTX, ODT, ODS or ODP, for
+example a LibreOffice running in a sandbox:
+
+```python
+import subprocess, tempfile
+from pathlib import Path
+from algen_agent_tools.documents import documents_toolkit, extractor_for
+
+TARGETS = {
+    "application/msword": "docx",
+    "application/vnd.ms-excel": "xlsx",
+    "application/vnd.ms-powerpoint": "pptx",
+}
+
+class SandboxedLibreOffice:
+    def convert(self, data: bytes, *, media_type: str) -> bytes:
+        target = TARGETS[media_type]
+        with tempfile.TemporaryDirectory() as work:
+            Path(work, "in").write_bytes(data)
+            # Run it in your sandbox: no network, a read-only file system, a time limit.
+            subprocess.run(["soffice", "--headless", "--convert-to", target, "--outdir", work,
+                            str(Path(work, "in"))], check=True, timeout=60, capture_output=True)
+            outputs = list(Path(work).glob(f"in.{target}"))
+            if not outputs:
+                raise ValueError("conversion failed")
+            return outputs[0].read_bytes()
+
+documents = documents_toolkit(artifact_loader=load, converter=SandboxedLibreOffice())
+extracted = extractor_for("cv.doc", converter=SandboxedLibreOffice()).extract(data, filename="cv.doc")
+```
+
+The converter's output is as untrusted as the file:
+
+- Before the converter sees a file, it must be at most 10 MB and a compound (OLE) file by its
+  signature; a `.docx` or RTF file named `.doc` is read directly, without converting. The
+  converter gets the bytes and the legacy media type (`application/msword`,
+  `application/vnd.ms-excel` or `application/vnd.ms-powerpoint`), never the file's name.
+- The output must be at most 10 MB, and its type comes from its own signature: anything other
+  than PDF, DOCX, XLSX, PPTX, ODT, ODS or ODP (text, HTML, an image, another legacy file) is
+  refused. It is then inspected by that format's extractor with every hidden-text,
+  prompt-injection, macro and remote-content check, a PDF with OCR when a recognizer is set.
+  Converted output is never converted again.
+- A conversion drops a macro project, so the legacy file is checked for one first: a Word or
+  Excel VBA project is `document.macros` (critical), as for DOCX. A PowerPoint 97 macro project
+  is stored inside the presentation stream and is not detected.
+- The result keeps the legacy file's `media_type`. A `ValueError` from the converter refuses the
+  file with "the document converter could not convert the file", without the converter's
+  message; any other error (a timeout) propagates unchanged.
+- The converter runs in the same worker thread as the parsing. Sandboxing it, without network
+  access and with its own time limit, is the host's job.
+
+In code, `LegacyOfficeDocumentExtractor(converter=..., max_bytes=10_000_000,
+max_output_bytes=10_000_000)` changes the limits. An email's legacy attachments are converted
+with the same converter, and the mail toolkits' `read_attachment` uses it when their
+`DocumentReader` has one (`DocumentReader(converter=...)`).
 
 ## Email
 
@@ -173,6 +237,34 @@ in `algen_agent_tools.documents.inspection`.
 
 PDF, DOCX and PPTX documents with text and embedded images report `document.images_excluded`:
 the images were not read. A document with images and no text reports `document.ocr_required`.
+
+### Links before redaction
+
+`redact_pii` replaces every web address with `[URL REDACTED]`, so a model never learns that the
+sender already gave, say, a profile link. Find the links you care about first, with hosts you
+choose, and tell the model only what it needs:
+
+```python
+from algen_agent_tools.documents.inspection import find_links, redact_pii, unwrap_redirect
+
+links = find_links(body, hosts=["github.com", "linkedin.com"])   # ["github.com/octocat", ...]
+links_given = sorted({link.partition("/")[0] for link in links})   # ["github.com"]
+safe_body = redact_pii(body)
+```
+
+`find_links(text, *, hosts, limit=20)` returns the links whose host is one of `hosts` or a
+subdomain of one (`gist.github.com` for `github.com`, never `evil-github.com`), as `host/path`:
+lower-case host without `www.`, and no scheme, port, credentials, query string or fragment, which
+can carry tokens. They are de-duplicated ignoring case, kept in order, at most 200 characters each
+and at most `limit` in all. Links with a scheme or `www.` are found anywhere; a bare
+`github.com/octocat` only for the hosts given. Paths are returned as written, so do not ask for a
+host whose paths carry secrets.
+
+Each link is first unwrapped with `unwrap_redirect(url)`, which returns the address behind Gmail
+(`google.<tld>/url?q=`), Outlook Safe Links (`*.safelinks.protection.outlook.com/?url=`) and
+Proofpoint URL Defense (v1, v2 and v3) wrappers, also when one wraps another, up to five deep. It
+reads the address only and never visits it. A link that is not wrapped, is malformed, or points
+to something other than a web address (`javascript:`, `mailto:`) comes back unchanged.
 
 ## Unread content
 

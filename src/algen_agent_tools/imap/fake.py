@@ -317,7 +317,9 @@ def _structure(message: Message) -> str:
     params = _raw_params(message.get("Content-Type", ""))
     encoding = str(message.get("Content-Transfer-Encoding", "7BIT")).upper()
     body = _payload(message)
-    fields = f"{_q(kind)} {_q(subtype)} {_params(params)} NIL NIL {_q(encoding)} {len(body)}"
+    content_id = str(message.get("Content-ID", "")).strip()
+    body_id = '"' + content_id.replace('"', "") + '"' if content_id else "NIL"
+    fields = f"{_q(kind)} {_q(subtype)} {_params(params)} {body_id} NIL {_q(encoding)} {len(body)}"
     if kind == "TEXT":
         fields += f" {body.count(b'\n') + 1}"
     elif (kind, subtype) == ("MESSAGE", "RFC822"):

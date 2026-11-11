@@ -32,6 +32,13 @@ OAuth refresh token.
   decides when present; without it only an SPF failure with no DKIM pass is `fail`. Text the
   sender controls (comments, quoted addresses, lower headers) is ignored. Use it to keep a
   spoofed "From" out of trusted workflows; `unknown` is not a failure.
+- `attachments` lists every file part of the message, named or not, inline or not, up to 20.
+  `attachment_count` counts them all and `attachments_truncated` says when some were left out.
+  `is_inline` marks a part the message shows in its body (an inline `Content-Disposition`, or a
+  `Content-ID` without a disposition), such as a signature logo or a pasted picture, and
+  `content_id` is its `Content-ID` without angle brackets. Inline parts are still listed: some
+  mail clients (Apple Mail) mark attached PDFs inline. A part that declares no file name gets one
+  from its place and type, such as `attachment-3.pdf`, and downloads under it.
 - `gmail.get_message(message_id, max_chars=20000, include="full")` reads one message: the same
   fields plus `cc` and the body as plain text (the text parts, or the HTML part with markup,
   scripts and styles removed; `include="latest"` keeps only the sender's own text), cut to `max_chars` (at most 100,000) with `body_truncated` set when cut. Message
@@ -112,6 +119,16 @@ new content and is always kept, and a message that is only a quote is returned w
 IMAP bodies join every inline text part (at most five), as clients that split the text around
 inline images send them. The same applies to the IMAP and Outlook toolkits.
 
+## Links in a message
+
+Copies of mail bodies carry links wrapped in a client's redirect (`google.com/url?q=`, Outlook
+Safe Links, Proofpoint). `algen_agent_tools.mail` re-exports `unwrap_redirect(url)`, which
+returns the real address without visiting it, and `find_links(text, hosts=[...])`, which returns
+the links to the hosts you name as `host/path` (no query string), unwrapped and de-duplicated.
+Call it before `redact_pii` removes every URL, to tell a model which hosts the sender linked to;
+see [links before redaction](documents.md#links-before-redaction). The same helpers apply to
+IMAP and Outlook bodies.
+
 ## Reading attachments
 
 `documents=DocumentReader()` adds `read_attachment`: it downloads one attachment, checks it
@@ -183,7 +200,8 @@ support = gmail_toolkit(
 ## Testing
 
 `FakeMailbox(inbox=[InboundEmailSummary(...)])` serves pages to `list_messages`, messages to
-`get_message` (with the body of any `InboundEmailDetail` in the inbox), attachments from
+`get_message` (with the body of any `InboundEmailDetail` in the inbox; a row's
+`attachment_count` defaults to the attachments it lists), attachments from
 `files={(message_id, part_id): AttachmentUpload(...)}` to `get_attachment`, and records sends;
 pass `client=mailbox.factory()`.
 

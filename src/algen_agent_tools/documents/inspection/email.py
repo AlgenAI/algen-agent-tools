@@ -31,6 +31,7 @@ from algen_agent_tools.documents.inspection.core import (
 )
 
 if TYPE_CHECKING:
+    from algen_agent_tools.documents.inspection.legacy import DocumentConverter
     from algen_agent_tools.documents.inspection.ocr import TextRecognizer
 
 HEADERS = ("From", "To", "Cc", "Date", "Subject")
@@ -82,6 +83,7 @@ class EmailDocumentExtractor:
         max_characters: int = 250_000,
         ocr: TextRecognizer | None = None,
         ocr_max_pages: int = 3,
+        converter: DocumentConverter | None = None,
     ) -> None:
         if max_depth < 0 or max_attachments < 0:
             raise ValueError("max_depth and max_attachments must be 0 or more")
@@ -91,6 +93,7 @@ class EmailDocumentExtractor:
         self._max_characters = max_characters
         self._ocr = ocr
         self._ocr_max_pages = ocr_max_pages
+        self._converter = converter
 
     def extract(self, data: bytes, *, filename: str) -> ExtractedDocument:
         del filename
@@ -231,7 +234,11 @@ class EmailDocumentExtractor:
                 return self._extract(data, depth=depth + 1, budget=budget)
             payload = _payload(attachment)
             extractor = extractor_for(
-                name, data=payload, ocr=self._ocr, ocr_max_pages=self._ocr_max_pages
+                name,
+                data=payload,
+                ocr=self._ocr,
+                ocr_max_pages=self._ocr_max_pages,
+                converter=self._converter,
             )
             return extractor.extract(payload, filename=name)
         except ImportError as exc:

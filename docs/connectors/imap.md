@@ -32,6 +32,11 @@ deleted or marked as seen. Send replies with [`smtp.send_email`](smtp.md).
   (`X-GM-RAW`, for example `has:attachment newer_than:7d`) and is refused unless the server is
   Gmail. There is no raw IMAP search. Each row has the sender, recipients, subject, a snippet of up to 200 characters, the
   message's flags (and Gmail labels), its attachments with their `part_id`, and `sender_auth`.
+  Attachments are listed as for [Gmail](gmail.md#tools): up to 20, with `attachment_count`,
+  `attachments_truncated`, `is_inline` and `content_id` (from the part's `BODYSTRUCTURE`), and a
+  generated name such as `attachment-2.pdf` for a part that declares none (a forwarded email
+  without a name is `attachment-<n>.eml`). Every part but the message's own text is an
+  attachment.
 - `imap.list_folders()` lists the folders the tools may read, each with its special-use flag
   (`\Sent`, `\All`, `\Archive`, `\Drafts`, `\Junk`, `\Trash`, `\Flagged`) when the server
   marks one. It never lists folders outside `ALGEN_TOOLS_IMAP_FOLDERS`.

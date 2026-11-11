@@ -8,8 +8,54 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Upgrade notes
+
+- Mail summaries list more attachments (#66): every file part of a message except its own text,
+  including inline images (signature logos, pasted pictures) and parts without a file name.
+  Filter on the new `is_inline` instead of guessing from names such as `image001.png`; inline
+  parts can be real documents. A nameless part is named from its place and type
+  (`attachment-3.pdf`), and an IMAP forwarded email without a name is now
+  `attachment-<n>.eml` instead of `message.eml`.
+- Outlook `get_message` and `get_thread` read a message's attachments even when Graph's
+  `hasAttachments` is false (it is for a message whose only attachments are inline): one more
+  Graph request for each such message.
+
+### Added
+
+- A complete attachment manifest on Gmail, IMAP and Outlook (#66). `InboundEmailSummary` (and
+  so `InboundEmailDetail` and the messages of `EmailThread`) gains `attachment_count`, every
+  attachment part before the 20-entry cap, and `attachments_truncated`; both default from
+  `attachments` when a caller builds a summary itself. `InboundEmailAttachment` gains
+  `is_inline` (from `Content-Disposition` and `Content-ID`; Graph's `isInline`) and
+  `content_id` (without angle brackets). Gmail lists parts it returns with the message itself
+  and downloads them from it. Helpers in `algen_agent_tools.mail.inbound`: `MAX_ATTACHMENTS`,
+  `attachment_manifest`, `generated_filename`, `is_inline_part`, `normalized_content_id`.
+- Tool contract (additive): the output schemas of `list_messages`, `get_message` and
+  `get_thread` on `gmail`, `imap` and `outlook` gain these fields; `connectors.json` is
+  regenerated. Names, input schemas, side effects and permissions are unchanged.
+- `find_links(text, *, hosts, limit=20)` and `unwrap_redirect(url)` in
+  `algen_agent_tools.documents.inspection` (re-exported from `algen_agent_tools.documents` and
+  `algen_agent_tools.mail`) (#69). `unwrap_redirect` returns the address behind Gmail
+  (`google.<tld>/url?q=`), Outlook Safe Links and Proofpoint URL Defense v1, v2 and v3 wrappers,
+  nested up to five deep, without network access; `find_links` returns the links to the hosts a
+  caller names (or their subdomains) as `host/path`, unwrapped, de-duplicated, in order and
+  capped, never with a query string. Call it before `redact_pii`, whose behaviour is unchanged,
+  to tell a model which hosts a sender linked to without showing the links.
+- Legacy Word (`.doc`), Excel (`.xls`) and PowerPoint (`.ppt`) files through a host-supplied
+  `DocumentConverter` (#45): `documents_toolkit(converter=...)`, `DocumentReader(converter=...)`,
+  `extractor_for(..., converter=...)` and the new `LegacyOfficeDocumentExtractor`. The package
+  ships no converter. A converter (for example a sandboxed LibreOffice) turns the legacy bytes
+  into PDF, DOCX, XLSX, PPTX, ODT, ODS or ODP; the input must be a compound file of at most
+  10 MB, the output must be at most 10 MB and one of those formats by its signature, and it is
+  inspected by that format's extractor with all its findings. A Word or Excel macro project in
+  the legacy file is `document.macros`, since conversion drops it. With a converter, the
+  `extract_text` and `read_attachment` descriptions say legacy files are read; without one, the
+  tools and the catalog are unchanged.
+
 ### Changed
 
+- Without a converter, a `.doc`, `.xls` or `.ppt` file is refused with a message that names the
+  converter and the formats to save as, instead of the list of supported formats.
 - Allows `algen-agent-runtime` 0.2 (`>=0.1.0a23,<0.3`): the tools and their tests pass on both
   `0.1.0a23` and the `0.2.0b1` beta. Runtime 0.2 refuses a tool call whose arguments a policy
   redacted when the call is planned, with `policy.redacted`, instead of when it runs; nothing is

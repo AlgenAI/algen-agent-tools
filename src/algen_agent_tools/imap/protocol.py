@@ -220,6 +220,8 @@ class BodyPart:
     params: dict[str, str] = field(default_factory=dict)
     disposition: str | None = None
     disposition_params: dict[str, str] = field(default_factory=dict)
+    content_id: str | None = None
+    """The part's Content-ID (``body-fld-id``), as the server sends it."""
 
     @property
     def charset(self) -> str:
@@ -239,8 +241,18 @@ class BodyPart:
         return name if name not in ("", ".", "..") else None
 
     @property
+    def is_body_text(self) -> bool:
+        """The part holds the message's own text rather than a file."""
+        return (
+            self.media_type in ("text/plain", "text/html")
+            and self.filename is None
+            and self.disposition != "attachment"
+        )
+
+    @property
     def is_attachment(self) -> bool:
-        return self.filename is not None or self.media_type == "message/rfc822"
+        """The part is a file, named or not, inline or not: every leaf but the body text."""
+        return not self.is_body_text
 
 
 def _param(params: Mapping[str, str], name: str) -> str | None:
@@ -316,6 +328,7 @@ def _walk(node: Value, number: str, parts: list[BodyPart]) -> None:
             params=_params(node[2]),
             disposition=disposition,
             disposition_params=disposition_params,
+            content_id=text(node[3]) or None,
         )
     )
 
@@ -342,6 +355,7 @@ def text_parts(parts: Sequence[BodyPart], limit: int = 5) -> list[BodyPart]:
 
 
 def attachment_parts(parts: Sequence[BodyPart]) -> list[BodyPart]:
+    """Every attachment part of a message, in reading order."""
     return [part for part in parts if part.is_attachment]
 
 

@@ -12,11 +12,15 @@ from pydantic import BaseModel, ConfigDict, Field
 from algen_agent_tools._env import missing_extra
 from algen_agent_tools.attachments import ArtifactLoader, AttachmentRef
 from algen_agent_tools.documents.inspection import ExtractedDocument, extractor_for
+from algen_agent_tools.documents.inspection.legacy import DocumentConverter
 from algen_agent_tools.documents.inspection.ocr import TextRecognizer
 
 MAX_CHARS = 100_000
 AUDIT_METADATA = {"content_capture": "disabled", "channel": "documents"}
 OCR_NOTE = "PNG, JPEG, WebP, GIF, BMP and TIFF images and scanned PDF pages are read by OCR."
+CONVERTER_NOTE = (
+    "Legacy Word (.doc), Excel (.xls) and PowerPoint (.ppt) files are converted, then read."
+)
 
 Disposition = Literal["pass", "review", "quarantine"]
 
@@ -81,16 +85,22 @@ class DocumentText(BaseModel):
 
 
 def _inspect(
-    data: bytes, filename: str, ocr: TextRecognizer | None, ocr_max_pages: int
+    data: bytes,
+    filename: str,
+    ocr: TextRecognizer | None,
+    ocr_max_pages: int,
+    converter: DocumentConverter | None = None,
 ) -> ExtractedDocument:
     # The extractors (documents.inspection) do the parsing and the hidden-text and
     # prompt-injection checks; this function bounds and governs the call.
     try:
-        extractor = extractor_for(filename, data=data, ocr=ocr, ocr_max_pages=ocr_max_pages)
+        extractor = extractor_for(
+            filename, data=data, ocr=ocr, ocr_max_pages=ocr_max_pages, converter=converter
+        )
         return extractor.extract(data, filename=filename)
     except ImportError as exc:
         # PyMuPDF is the documents extra and olefile the msg extra; an ImportError from the
-        # host's recognizer is the recognizer's own and propagates unchanged.
+        # host's recognizer or converter is its own and propagates unchanged.
         if exc.name == "fitz":
             raise missing_extra("PyMuPDF", "documents") from None
         if exc.name == "olefile":
@@ -104,14 +114,15 @@ class DocumentReader:
     behind ``documents.extract_text`` and the mail toolkits' ``read_attachment``.
 
     Documents over ``max_bytes`` are refused before parsing. With ``quarantine="withhold"`` (the
-    default) a quarantined document's findings are returned without its text. ``ocr`` and
-    ``ocr_max_pages`` are as for :func:`documents_toolkit`.
+    default) a quarantined document's findings are returned without its text. ``ocr``,
+    ``ocr_max_pages`` and ``converter`` are as for :func:`documents_toolkit`.
     """
 
     max_bytes: int = 10_000_000
     quarantine: Literal["withhold", "return"] = "withhold"
     ocr: TextRecognizer | None = None
     ocr_max_pages: int = 3
+    converter: DocumentConverter | None = None
 
     def __post_init__(self) -> None:
         if self.ocr_max_pages < 0:
@@ -119,8 +130,14 @@ class DocumentReader:
 
     @property
     def note(self) -> str:
-        """What a tool description adds about the formats read: the OCR note with a recognizer."""
-        return "" if self.ocr is None else f" {OCR_NOTE}"
+        """What a tool description adds about the formats read: the OCR note with a recognizer,
+        the converter note with a converter."""
+        notes = [
+            note
+            for note, enabled in ((OCR_NOTE, self.ocr), (CONVERTER_NOTE, self.converter))
+            if enabled is not None
+        ]
+        return "".join(f" {note}" for note in notes)
 
     async def read(
         self, data: bytes, *, filename: str, media_type: str, max_chars: int
@@ -129,7 +146,7 @@ class DocumentReader:
             raise DocumentRefused("document exceeds the configured size limit")
         try:
             extracted = await asyncio.to_thread(
-                _inspect, data, filename, self.ocr, self.ocr_max_pages
+                _inspect, data, filename, self.ocr, self.ocr_max_pages, self.converter
             )
         except ValueError as exc:
             raise DocumentRefused(str(exc)) from None
@@ -184,6 +201,7 @@ def documents_toolkit(
     quarantine: Literal["withhold", "return"] = "withhold",
     ocr: TextRecognizer | None = None,
     ocr_max_pages: int = 3,
+    converter: DocumentConverter | None = None,
 ) -> Toolkit:
     """A toolkit with ``<name>.extract_text`` (read): the readable text of a PDF, Word (DOCX),
     Excel (XLSX), PowerPoint (PPTX), HTML, CSV, TSV, plain-text, Markdown or email (EML, MSG)
@@ -197,9 +215,19 @@ def documents_toolkit(
     With one, images (PNG, JPEG, WebP, GIF, BMP, TIFF) are read and scanned PDF pages are
     recognized, up to ``ocr_max_pages`` pages per PDF; without one (the default), images are
     refused and scanned pages are reported as ``document.ocr_required``.
+
+    ``converter`` is an optional
+    :class:`~algen_agent_tools.documents.inspection.legacy.DocumentConverter`. With one, legacy
+    Word (``.doc``), Excel (``.xls``) and PowerPoint (``.ppt``) files are converted (for example
+    by a sandboxed LibreOffice) and the output is inspected as the PDF, OOXML or ODF file it is;
+    without one (the default), they are refused.
     """
     reader = DocumentReader(
-        max_bytes=max_bytes, quarantine=quarantine, ocr=ocr, ocr_max_pages=ocr_max_pages
+        max_bytes=max_bytes,
+        quarantine=quarantine,
+        ocr=ocr,
+        ocr_max_pages=ocr_max_pages,
+        converter=converter,
     )
     toolkit = Toolkit(name)
 
@@ -223,8 +251,8 @@ def documents_toolkit(
         read(timeout=120),
         max_result_bytes=1_048_576,
         audit_metadata=AUDIT_METADATA,
-        # With a recognizer the model is told it may send images; without one the docstring is
-        # the description, unchanged.
-        description=None if ocr is None else f"{inspect.getdoc(extract_text)}{reader.note}",
+        # With a recognizer or a converter the model is told which more formats it may send;
+        # without either the docstring is the description, unchanged.
+        description=f"{inspect.getdoc(extract_text)}{reader.note}" if reader.note else None,
     )(extract_text)
     return toolkit
