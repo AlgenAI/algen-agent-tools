@@ -11,12 +11,13 @@ attempted, keeps declared `format: email` result fields out of `pii` redaction, 
 run's attachments (`runtime_attachment_loader`); 0.1.0a20 keeps a toolkit's configuration error
 (which extra to install, which variable to set) when its client cannot open. Document inspection
 moved into this package in 0.2.0a7, so the `documents` extra installs PyMuPDF directly. From
-0.2.0a8 it needs 0.1.0a23 (unchanged in 0.2.0a9 and 0.2.0a10): 0.1.0a22 and 0.1.0a23 fix two ways an approval-required workflow tool
+0.2.0a8 it needs 0.1.0a23 (unchanged in 0.2.0a9 to 0.2.0a11; 0.2.0a11 also runs on 0.2.0b1): 0.1.0a22 and 0.1.0a23 fix two ways an approval-required workflow tool
 step could run without its approval, and run synchronous tools in a worker thread within their
 timeout.
 
 | algen-agent-tools | Supported algen-agent-runtime |
 | --- | --- |
+| 0.2.0a11 | `>=0.1.0a23,<0.3` (tested on 0.1.0a23 and 0.2.0b1) |
 | 0.2.0a10 | `>=0.1.0a23,<0.2` (tested on 0.1.0a23) |
 | 0.2.0a9 | `>=0.1.0a23,<0.2` (tested on 0.1.0a23) |
 | 0.2.0a8 | `>=0.1.0a23,<0.2` (tested on 0.1.0a23) |

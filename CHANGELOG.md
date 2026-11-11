@@ -8,6 +8,13 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a11] - 2026-11-11
+
+Runs on Runtime 0.2: the supported range is `algen-agent-runtime>=0.1.0a23,<0.3`, tested on
+0.1.0a23 and 0.2.0b1. Mail summaries list every attachment with an inline flag and report a cut
+list; `find_links` keeps the links a sender gave before `redact_pii` removes them; legacy
+`.doc`, `.xls` and `.ppt` files are read through a host-supplied converter.
+
 ### Upgrade notes
 
 - Mail summaries list more attachments (#66): every file part of a message except its own text,

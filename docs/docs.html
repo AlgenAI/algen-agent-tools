@@ -746,11 +746,11 @@ mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); co
       <!-- ═══════════════ GET STARTED ═══════════════ -->
       <section class="doc" id="welcome" style="padding-top:0">
         <div class="hero">
-          <span class="eyebrow">Algen Agent Tools · v0.2.0a10</span>
+          <span class="eyebrow">Algen Agent Tools · v0.2.0a11</span>
           <h1>Typed tools for agents. <span class="accent">Governed by default.</span></h1>
           <p class="lead">Curated connectors for agents built on Algen Agent Runtime. Each connector is a set of narrow, typed actions with a declared side effect, permission and approval rule, registered as a Runtime plugin so Studio can list it before anything runs.</p>
           <div class="hero-meta">
-            <span class="pill brand"><span class="dot"></span>0.2.0a10 · pre-alpha</span>
+            <span class="pill brand"><span class="dot"></span>0.2.0a11 · pre-alpha</span>
             <span class="pill">Python 3.12 &amp; 3.13</span>
             <span class="pill">Runtime &gt;=0.1.0a23,&lt;0.2</span>
             <span class="pill">Apache-2.0</span>
@@ -785,7 +785,7 @@ mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); co
           <a class="card feature" href="#mcp-overlays"><span class="section-icon"><svg class="i"><use href="#i-plug"/></svg></span><h4>MCP, reviewed</h4><p>A governance overlay turns a remote MCP server into declared, schema-pinned tools; anything undeclared is never exposed.</p></a>
           <a class="card feature" href="#connector-policy"><span class="section-icon"><svg class="i"><use href="#i-user-check"/></svg></span><h4>Curated and owned</h4><p>Each connector has an owner, a security review and its own release cadence, so the Runtime core stays small.</p></a>
         </div>
-        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Pre-release.</strong> <code>0.2.0a10</code> is an alpha. A tool's name, input schema, side effect and permission are public contract; any change ships with a CHANGELOG entry and an upgrade note.</p></div>
+        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Pre-release.</strong> <code>0.2.0a11</code> is an alpha. A tool's name, input schema, side effect and permission are public contract; any change ships with a CHANGELOG entry and an upgrade note.</p></div>
       </section>
 
       <section class="doc" id="install">
@@ -893,6 +893,14 @@ security:
       <section class="doc" id="releases">
         <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-history"/></svg></span>Get started</div>
         <h2>What's new<a class="anchor" href="#releases" aria-label="Link to this section">#</a></h2>
+        <h3 id="release-0-2-0a11">0.2.0a11 · 11 November 2026<a class="anchor" href="#release-0-2-0a11" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>Runtime 0.2.</strong> Requires <code>algen-agent-runtime&gt;=0.1.0a23,&lt;0.3</code>, tested on 0.1.0a23 and 0.2.0b1. On Runtime 0.2 a call whose arguments a policy redacted is refused when it is planned, with <code>policy.redacted</code>.</li>
+          <li><strong>A complete attachment manifest.</strong> Gmail, IMAP and Outlook list every attachment part, inline images and nameless parts included, with <code>is_inline</code> and <code>content_id</code>; summaries report <code>attachment_count</code> and <code>attachments_truncated</code> instead of cutting the list at 20 silently. A nameless part is named from its place and type (<code>attachment-3.pdf</code>).</li>
+          <li><strong>Links before redaction.</strong> <code>find_links(text, hosts=...)</code> returns the links to the hosts you name as <code>host/path</code>, never with a query string, and <code>unwrap_redirect</code> undoes Gmail, Outlook Safe Links and Proofpoint wrappers, without network access.</li>
+          <li><strong>Legacy Office files.</strong> With a host-supplied <code>DocumentConverter</code> (for example a sandboxed LibreOffice), <code>.doc</code>, <code>.xls</code> and <code>.ppt</code> are converted and read by the modern extractors with all their findings; a macro project in the legacy file is <code>document.macros</code>.</li>
+          <li><strong>Changed:</strong> mail summaries now include inline parts, so filter on <code>is_inline</code>; an IMAP forwarded email without a name is <code>attachment-&lt;n&gt;.eml</code>; Outlook reads attachments even when Graph's <code>hasAttachments</code> is false.</li>
+        </ul>
         <h3 id="release-0-2-0a10">0.2.0a10 · 5 November 2026<a class="anchor" href="#release-0-2-0a10" aria-label="Link to this section">#</a></h3>
         <ul>
           <li><strong>Outlook <code>.msg</code> files.</strong> With the new <code>msg</code> extra (olefile), <code>documents.extract_text</code> reads <code>.msg</code> files like <code>.eml</code>, with the same limits; a message whose only body is RTF reports <code>document.body_unread</code>. See <a href="#documents-email">Email files</a>.</li>
@@ -1674,7 +1682,7 @@ notices = smtp_toolkit(
         <h2>Runtime compatibility<a class="anchor" href="#compatibility" aria-label="Link to this section">#</a></h2>
         <div class="table-wrap"><table>
           <thead><tr><th>algen-agent-tools</th><th>Supported algen-agent-runtime</th></tr></thead>
-          <tbody><tr><td>0.2.0a10</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a9</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a8</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a7</td><td><code>&gt;=0.1.0a20,&lt;0.2</code> (tested on 0.1.0a20 and 0.1.0a21)</td></tr><tr><td>0.2.0a6</td><td><code>&gt;=0.1.0a18,&lt;0.2</code></td></tr><tr><td>0.2.0a1 to 0.2.0a5</td><td><code>&gt;=0.1.0a12,&lt;0.2</code> (tested on 0.1.0a12 and 0.1.0a13)</td></tr><tr><td>0.1.0a2</td><td><code>&gt;=0.1.0a12,&lt;0.2</code></td></tr><tr><td>0.1.0a1</td><td><code>&gt;=0.1.0a11,&lt;0.2</code></td></tr></tbody>
+          <tbody><tr><td>0.2.0a11</td><td><code>&gt;=0.1.0a23,&lt;0.3</code> (tested on 0.1.0a23 and 0.2.0b1)</td></tr><tr><td>0.2.0a10</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a9</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a8</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a7</td><td><code>&gt;=0.1.0a20,&lt;0.2</code> (tested on 0.1.0a20 and 0.1.0a21)</td></tr><tr><td>0.2.0a6</td><td><code>&gt;=0.1.0a18,&lt;0.2</code></td></tr><tr><td>0.2.0a1 to 0.2.0a5</td><td><code>&gt;=0.1.0a12,&lt;0.2</code> (tested on 0.1.0a12 and 0.1.0a13)</td></tr><tr><td>0.1.0a2</td><td><code>&gt;=0.1.0a12,&lt;0.2</code></td></tr><tr><td>0.1.0a1</td><td><code>&gt;=0.1.0a11,&lt;0.2</code></td></tr></tbody>
         </table></div>
         <p>The package is built on the Runtime's tool authoring API (<code>@tool</code>, presets, <code>Toolkit</code>), declared plugins and <code>describe</code>, all introduced in Runtime 0.1.0a11. From 0.1.0a2 it needs Runtime 0.1.0a12, whose <code>pii</code> guardrail leaves fields declared <code>format: email</code> alone. From 0.2.0a6 it needs Runtime 0.1.0a18: 0.1.0a14's document inspection reads XLSX, PPTX, HTML, CSV and TSV, and 0.1.0a18's <code>cache_context</code> keys cached SQL results on the values <code>context_params</code> binds. From 0.2.0a7 it needs Runtime 0.1.0a20, which records refusals as not attempted, keeps declared <code>format: email</code> result fields out of <code>pii</code> redaction and gives tools the run's attachments. From 0.2.0a8 it needs Runtime 0.1.0a23: 0.1.0a22 and 0.1.0a23 fix two ways an approval-required workflow tool step could run without its approval, and run synchronous tools in a worker thread within their timeout. CI runs the full suite against the lowest supported Runtime and the newest release inside the range; a Runtime release that breaks a connector lowers the upper bound until it is fixed. Every plugin targets plugin core API version <code>1</code>.</p>
       </section>
@@ -1725,7 +1733,7 @@ notices = smtp_toolkit(
 
       <div class="no-results" id="noResults">No sections match your search. Try a different term.</div>
       <footer class="page-foot">
-        <span>Algen Agent Tools · Apache-2.0 · Documentation for package version 0.2.0a10</span>
+        <span>Algen Agent Tools · Apache-2.0 · Documentation for package version 0.2.0a11</span>
         <span>© AlgenAI</span>
       </footer>
     </div>
