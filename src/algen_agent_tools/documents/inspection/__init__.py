@@ -10,6 +10,9 @@ disposition. PDF needs the ``documents`` extra (PyMuPDF); the other formats need
 host-supplied :class:`TextRecognizer`; this package ships no OCR engine, and without a recognizer
 images are refused.
 
+``find_links(text, hosts=...)`` and ``unwrap_redirect(url)`` find the links to hosts a caller names
+(unwrapping Gmail, Outlook Safe Links and Proofpoint redirects) before ``redact_pii`` removes them.
+
 Moved here from ``algen_agent_runtime.security`` (deprecated there in Runtime 0.1.0a19).
 """
 
@@ -34,6 +37,7 @@ from algen_agent_tools.documents.inspection.docx import DocxDocumentExtractor
 from algen_agent_tools.documents.inspection.email import EmailDocumentExtractor
 from algen_agent_tools.documents.inspection.html import HtmlDocumentExtractor
 from algen_agent_tools.documents.inspection.image import ImageDocumentExtractor
+from algen_agent_tools.documents.inspection.links import find_links, unwrap_redirect
 from algen_agent_tools.documents.inspection.ocr import RecognizedText, TextRecognizer
 from algen_agent_tools.documents.inspection.odf import OdfDocumentExtractor
 from algen_agent_tools.documents.inspection.pptx import PptxDocumentExtractor
@@ -65,7 +69,9 @@ __all__ = [
     "XlsxDocumentExtractor",
     "classify_findings",
     "extractor_for",
+    "find_links",
     "prompt_injection_findings",
     "redact_pii",
     "sanitize_untrusted_text",
+    "unwrap_redirect",
 ]

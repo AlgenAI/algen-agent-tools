@@ -33,6 +33,14 @@ A tool's name, input schema, side effect and permission are part of the public c
 - Tool contract (additive): the output schemas of `list_messages`, `get_message` and
   `get_thread` on `gmail`, `imap` and `outlook` gain these fields; `connectors.json` is
   regenerated. Names, input schemas, side effects and permissions are unchanged.
+- `find_links(text, *, hosts, limit=20)` and `unwrap_redirect(url)` in
+  `algen_agent_tools.documents.inspection` (re-exported from `algen_agent_tools.documents` and
+  `algen_agent_tools.mail`) (#69). `unwrap_redirect` returns the address behind Gmail
+  (`google.<tld>/url?q=`), Outlook Safe Links and Proofpoint URL Defense v1, v2 and v3 wrappers,
+  nested up to five deep, without network access; `find_links` returns the links to the hosts a
+  caller names (or their subdomains) as `host/path`, unwrapped, de-duplicated, in order and
+  capped, never with a query string. Call it before `redact_pii`, whose behaviour is unchanged,
+  to tell a model which hosts a sender linked to without showing the links.
 
 ### Changed
 

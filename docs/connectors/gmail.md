@@ -119,6 +119,16 @@ new content and is always kept, and a message that is only a quote is returned w
 IMAP bodies join every inline text part (at most five), as clients that split the text around
 inline images send them. The same applies to the IMAP and Outlook toolkits.
 
+## Links in a message
+
+Copies of mail bodies carry links wrapped in a client's redirect (`google.com/url?q=`, Outlook
+Safe Links, Proofpoint). `algen_agent_tools.mail` re-exports `unwrap_redirect(url)`, which
+returns the real address without visiting it, and `find_links(text, hosts=[...])`, which returns
+the links to the hosts you name as `host/path` (no query string), unwrapped and de-duplicated.
+Call it before `redact_pii` removes every URL, to tell a model which hosts the sender linked to;
+see [links before redaction](documents.md#links-before-redaction). The same helpers apply to
+IMAP and Outlook bodies.
+
 ## Reading attachments
 
 `documents=DocumentReader()` adds `read_attachment`: it downloads one attachment, checks it

@@ -20,6 +20,8 @@ from algen_agent_tools.documents.inspection import (
     TextRecognizer,
     UnreadContent,
     extractor_for,
+    find_links,
+    unwrap_redirect,
 )
 from algen_agent_tools.documents.toolkit import (
     DocumentAttachmentText,
@@ -49,4 +51,6 @@ __all__ = [
     "UnreadContent",
     "documents_toolkit",
     "extractor_for",
+    "find_links",
+    "unwrap_redirect",
 ]

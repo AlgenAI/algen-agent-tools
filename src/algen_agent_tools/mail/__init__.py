@@ -1,6 +1,8 @@
 """Shared email contracts for the mail connectors: outbound messages and the send tool, and
-bounded summaries of inbound mail."""
+bounded summaries of inbound mail. ``find_links`` and ``unwrap_redirect`` (from
+:mod:`algen_agent_tools.documents.inspection`) find links in a body behind mail-client redirects."""
 
+from algen_agent_tools.documents.inspection.links import find_links, unwrap_redirect
 from algen_agent_tools.mail.fake import FakeMailbox
 from algen_agent_tools.mail.inbound import (
     EmailThread,
@@ -65,6 +67,8 @@ __all__ = [
     "authentication_verdict",
     "bind_artifact_loader",
     "build_mime_message",
+    "find_links",
     "html_to_text",
     "topmost_verdict",
+    "unwrap_redirect",
 ]

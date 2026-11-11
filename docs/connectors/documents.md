@@ -174,6 +174,34 @@ in `algen_agent_tools.documents.inspection`.
 PDF, DOCX and PPTX documents with text and embedded images report `document.images_excluded`:
 the images were not read. A document with images and no text reports `document.ocr_required`.
 
+### Links before redaction
+
+`redact_pii` replaces every web address with `[URL REDACTED]`, so a model never learns that the
+sender already gave, say, a profile link. Find the links you care about first, with hosts you
+choose, and tell the model only what it needs:
+
+```python
+from algen_agent_tools.documents.inspection import find_links, redact_pii, unwrap_redirect
+
+links = find_links(body, hosts=["github.com", "linkedin.com"])   # ["github.com/octocat", ...]
+links_given = sorted({link.partition("/")[0] for link in links})   # ["github.com"]
+safe_body = redact_pii(body)
+```
+
+`find_links(text, *, hosts, limit=20)` returns the links whose host is one of `hosts` or a
+subdomain of one (`gist.github.com` for `github.com`, never `evil-github.com`), as `host/path`:
+lower-case host without `www.`, and no scheme, port, credentials, query string or fragment, which
+can carry tokens. They are de-duplicated ignoring case, kept in order, at most 200 characters each
+and at most `limit` in all. Links with a scheme or `www.` are found anywhere; a bare
+`github.com/octocat` only for the hosts given. Paths are returned as written, so do not ask for a
+host whose paths carry secrets.
+
+Each link is first unwrapped with `unwrap_redirect(url)`, which returns the address behind Gmail
+(`google.<tld>/url?q=`), Outlook Safe Links (`*.safelinks.protection.outlook.com/?url=`) and
+Proofpoint URL Defense (v1, v2 and v3) wrappers, also when one wraps another, up to five deep. It
+reads the address only and never visits it. A link that is not wrapped, is malformed, or points
+to something other than a web address (`javascript:`, `mailto:`) comes back unchanged.
+
 ## Unread content
 
 Content the inspection did not read is reported separately from security findings, so a caller
