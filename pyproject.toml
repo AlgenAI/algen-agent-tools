@@ -34,7 +34,7 @@ classifiers = [
 ]
 # The supported Runtime range. CI tests the lowest and the highest release in it.
 dependencies = [
-  "algen-agent-runtime>=0.1.0a23,<0.2",
+  "algen-agent-runtime>=0.1.0a23,<0.3",
 ]
 
 [project.optional-dependencies]
@@ -55,13 +55,13 @@ ocr = ["pytesseract>=0.3.10,<0.4", "Pillow>=10,<14"]
 # Outlook .msg files: olefile (BSD) reads the OLE container; Tools parses the message itself.
 msg = ["olefile>=0.46,<1"]
 # GitHub is an MCP overlay, so it needs the Runtime's MCP client.
-github = ["algen-agent-runtime[mcp]>=0.1.0a23,<0.2"]
+github = ["algen-agent-runtime[mcp]>=0.1.0a23,<0.3"]
 gmail = []
 # IMAP uses the standard library's imaplib.
 imap = []
 # Outlook uses httpx, already installed with the Runtime.
 outlook = []
-mcp = ["algen-agent-runtime[mcp]>=0.1.0a23,<0.2"]
+mcp = ["algen-agent-runtime[mcp]>=0.1.0a23,<0.3"]
 # rsa: MySQL 8 authenticates with caching_sha2_password, which needs cryptography.
 mysql = ["aiomysql[rsa]>=0.2,<1"]
 postgres = ["asyncpg>=0.29,<1"]
