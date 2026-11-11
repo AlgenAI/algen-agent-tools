@@ -94,9 +94,11 @@ async def test_a_rejected_email_is_never_sent() -> None:
 
 async def test_the_default_pii_guardrail_still_screens_the_message() -> None:
     # Recipients declare format: email, so pii leaves them alone; an address in the body is
-    # redacted, and the Runtime refuses to run a tool on redacted arguments.
+    # redacted, and the Runtime refuses to run a tool on redacted arguments. Runtime 0.2 refuses
+    # it when the call is planned, with policy.redacted; 0.1 refused it as "transformed by policy".
     outcome = await run("approved", body="Write to ops@example.com or call 9876543210.")
 
     assert outcome["status"] == RunStatus.FAILED
-    assert "transformed by policy" in str(outcome["error"])
+    error = str(outcome["error"])
+    assert "policy.redacted" in error or "transformed by policy" in error
     assert agent_plugin.MAILBOX.sent == []
