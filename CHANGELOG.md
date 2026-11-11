@@ -41,9 +41,21 @@ A tool's name, input schema, side effect and permission are part of the public c
   caller names (or their subdomains) as `host/path`, unwrapped, de-duplicated, in order and
   capped, never with a query string. Call it before `redact_pii`, whose behaviour is unchanged,
   to tell a model which hosts a sender linked to without showing the links.
+- Legacy Word (`.doc`), Excel (`.xls`) and PowerPoint (`.ppt`) files through a host-supplied
+  `DocumentConverter` (#45): `documents_toolkit(converter=...)`, `DocumentReader(converter=...)`,
+  `extractor_for(..., converter=...)` and the new `LegacyOfficeDocumentExtractor`. The package
+  ships no converter. A converter (for example a sandboxed LibreOffice) turns the legacy bytes
+  into PDF, DOCX, XLSX, PPTX, ODT, ODS or ODP; the input must be a compound file of at most
+  10 MB, the output must be at most 10 MB and one of those formats by its signature, and it is
+  inspected by that format's extractor with all its findings. A Word or Excel macro project in
+  the legacy file is `document.macros`, since conversion drops it. With a converter, the
+  `extract_text` and `read_attachment` descriptions say legacy files are read; without one, the
+  tools and the catalog are unchanged.
 
 ### Changed
 
+- Without a converter, a `.doc`, `.xls` or `.ppt` file is refused with a message that names the
+  converter and the formats to save as, instead of the list of supported formats.
 - Allows `algen-agent-runtime` 0.2 (`>=0.1.0a23,<0.3`): the tools and their tests pass on both
   `0.1.0a23` and the `0.2.0b1` beta. Runtime 0.2 refuses a tool call whose arguments a policy
   redacted when the call is planned, with `policy.redacted`, instead of when it runs; nothing is

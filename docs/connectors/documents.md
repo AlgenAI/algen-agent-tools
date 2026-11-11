@@ -42,7 +42,9 @@ the calling tenant, bounds the call and governs it as a tool.
 
 The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`,
 `.odp`, `.rtf`, `.html`,
-`.htm`, `.csv`, `.tsv`, `.txt`, `.md`, `.eml` or `.msg`. Any other suffix is refused. When the
+`.htm`, `.csv`, `.tsv`, `.txt`, `.md`, `.eml` or `.msg`, and with a host-supplied converter
+`.doc`, `.xls` and `.ppt` (see [Legacy Office files](#legacy-office-files)). Any other suffix is
+refused. When the
 content's own signature names another type, the content wins: a `scan.pdf` that is really a
 JPEG is read as an image (with OCR), a `.docx` renamed `.doc` as Word, a PDF named `.txt` as a
 PDF. Text formats have no signature, so they go by their name. Text, CSV, TSV, Markdown and HTML
@@ -103,6 +105,68 @@ reported. An embedded OLE object, a common exploit carrier, is `document.embedde
 (security), and a field that loads a remote file (`INCLUDEPICTURE`, `INCLUDETEXT`) is
 `document.external_reference`. Pictures are coverage findings. A Word file saved as RTF but named
 `.doc` is recognised by its content.
+
+## Legacy Office files
+
+Legacy binary Word (`.doc`), Excel (`.xls`) and PowerPoint (`.ppt`) files are refused unless the
+host passes a converter: this package parses no legacy binary format and ships no converter.
+Without one, the refusal says to save the file as DOCX, XLSX, PPTX or PDF, and in an email such
+an attachment is `document.attachment_unread` (coverage). A converter is any object with a
+`convert` method that turns the legacy bytes into PDF, DOCX, XLSX, PPTX, ODT, ODS or ODP, for
+example a LibreOffice running in a sandbox:
+
+```python
+import subprocess, tempfile
+from pathlib import Path
+from algen_agent_tools.documents import documents_toolkit, extractor_for
+
+TARGETS = {
+    "application/msword": "docx",
+    "application/vnd.ms-excel": "xlsx",
+    "application/vnd.ms-powerpoint": "pptx",
+}
+
+class SandboxedLibreOffice:
+    def convert(self, data: bytes, *, media_type: str) -> bytes:
+        target = TARGETS[media_type]
+        with tempfile.TemporaryDirectory() as work:
+            Path(work, "in").write_bytes(data)
+            # Run it in your sandbox: no network, a read-only file system, a time limit.
+            subprocess.run(["soffice", "--headless", "--convert-to", target, "--outdir", work,
+                            str(Path(work, "in"))], check=True, timeout=60, capture_output=True)
+            outputs = list(Path(work).glob(f"in.{target}"))
+            if not outputs:
+                raise ValueError("conversion failed")
+            return outputs[0].read_bytes()
+
+documents = documents_toolkit(artifact_loader=load, converter=SandboxedLibreOffice())
+extracted = extractor_for("cv.doc", converter=SandboxedLibreOffice()).extract(data, filename="cv.doc")
+```
+
+The converter's output is as untrusted as the file:
+
+- Before the converter sees a file, it must be at most 10 MB and a compound (OLE) file by its
+  signature; a `.docx` or RTF file named `.doc` is read directly, without converting. The
+  converter gets the bytes and the legacy media type (`application/msword`,
+  `application/vnd.ms-excel` or `application/vnd.ms-powerpoint`), never the file's name.
+- The output must be at most 10 MB, and its type comes from its own signature: anything other
+  than PDF, DOCX, XLSX, PPTX, ODT, ODS or ODP (text, HTML, an image, another legacy file) is
+  refused. It is then inspected by that format's extractor with every hidden-text,
+  prompt-injection, macro and remote-content check, a PDF with OCR when a recognizer is set.
+  Converted output is never converted again.
+- A conversion drops a macro project, so the legacy file is checked for one first: a Word or
+  Excel VBA project is `document.macros` (critical), as for DOCX. A PowerPoint 97 macro project
+  is stored inside the presentation stream and is not detected.
+- The result keeps the legacy file's `media_type`. A `ValueError` from the converter refuses the
+  file with "the document converter could not convert the file", without the converter's
+  message; any other error (a timeout) propagates unchanged.
+- The converter runs in the same worker thread as the parsing. Sandboxing it, without network
+  access and with its own time limit, is the host's job.
+
+In code, `LegacyOfficeDocumentExtractor(converter=..., max_bytes=10_000_000,
+max_output_bytes=10_000_000)` changes the limits. An email's legacy attachments are converted
+with the same converter, and the mail toolkits' `read_attachment` uses it when their
+`DocumentReader` has one (`DocumentReader(converter=...)`).
 
 ## Email
 

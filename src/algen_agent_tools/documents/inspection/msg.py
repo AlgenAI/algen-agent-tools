@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any
 from algen_agent_tools.documents.inspection.core import ExtractedDocument
 
 if TYPE_CHECKING:
+    from algen_agent_tools.documents.inspection.legacy import DocumentConverter
     from algen_agent_tools.documents.inspection.ocr import TextRecognizer
 
 UNREAD_BODY_HEADER = "X-Algen-Unread-Body"
@@ -226,6 +227,7 @@ class MsgDocumentExtractor:
         max_characters: int = 250_000,
         ocr: TextRecognizer | None = None,
         ocr_max_pages: int = 3,
+        converter: DocumentConverter | None = None,
     ) -> None:
         from algen_agent_tools.documents.inspection.email import EmailDocumentExtractor
 
@@ -237,6 +239,7 @@ class MsgDocumentExtractor:
             max_characters=max_characters,
             ocr=ocr,
             ocr_max_pages=ocr_max_pages,
+            converter=converter,
         )
 
     def extract(self, data: bytes, *, filename: str) -> ExtractedDocument:

@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from algen_agent_tools.documents.inspection.ocr import render_page_png, validate_ocr_options
 
 if TYPE_CHECKING:
+    from algen_agent_tools.documents.inspection.legacy import DocumentConverter
     from algen_agent_tools.documents.inspection.ocr import TextRecognizer
 
 
@@ -634,6 +635,7 @@ def extractor_for(
     data: bytes | None = None,
     ocr: TextRecognizer | None = None,
     ocr_max_pages: int = 3,
+    converter: DocumentConverter | None = None,
 ) -> DocumentExtractor:
     """The extractor for ``filename``'s suffix, or with ``data``, for the type the content's
     signature declares when it has one (a ``scan.pdf`` that is really a JPEG is read as an
@@ -644,6 +646,11 @@ def extractor_for(
     With an ``ocr`` recognizer, images (PNG, JPEG, WebP, GIF, BMP, TIFF) are accepted and
     scanned PDF pages are recognized, up to ``ocr_max_pages`` pages per PDF. Without one,
     images are refused and nothing is recognized.
+
+    With a ``converter`` (a host-supplied
+    :class:`~algen_agent_tools.documents.inspection.legacy.DocumentConverter`), legacy Word
+    (``.doc``), Excel (``.xls``) and PowerPoint (``.ppt``) files are converted and the output is
+    inspected as the format it is. Without one, they are refused.
     """
     suffix = Path(filename).suffix.lower()
     sniffed = sniff_suffix(data) if data is not None else None
@@ -690,11 +697,22 @@ def extractor_for(
     if suffix == ".eml":
         from algen_agent_tools.documents.inspection.email import EmailDocumentExtractor
 
-        return EmailDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages)
+        return EmailDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages, converter=converter)
     if suffix == ".msg":
         from algen_agent_tools.documents.inspection.msg import MsgDocumentExtractor
 
-        return MsgDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages)
+        return MsgDocumentExtractor(ocr=ocr, ocr_max_pages=ocr_max_pages, converter=converter)
+    if suffix in {".doc", ".xls", ".ppt"}:
+        from algen_agent_tools.documents.inspection.legacy import (
+            LEGACY_REFUSAL,
+            LegacyOfficeDocumentExtractor,
+        )
+
+        if converter is None:
+            raise ValueError(LEGACY_REFUSAL)
+        return LegacyOfficeDocumentExtractor(
+            converter=converter, ocr=ocr, ocr_max_pages=ocr_max_pages
+        )
     raise ValueError(
         "only PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP, RTF, HTML, CSV, TSV, TXT, Markdown, EML and "
         "MSG documents are supported"

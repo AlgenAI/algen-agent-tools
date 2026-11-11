@@ -8,6 +8,7 @@ The document inspection itself (``extractor_for`` and its contracts) lives in
 """
 
 from algen_agent_tools.documents.inspection import (
+    DocumentConverter,
     DocumentDisposition,
     DocumentPart,
     DocumentSecurityFinding,
@@ -34,6 +35,7 @@ from algen_agent_tools.documents.toolkit import (
 
 __all__ = [
     "DocumentAttachmentText",
+    "DocumentConverter",
     "DocumentDisposition",
     "DocumentFinding",
     "DocumentPart",
