@@ -14,6 +14,7 @@ import imaplib
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
+from email.header import decode_header, make_header
 from email.message import Message
 from email.policy import compat32
 from typing import Any
@@ -60,6 +61,9 @@ class FakeImapServer:
     drop_next: bool = False
     """Raise ``imaplib.IMAP4.abort`` on the next command, as a server that hung up would."""
     logged_out: int = 0
+    utf8_search: bool = True
+    """Answer ``SEARCH CHARSET UTF-8``; ``False`` answers ``NO [BADCHARSET]``, as a server that
+    searches US-ASCII only does."""
 
     def add(
         self,
@@ -109,6 +113,8 @@ class FakeImapConnection:
         self._authenticated = False
         self._folder: str | None = None
         self._responses: dict[str, list[bytes]] = {}
+        self.literal: bytes | None = None
+        """A literal for the next command's last argument, as ``imaplib.IMAP4.literal``."""
 
     def _record(self, command: str) -> None:
         self._server.commands.append(command)
@@ -148,12 +154,22 @@ class FakeImapConnection:
         return code, list(self._responses.pop(code, [None]))
 
     def uid(self, command: str, *args: str) -> tuple[str, builtins.list[Any]]:
-        self._record(f"UID {command} {' '.join(args)}")
+        literal, self.literal = self.literal, None
+        marker = f" {{{len(literal)}}}" if literal is not None else ""
+        self._record(f"UID {command} {' '.join(args)}{marker}")
         if self._folder is None:
             raise imaplib.IMAP4.error("command illegal in this state")
         messages = self._server.folders[self._folder]
         if command == "SEARCH":
-            found = [str(item.uid) for item in messages if _matches(item, list(args))]
+            criteria = list(args)
+            if criteria[:1] and criteria[0].upper() == "CHARSET":
+                if criteria[1].upper() != "UTF-8" or not self._server.utf8_search:
+                    return "NO", [b"[BADCHARSET (US-ASCII)] charset not supported"]
+                criteria = criteria[2:]
+            if literal is not None:
+                value = literal.decode("utf-8")
+                criteria.append('"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"')
+            found = [str(item.uid) for item in messages if _matches(item, criteria)]
             return "OK", [" ".join(found).encode()]
         if command == "FETCH":
             wanted = _uid_set(args[0])
@@ -189,6 +205,15 @@ def _date(value: str) -> date:
     return date(int(year), MONTHS.index(month) + 1, int(day))
 
 
+def _decoded(message: Message, name: str) -> str:
+    """A header as a server searches it: RFC 2047 encoded words decoded."""
+    value = str(message.get(name, ""))
+    try:
+        return str(make_header(decode_header(value)))
+    except (ValueError, LookupError, UnicodeError):
+        return value
+
+
 def _matches(item: FakeImapMessage, criteria: list[str]) -> bool:
     index = 0
     while index < len(criteria):
@@ -214,7 +239,7 @@ def _key(item: FakeImapMessage, criteria: list[str], index: int) -> tuple[bool, 
         return left or right, after
     if key in ("FROM", "SUBJECT"):
         wanted = unquote(criteria[index + 1]).casefold()
-        return wanted in str(message.get(key.title(), "")).casefold(), index + 2
+        return wanted in _decoded(message, key.title()).casefold(), index + 2
     if key == "TEXT":
         wanted = unquote(criteria[index + 1]).casefold()
         return wanted in item.raw.decode("utf-8", "replace").casefold(), index + 2
@@ -225,7 +250,7 @@ def _key(item: FakeImapMessage, criteria: list[str], index: int) -> tuple[bool, 
         return all(word in content for word in words), index + 2
     if key == "HEADER":
         name, wanted = criteria[index + 1], unquote(criteria[index + 2]).casefold()
-        return wanted in str(message.get(name, "")).casefold(), index + 3
+        return wanted in _decoded(message, name).casefold(), index + 3
     if key == "SINCE":
         return day >= _date(criteria[index + 1]), index + 2
     if key == "BEFORE":
@@ -272,10 +297,21 @@ def _parts(message: Message, number: str = "") -> list[tuple[str, Message]]:
 
 
 def _payload(part: Message) -> bytes:
+    """A leaf part's body as the message stores it: still transfer-encoded, with its own line
+    endings. An 8bit body keeps its bytes (UTF-8 or any other charset)."""
     payload = part.get_payload()
     if isinstance(payload, list):  # message/rfc822
         return b"".join(item.as_bytes() for item in _children(part))
-    return str(payload).encode("ascii", "surrogateescape")
+    if str(part.get("Content-Transfer-Encoding", "")).strip().lower() in (
+        "base64",
+        "quoted-printable",
+    ):
+        # Encoded text is ASCII; decode=True would remove the encoding.
+        return str(payload).encode("utf-8", "surrogateescape")
+    # A part parsed from bytes keeps 8bit octets as surrogates; decode=True turns them back
+    # into the original bytes, where the plain payload is already decoded with the charset.
+    raw = part.get_payload(decode=True)
+    return raw if isinstance(raw, bytes) else b""
 
 
 def _params(pairs: Sequence[tuple[str, str]] | None) -> str:

@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from algen_agent_tools._core.auth import OAuthClientCredentials, OAuthRefresh, RefreshTokenSink
 from algen_agent_tools._core.errors import failure, not_attempted, rejected
 from algen_agent_tools._core.http import HostLockedClient
+from algen_agent_tools._core.schema import Identifier
 from algen_agent_tools.attachments.models import AttachmentUpload
 from algen_agent_tools.mail.inbound import (
     MAX_THREAD_MESSAGES,
@@ -98,7 +99,7 @@ class OutlookSettings(BaseModel):
 class OutlookMailboxPage(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     messages: tuple[InboundEmailSummary, ...] = ()
-    next_page_token: str | None = None
+    next_page_token: Identifier | None = None
 
 
 def _segment(value: str) -> str:
@@ -206,6 +207,22 @@ class OutlookMailboxClient:
         return {"Authorization": f"Bearer {await self._oauth.token()}", **extra}
 
     async def send(self, message: EmailMessage, *, idempotency_key: str) -> EmailDeliveryReceipt:
+        """Send ``message``. With ``in_reply_to`` it is a reply (``messages/{id}/reply``) to the
+        mailbox's message with that Message-ID, so Graph sets In-Reply-To and References from
+        the original and keeps the reply in its conversation. ``references`` is not sent: Graph
+        builds it, and takes only ``X-`` headers on a new message."""
+        if message.thread_id is not None:
+            raise not_attempted(
+                EmailDeliveryError(
+                    "Outlook threads a reply by in_reply_to; thread_id is not supported"
+                )
+            )
+        if message.references and message.in_reply_to is None:
+            raise not_attempted(
+                EmailDeliveryError(
+                    "Outlook cannot set References on a new message; reply with in_reply_to"
+                )
+            )
         attachments: list[dict[str, Any]] = []
         total_bytes = 0
         for reference in message.attachments:
@@ -231,12 +248,15 @@ class OutlookMailboxClient:
             body["replyTo"] = _recipients((message.reply_to,))
         if attachments:
             body["attachments"] = attachments
+        if message.in_reply_to is not None:
+            original = await self._message_by_header(message.in_reply_to)
+            url = self._url(f"messages/{_segment(original)}/reply")
+            payload: dict[str, Any] = {"message": body}
+        else:
+            url = self._url("sendMail")
+            payload = {"message": body, "saveToSentItems": True}
         try:
-            response = await self._http.post(
-                self._url("sendMail"),
-                headers=await self._headers(),
-                json={"message": body, "saveToSentItems": True},
-            )
+            response = await self._http.post(url, headers=await self._headers(), json=payload)
             response.raise_for_status()
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
             error = EmailDeliveryError(failure("Outlook", "delivery", exc))
@@ -251,6 +271,32 @@ class OutlookMailboxClient:
             status=EmailDeliveryStatus.ACCEPTED,
             accepted_recipients=recipients,
         )
+
+    async def _message_by_header(self, message_id: str) -> str:
+        """The Graph id of this mailbox's message whose Message-ID is ``message_id``."""
+        # OData quotes a literal in single quotes, doubling any inside it.
+        literal = message_id.replace("'", "''")
+        try:
+            response = await self._http.get(
+                self._url("messages"),
+                headers=await self._headers(),
+                params={
+                    "$filter": f"internetMessageId eq '{literal}'",
+                    "$select": "id",
+                    "$top": "1",
+                },
+            )
+            response.raise_for_status()
+            found = response.json()["value"]
+        except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+            raise not_attempted(
+                EmailDeliveryError(failure("Outlook", "reply lookup", exc))
+            ) from exc
+        if not found or not str(found[0].get("id") or ""):
+            raise not_attempted(
+                EmailDeliveryError("Outlook has no message with that in_reply_to in this mailbox")
+            )
+        return str(found[0]["id"])
 
     async def _attachment(
         self, reference: EmailAttachmentReference, sent_bytes: int

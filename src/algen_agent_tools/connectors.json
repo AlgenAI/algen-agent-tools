@@ -89,6 +89,7 @@
               "page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 2000,
                     "type": "string"
                   },
@@ -113,6 +114,7 @@
                   "description": "A chat, group or channel the connector can read or write.",
                   "properties": {
                     "id": {
+                      "format": "identifier",
                       "maxLength": 256,
                       "type": "string"
                     },
@@ -148,6 +150,7 @@
               "next_page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "type": "string"
                   },
                   {
@@ -174,6 +177,7 @@
             "additionalProperties": false,
             "properties": {
               "conversation_id": {
+                "format": "identifier",
                 "maxLength": 256,
                 "minLength": 1,
                 "pattern": "^[0-9]{15,21}$",
@@ -188,6 +192,7 @@
               "page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 2000,
                     "type": "string"
                   },
@@ -221,6 +226,7 @@
                         "description": "A file on a message; ``get_attachment`` saves it as an artifact by ``attachment_id``.",
                         "properties": {
                           "attachment_id": {
+                            "format": "identifier",
                             "maxLength": 2000,
                             "type": "string"
                           },
@@ -259,6 +265,7 @@
                       "description": "A chat, group or channel the connector can read or write.",
                       "properties": {
                         "id": {
+                          "format": "identifier",
                           "maxLength": 256,
                           "type": "string"
                         },
@@ -294,12 +301,14 @@
                       "type": "boolean"
                     },
                     "message_id": {
+                      "format": "identifier",
                       "maxLength": 256,
                       "type": "string"
                     },
                     "reply_to_message_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 256,
                           "type": "string"
                         },
@@ -327,6 +336,7 @@
                               "default": null
                             },
                             "id": {
+                              "format": "identifier",
                               "maxLength": 256,
                               "type": "string"
                             },
@@ -380,6 +390,7 @@
               "next_page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "type": "string"
                   },
                   {
@@ -406,6 +417,7 @@
             "additionalProperties": false,
             "properties": {
               "conversation_id": {
+                "format": "identifier",
                 "maxLength": 256,
                 "minLength": 1,
                 "pattern": "^[0-9]{15,21}$",
@@ -414,6 +426,7 @@
               "reply_to_message_id": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 256,
                     "minLength": 1,
                     "pattern": "^[0-9]{15,21}$",
@@ -443,9 +456,11 @@
             "additionalProperties": false,
             "properties": {
               "conversation_id": {
+                "format": "identifier",
                 "type": "string"
               },
               "message_id": {
+                "format": "identifier",
                 "type": "string"
               },
               "provider": {
@@ -3476,6 +3491,7 @@
                 "type": "integer"
               },
               "message_id": {
+                "format": "identifier",
                 "maxLength": 1000,
                 "minLength": 1,
                 "pattern": "^[A-Za-z0-9_=-][A-Za-z0-9_.=-]*$",
@@ -3508,6 +3524,7 @@
                     "content_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 998,
                           "type": "string"
                         },
@@ -3537,6 +3554,7 @@
                     "part_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 64,
                           "type": "string"
                         },
@@ -3547,6 +3565,7 @@
                       "default": null
                     },
                     "provider_attachment_id": {
+                      "format": "identifier",
                       "maxLength": 2000,
                       "minLength": 1,
                       "type": "string"
@@ -3591,6 +3610,7 @@
               "in_reply_to": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 998,
                     "type": "string"
                   },
@@ -3610,6 +3630,7 @@
               "message_id_header": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 998,
                     "type": "string"
                   },
@@ -3620,6 +3641,7 @@
                 "default": null
               },
               "provider_message_id": {
+                "format": "identifier",
                 "type": "string"
               },
               "quoted_text_removed": {
@@ -3648,6 +3670,7 @@
               "references": {
                 "default": [],
                 "items": {
+                  "format": "identifier",
                   "type": "string"
                 },
                 "maxItems": 100,
@@ -3708,6 +3731,7 @@
               "thread_id": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "type": "string"
                   },
                   {
@@ -3757,6 +3781,7 @@
                 "type": "integer"
               },
               "thread_id": {
+                "format": "identifier",
                 "maxLength": 2000,
                 "minLength": 1,
                 "pattern": "^[A-Za-z0-9_=-][A-Za-z0-9_.=-]*$",
@@ -3795,6 +3820,7 @@
                           "content_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 998,
                                 "type": "string"
                               },
@@ -3824,6 +3850,7 @@
                           "part_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 64,
                                 "type": "string"
                               },
@@ -3834,6 +3861,7 @@
                             "default": null
                           },
                           "provider_attachment_id": {
+                            "format": "identifier",
                             "maxLength": 2000,
                             "minLength": 1,
                             "type": "string"
@@ -3878,6 +3906,7 @@
                     "in_reply_to": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 998,
                           "type": "string"
                         },
@@ -3897,6 +3926,7 @@
                     "message_id_header": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 998,
                           "type": "string"
                         },
@@ -3907,6 +3937,7 @@
                       "default": null
                     },
                     "provider_message_id": {
+                      "format": "identifier",
                       "type": "string"
                     },
                     "quoted_text_removed": {
@@ -3935,6 +3966,7 @@
                     "references": {
                       "default": [],
                       "items": {
+                        "format": "identifier",
                         "type": "string"
                       },
                       "maxItems": 100,
@@ -3995,6 +4027,7 @@
                     "thread_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "type": "string"
                         },
                         {
@@ -4013,6 +4046,7 @@
                 "type": "array"
               },
               "thread_id": {
+                "format": "identifier",
                 "type": "string"
               },
               "truncated": {
@@ -4048,6 +4082,7 @@
               "page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 2000,
                     "type": "string"
                   },
@@ -4090,6 +4125,7 @@
                           "content_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 998,
                                 "type": "string"
                               },
@@ -4119,6 +4155,7 @@
                           "part_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 64,
                                 "type": "string"
                               },
@@ -4129,6 +4166,7 @@
                             "default": null
                           },
                           "provider_attachment_id": {
+                            "format": "identifier",
                             "maxLength": 2000,
                             "minLength": 1,
                             "type": "string"
@@ -4160,6 +4198,7 @@
                       "type": "array"
                     },
                     "provider_message_id": {
+                      "format": "identifier",
                       "type": "string"
                     },
                     "received_at_ms": {
@@ -4231,6 +4270,7 @@
                     "thread_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "type": "string"
                         },
                         {
@@ -4250,6 +4290,7 @@
               "next_page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "type": "string"
                   },
                   {
@@ -4275,11 +4316,11 @@
           "version": "1.0.0"
         },
         {
-          "description": "Send one email through Gmail from the deployment's own address. Give at least one recipient, a subject and a text or HTML body. Every call sends a real email.",
+          "description": "Send one email through Gmail from the deployment's own address. Give at least one recipient, a subject and a text or HTML body. To reply in a thread, set in_reply_to to the message_id_header of the message replied to and references to its references, and keep its subject (Re: ...). Set thread_id to the replied-to message's thread_id too, so Gmail files the reply in that thread. Every call sends a real email.",
           "idempotency": "keyed",
           "input_schema": {
             "additionalProperties": false,
-            "description": "What the model supplies to send one email; the sender is the deployment's.",
+            "description": "An :class:`OutgoingEmail` that may name the provider's own thread (Gmail).",
             "properties": {
               "bcc": {
                 "default": [],
@@ -4357,6 +4398,35 @@
                 ],
                 "default": null
               },
+              "in_reply_to": {
+                "anyOf": [
+                  {
+                    "format": "identifier",
+                    "maxLength": 980,
+                    "minLength": 5,
+                    "pattern": "^<[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\\[[!-Z^-~]*\\])>$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "To reply in a thread: the message_id_header of the message replied to, such as <id@host>."
+              },
+              "references": {
+                "default": [],
+                "description": "With in_reply_to: the replied-to message's references, oldest first. in_reply_to is added at the end.",
+                "items": {
+                  "format": "identifier",
+                  "maxLength": 980,
+                  "minLength": 5,
+                  "pattern": "^<[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\\[[!-Z^-~]*\\])>$",
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "type": "array"
+              },
               "reply_to": {
                 "anyOf": [
                   {
@@ -4408,6 +4478,22 @@
                   }
                 ],
                 "default": null
+              },
+              "thread_id": {
+                "anyOf": [
+                  {
+                    "format": "identifier",
+                    "maxLength": 256,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9_-]+$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "With in_reply_to: the thread_id of the message replied to, so the reply joins that thread."
               },
               "to": {
                 "items": {
@@ -4468,6 +4554,7 @@
                 "type": "string"
               },
               "provider_message_id": {
+                "format": "identifier",
                 "maxLength": 998,
                 "minLength": 1,
                 "type": "string"
@@ -4615,6 +4702,7 @@
                 "type": "integer"
               },
               "message_id": {
+                "format": "identifier",
                 "maxLength": 1000,
                 "minLength": 1,
                 "pattern": "^[A-Za-z0-9_=-][A-Za-z0-9_.=-]*$",
@@ -4647,6 +4735,7 @@
                     "content_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 998,
                           "type": "string"
                         },
@@ -4676,6 +4765,7 @@
                     "part_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 64,
                           "type": "string"
                         },
@@ -4686,6 +4776,7 @@
                       "default": null
                     },
                     "provider_attachment_id": {
+                      "format": "identifier",
                       "maxLength": 2000,
                       "minLength": 1,
                       "type": "string"
@@ -4730,6 +4821,7 @@
               "in_reply_to": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 998,
                     "type": "string"
                   },
@@ -4749,6 +4841,7 @@
               "message_id_header": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 998,
                     "type": "string"
                   },
@@ -4759,6 +4852,7 @@
                 "default": null
               },
               "provider_message_id": {
+                "format": "identifier",
                 "type": "string"
               },
               "quoted_text_removed": {
@@ -4787,6 +4881,7 @@
               "references": {
                 "default": [],
                 "items": {
+                  "format": "identifier",
                   "type": "string"
                 },
                 "maxItems": 100,
@@ -4847,6 +4942,7 @@
               "thread_id": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "type": "string"
                   },
                   {
@@ -4896,6 +4992,7 @@
                 "type": "integer"
               },
               "thread_id": {
+                "format": "identifier",
                 "maxLength": 2000,
                 "minLength": 1,
                 "pattern": "^[A-Za-z0-9_=-][A-Za-z0-9_.=-]*$",
@@ -4934,6 +5031,7 @@
                           "content_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 998,
                                 "type": "string"
                               },
@@ -4963,6 +5061,7 @@
                           "part_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 64,
                                 "type": "string"
                               },
@@ -4973,6 +5072,7 @@
                             "default": null
                           },
                           "provider_attachment_id": {
+                            "format": "identifier",
                             "maxLength": 2000,
                             "minLength": 1,
                             "type": "string"
@@ -5017,6 +5117,7 @@
                     "in_reply_to": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 998,
                           "type": "string"
                         },
@@ -5036,6 +5137,7 @@
                     "message_id_header": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 998,
                           "type": "string"
                         },
@@ -5046,6 +5148,7 @@
                       "default": null
                     },
                     "provider_message_id": {
+                      "format": "identifier",
                       "type": "string"
                     },
                     "quoted_text_removed": {
@@ -5074,6 +5177,7 @@
                     "references": {
                       "default": [],
                       "items": {
+                        "format": "identifier",
                         "type": "string"
                       },
                       "maxItems": 100,
@@ -5134,6 +5238,7 @@
                     "thread_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "type": "string"
                         },
                         {
@@ -5152,6 +5257,7 @@
                 "type": "array"
               },
               "thread_id": {
+                "format": "identifier",
                 "type": "string"
               },
               "truncated": {
@@ -5225,7 +5331,7 @@
           "version": "1.0.0"
         },
         {
-          "description": "List messages in one mailbox folder, newest first: sender, recipients, subject, a\nshort snippet, flags and attachments. Every filter given must match: from_address and\nsubject are text the From and Subject headers contain (ASCII), since and before are\ndates (YYYY-MM-DD; since includes the day, before excludes it), unread_only keeps\nunseen mail, text_contains is text anywhere in the headers or body (ASCII), and\ngmail_query is a Gmail search such as \"has:attachment newer_than:7d\" (Gmail servers\nonly). folder is a name from list_folders or a special-use name such as \\Sent. Reading\nnever marks a message as seen. Use next_page_token to continue.",
+          "description": "List messages in one mailbox folder, newest first: sender, recipients, subject, a\nshort snippet, flags and attachments. Every filter given must match: from_address and\nsubject are text the From and Subject headers contain, since and before are dates\n(YYYY-MM-DD; since includes the day, before excludes it), unread_only keeps unseen\nmail, text_contains is text anywhere in the headers or body, and gmail_query is a Gmail\nsearch such as \"has:attachment newer_than:7d\" (ASCII; Gmail servers only). Text that\nis not ASCII needs a server that searches UTF-8; one that does not refuses it. folder is a name from list_folders or a special-use name such as \\Sent. Reading\nnever marks a message as seen. Use next_page_token to continue.",
           "idempotency": "idempotent",
           "input_schema": {
             "additionalProperties": false,
@@ -5252,7 +5358,7 @@
                 "anyOf": [
                   {
                     "maxLength": 320,
-                    "pattern": "^[ -~]*$",
+                    "pattern": "^[^\\x00-\\x1f\\x7f]*$",
                     "type": "string"
                   },
                   {
@@ -5283,6 +5389,7 @@
               "page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 32,
                     "type": "string"
                   },
@@ -5308,7 +5415,7 @@
                 "anyOf": [
                   {
                     "maxLength": 200,
-                    "pattern": "^[ -~]*$",
+                    "pattern": "^[^\\x00-\\x1f\\x7f]*$",
                     "type": "string"
                   },
                   {
@@ -5321,7 +5428,7 @@
                 "anyOf": [
                   {
                     "maxLength": 200,
-                    "pattern": "^[ -~]*$",
+                    "pattern": "^[^\\x00-\\x1f\\x7f]*$",
                     "type": "string"
                   },
                   {
@@ -5362,6 +5469,7 @@
                           "content_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 998,
                                 "type": "string"
                               },
@@ -5391,6 +5499,7 @@
                           "part_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 64,
                                 "type": "string"
                               },
@@ -5401,6 +5510,7 @@
                             "default": null
                           },
                           "provider_attachment_id": {
+                            "format": "identifier",
                             "maxLength": 2000,
                             "minLength": 1,
                             "type": "string"
@@ -5432,6 +5542,7 @@
                       "type": "array"
                     },
                     "provider_message_id": {
+                      "format": "identifier",
                       "type": "string"
                     },
                     "received_at_ms": {
@@ -5503,6 +5614,7 @@
                     "thread_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "type": "string"
                         },
                         {
@@ -5522,6 +5634,7 @@
               "next_page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "type": "string"
                   },
                   {
@@ -5859,6 +5972,7 @@
                 "type": "integer"
               },
               "message_id": {
+                "format": "identifier",
                 "maxLength": 1000,
                 "minLength": 1,
                 "pattern": "^[A-Za-z0-9_=+/-][A-Za-z0-9_.=+/-]*$",
@@ -5891,6 +6005,7 @@
                     "content_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 998,
                           "type": "string"
                         },
@@ -5920,6 +6035,7 @@
                     "part_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 64,
                           "type": "string"
                         },
@@ -5930,6 +6046,7 @@
                       "default": null
                     },
                     "provider_attachment_id": {
+                      "format": "identifier",
                       "maxLength": 2000,
                       "minLength": 1,
                       "type": "string"
@@ -5974,6 +6091,7 @@
               "in_reply_to": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 998,
                     "type": "string"
                   },
@@ -5993,6 +6111,7 @@
               "message_id_header": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 998,
                     "type": "string"
                   },
@@ -6003,6 +6122,7 @@
                 "default": null
               },
               "provider_message_id": {
+                "format": "identifier",
                 "type": "string"
               },
               "quoted_text_removed": {
@@ -6031,6 +6151,7 @@
               "references": {
                 "default": [],
                 "items": {
+                  "format": "identifier",
                   "type": "string"
                 },
                 "maxItems": 100,
@@ -6091,6 +6212,7 @@
               "thread_id": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "type": "string"
                   },
                   {
@@ -6140,6 +6262,7 @@
                 "type": "integer"
               },
               "thread_id": {
+                "format": "identifier",
                 "maxLength": 2000,
                 "minLength": 1,
                 "pattern": "^[A-Za-z0-9_=+/-][A-Za-z0-9_.=+/-]*$",
@@ -6178,6 +6301,7 @@
                           "content_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 998,
                                 "type": "string"
                               },
@@ -6207,6 +6331,7 @@
                           "part_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 64,
                                 "type": "string"
                               },
@@ -6217,6 +6342,7 @@
                             "default": null
                           },
                           "provider_attachment_id": {
+                            "format": "identifier",
                             "maxLength": 2000,
                             "minLength": 1,
                             "type": "string"
@@ -6261,6 +6387,7 @@
                     "in_reply_to": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 998,
                           "type": "string"
                         },
@@ -6280,6 +6407,7 @@
                     "message_id_header": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 998,
                           "type": "string"
                         },
@@ -6290,6 +6418,7 @@
                       "default": null
                     },
                     "provider_message_id": {
+                      "format": "identifier",
                       "type": "string"
                     },
                     "quoted_text_removed": {
@@ -6318,6 +6447,7 @@
                     "references": {
                       "default": [],
                       "items": {
+                        "format": "identifier",
                         "type": "string"
                       },
                       "maxItems": 100,
@@ -6378,6 +6508,7 @@
                     "thread_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "type": "string"
                         },
                         {
@@ -6396,6 +6527,7 @@
                 "type": "array"
               },
               "thread_id": {
+                "format": "identifier",
                 "type": "string"
               },
               "truncated": {
@@ -6442,6 +6574,7 @@
               "page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 4000,
                     "type": "string"
                   },
@@ -6495,6 +6628,7 @@
                           "content_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 998,
                                 "type": "string"
                               },
@@ -6524,6 +6658,7 @@
                           "part_id": {
                             "anyOf": [
                               {
+                                "format": "identifier",
                                 "maxLength": 64,
                                 "type": "string"
                               },
@@ -6534,6 +6669,7 @@
                             "default": null
                           },
                           "provider_attachment_id": {
+                            "format": "identifier",
                             "maxLength": 2000,
                             "minLength": 1,
                             "type": "string"
@@ -6565,6 +6701,7 @@
                       "type": "array"
                     },
                     "provider_message_id": {
+                      "format": "identifier",
                       "type": "string"
                     },
                     "received_at_ms": {
@@ -6636,6 +6773,7 @@
                     "thread_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "type": "string"
                         },
                         {
@@ -6655,6 +6793,7 @@
               "next_page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "type": "string"
                   },
                   {
@@ -6675,7 +6814,7 @@
           "version": "1.0.0"
         },
         {
-          "description": "Send one email through Outlook from the deployment's own address. Give at least one recipient, a subject and a text or HTML body. Every call sends a real email.",
+          "description": "Send one email through Outlook from the deployment's own address. Give at least one recipient, a subject and a text or HTML body. To reply in a thread, set in_reply_to to the message_id_header of the message replied to and references to its references, and keep its subject (Re: ...). On Outlook the reply is sent as a reply to that message, which must be in this mailbox; Outlook sets References itself. Every call sends a real email.",
           "idempotency": "keyed",
           "input_schema": {
             "additionalProperties": false,
@@ -6756,6 +6895,35 @@
                   }
                 ],
                 "default": null
+              },
+              "in_reply_to": {
+                "anyOf": [
+                  {
+                    "format": "identifier",
+                    "maxLength": 980,
+                    "minLength": 5,
+                    "pattern": "^<[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\\[[!-Z^-~]*\\])>$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "To reply in a thread: the message_id_header of the message replied to, such as <id@host>."
+              },
+              "references": {
+                "default": [],
+                "description": "With in_reply_to: the replied-to message's references, oldest first. in_reply_to is added at the end.",
+                "items": {
+                  "format": "identifier",
+                  "maxLength": 980,
+                  "minLength": 5,
+                  "pattern": "^<[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\\[[!-Z^-~]*\\])>$",
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "type": "array"
               },
               "reply_to": {
                 "anyOf": [
@@ -6868,6 +7036,7 @@
                 "type": "string"
               },
               "provider_message_id": {
+                "format": "identifier",
                 "maxLength": 998,
                 "minLength": 1,
                 "type": "string"
@@ -7278,7 +7447,7 @@
       "title": "SMTP email",
       "tools": [
         {
-          "description": "Send one email through SMTP from the deployment's own address. Give at least one recipient, a subject and a text or HTML body. Every call sends a real email.",
+          "description": "Send one email through SMTP from the deployment's own address. Give at least one recipient, a subject and a text or HTML body. To reply in a thread, set in_reply_to to the message_id_header of the message replied to and references to its references, and keep its subject (Re: ...). Every call sends a real email.",
           "idempotency": "keyed",
           "input_schema": {
             "additionalProperties": false,
@@ -7359,6 +7528,35 @@
                   }
                 ],
                 "default": null
+              },
+              "in_reply_to": {
+                "anyOf": [
+                  {
+                    "format": "identifier",
+                    "maxLength": 980,
+                    "minLength": 5,
+                    "pattern": "^<[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\\[[!-Z^-~]*\\])>$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "To reply in a thread: the message_id_header of the message replied to, such as <id@host>."
+              },
+              "references": {
+                "default": [],
+                "description": "With in_reply_to: the replied-to message's references, oldest first. in_reply_to is added at the end.",
+                "items": {
+                  "format": "identifier",
+                  "maxLength": 980,
+                  "minLength": 5,
+                  "pattern": "^<[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\\[[!-Z^-~]*\\])>$",
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "type": "array"
               },
               "reply_to": {
                 "anyOf": [
@@ -7471,6 +7669,7 @@
                 "type": "string"
               },
               "provider_message_id": {
+                "format": "identifier",
                 "maxLength": 998,
                 "minLength": 1,
                 "type": "string"
@@ -7764,6 +7963,7 @@
               "conversation_id": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 256,
                     "minLength": 1,
                     "pattern": "^-?[0-9]{1,20}$",
@@ -7784,6 +7984,7 @@
               "page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 2000,
                     "type": "string"
                   },
@@ -7814,6 +8015,7 @@
                         "description": "A file on a message; ``get_attachment`` saves it as an artifact by ``attachment_id``.",
                         "properties": {
                           "attachment_id": {
+                            "format": "identifier",
                             "maxLength": 2000,
                             "type": "string"
                           },
@@ -7852,6 +8054,7 @@
                       "description": "A chat, group or channel the connector can read or write.",
                       "properties": {
                         "id": {
+                          "format": "identifier",
                           "maxLength": 256,
                           "type": "string"
                         },
@@ -7887,12 +8090,14 @@
                       "type": "boolean"
                     },
                     "message_id": {
+                      "format": "identifier",
                       "maxLength": 256,
                       "type": "string"
                     },
                     "reply_to_message_id": {
                       "anyOf": [
                         {
+                          "format": "identifier",
                           "maxLength": 256,
                           "type": "string"
                         },
@@ -7920,6 +8125,7 @@
                               "default": null
                             },
                             "id": {
+                              "format": "identifier",
                               "maxLength": 256,
                               "type": "string"
                             },
@@ -7973,6 +8179,7 @@
               "next_page_token": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "type": "string"
                   },
                   {
@@ -7999,6 +8206,7 @@
             "additionalProperties": false,
             "properties": {
               "conversation_id": {
+                "format": "identifier",
                 "maxLength": 256,
                 "minLength": 1,
                 "pattern": "^-?[0-9]{1,20}$",
@@ -8007,6 +8215,7 @@
               "reply_to_message_id": {
                 "anyOf": [
                   {
+                    "format": "identifier",
                     "maxLength": 256,
                     "minLength": 1,
                     "pattern": "^[0-9]{1,20}$",
@@ -8036,9 +8245,11 @@
             "additionalProperties": false,
             "properties": {
               "conversation_id": {
+                "format": "identifier",
                 "type": "string"
               },
               "message_id": {
+                "format": "identifier",
                 "type": "string"
               },
               "provider": {

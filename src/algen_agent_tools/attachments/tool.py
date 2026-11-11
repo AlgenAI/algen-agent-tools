@@ -9,6 +9,7 @@ from algen_agent_runtime.tools.authoring import Toolkit, read
 from algen_agent_runtime.tools.contracts import Tool, ToolContext
 from pydantic import Field
 
+from algen_agent_tools._core.schema import IDENTIFIER_SCHEMA
 from algen_agent_tools.attachments.models import ArtifactSink, AttachmentRef, AttachmentUpload
 from algen_agent_tools.attachments.policy import AttachmentPolicy
 
@@ -29,8 +30,19 @@ ATTACHMENT_ID_DESCRIPTION = (
 def id_field(pattern: str = ID_PATTERN, *, max_length: int = 2_000) -> Any:
     """A tool input type for a provider id that must match ``pattern``. A pattern may allow more
     characters than :data:`ID_PATTERN` (Microsoft Graph ids contain ``/`` and ``+``) as long as
-    it never matches ``.`` or ``..`` and the client encodes the id into one path segment."""
-    return Annotated[str, Field(min_length=1, max_length=max_length, pattern=pattern)]
+    it never matches ``.`` or ``..`` and the client encodes the id into one path segment.
+
+    The field declares ``format: identifier``, so the Runtime's ``pii`` guardrail does not read
+    a digit-string id (a Telegram chat or message id) as a phone or Aadhaar number."""
+    return Annotated[
+        str,
+        Field(
+            min_length=1,
+            max_length=max_length,
+            pattern=pattern,
+            json_schema_extra=dict(IDENTIFIER_SCHEMA),
+        ),
+    ]
 
 
 def add_get_attachment_tool(

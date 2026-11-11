@@ -3,6 +3,11 @@
 Only the parts a reader sees are read: the body, headers, footers, footnotes and endnotes.
 Comments, tracked deletions and field codes are never extracted. Runs a reader cannot see
 (hidden, white or tiny text) are kept out of the sanitized text and reported as findings.
+
+Tracked changes that are not yet accepted or rejected are read as if all were accepted: pending
+insertions and moved text (at its new place) are kept, deletions and text moved away are left
+out. Their presence is reported as a ``document.tracked_changes`` finding (medium, so the
+document is ``review``), because the text may not be what the parties agreed.
 """
 
 from __future__ import annotations
@@ -38,6 +43,10 @@ _VISIBLE_PARTS = re.compile(r"^word/(document|header\d*|footer\d*|footnotes|endn
 # Relationship types that pull remote content when the document opens; hyperlinks are normal.
 _ACTIVE_EXTERNAL = re.compile(r"/(attachedTemplate|oleObject|frame|subDocument)$")
 _FALSE = {"0", "false", "off"}
+# Revision elements that wrap text: insertions, deletions, and the two ends of a move. The same
+# tags inside run or paragraph properties mark a paragraph mark's revision and hold no runs.
+_REVISIONS = {"ins": "insertions", "del": "deletions", "moveTo": "moves"}
+_LEFT_OUT = {f"{W}del", f"{W}moveFrom"}
 
 
 def _flag_on(properties: ElementTree.Element | None, name: str) -> bool:
@@ -55,15 +64,40 @@ def _own_runs(paragraph: ElementTree.Element) -> Iterator[ElementTree.Element]:
     """Runs of this paragraph, including those in hyperlinks and inserted revisions.
 
     Text boxes nest whole paragraphs inside a run's drawing; those are visited as
-    paragraphs of their own, so the walk stops at runs and at nested paragraphs.
+    paragraphs of their own, so the walk stops at runs and at nested paragraphs. Deleted runs
+    and runs moved away (``w:moveFrom``; their text reappears under ``w:moveTo``) are skipped.
     """
     pending = list(reversed(paragraph))
     while pending:
         element = pending.pop()
         if element.tag == f"{_W}r":
             yield element
-        elif element.tag not in {f"{_W}p", f"{_W}del"}:
+        elif element.tag != f"{_W}p" and element.tag not in _LEFT_OUT:
             pending.extend(reversed(element))
+
+
+def _count_revisions(root: ElementTree.Element, counts: dict[str, int]) -> None:
+    """Add the part's tracked insertions, deletions and moves that hold text to ``counts``."""
+    for tag, label in _REVISIONS.items():
+        counts[label] += sum(
+            1 for element in root.iter(f"{_W}{tag}") if element.find(f".//{_W}r") is not None
+        )
+
+
+def _tracked_changes_finding(counts: dict[str, int]) -> DocumentSecurityFinding | None:
+    if not any(counts.values()):
+        return None
+    summary = ", ".join(
+        f"{count} {label if count != 1 else label[:-1]}" for label, count in counts.items() if count
+    )
+    return DocumentSecurityFinding(
+        kind="document.tracked_changes",
+        severity=FindingSeverity.MEDIUM,
+        message=(
+            f"The document has tracked changes that are not accepted or rejected ({summary}). "
+            "The text reads them as accepted: insertions are included, deletions are not."
+        ),
+    )
 
 
 def _run_text(run: ElementTree.Element) -> str:
@@ -117,9 +151,11 @@ class DocxDocumentExtractor:
             findings = self._package_findings(archive, members)
             spans: list[DocumentSpan] = []
             visible_paragraphs: list[str] = []
+            revisions = dict.fromkeys(_REVISIONS.values(), 0)
             for name in sorted(members, key=lambda item: (item != "word/document.xml", item)):
                 if _VISIBLE_PARTS.match(name):
                     root = self._parse(archive.read(name))
+                    _count_revisions(root, revisions)
                     for visible, part_spans, part_findings in self._paragraphs(root):
                         spans.extend(part_spans)
                         findings.extend(part_findings)
@@ -129,6 +165,9 @@ class DocxDocumentExtractor:
             raise ValueError(f"DOCX exceeds {self._max_characters} extracted character limit")
         sanitized, visible_findings = sanitize_untrusted_text("\n".join(visible_paragraphs))
         findings.extend(visible_findings)
+        tracked = _tracked_changes_finding(revisions)
+        if tracked is not None:
+            findings.append(tracked)
         image_count = sum(1 for name in members if name.startswith("word/media/"))
         if not spans and image_count:
             findings.append(

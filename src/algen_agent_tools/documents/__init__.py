@@ -30,6 +30,7 @@ from algen_agent_tools.documents.toolkit import (
     DocumentReader,
     DocumentRefused,
     DocumentText,
+    PageWindow,
     documents_toolkit,
 )
 
@@ -47,6 +48,7 @@ __all__ = [
     "EmailDocumentExtractor",
     "ExtractedDocument",
     "FindingSeverity",
+    "PageWindow",
     "RecognizedText",
     "TesseractRecognizer",
     "TextRecognizer",

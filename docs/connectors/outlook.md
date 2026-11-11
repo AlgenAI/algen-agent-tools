@@ -50,6 +50,12 @@ registration.
 - `outlook.send_email` takes the same input as [`smtp.send_email`](smtp.md) and sends from the
   mailbox, saving a copy in Sent Items. Attachments travel inline, so they total at most 3 MB
   (`max_attachment_bytes`).
+- With `in_reply_to`, `outlook.send_email` is a reply: it finds the mailbox's message with that
+  Message-ID (`internetMessageId`) and sends through Graph's `messages/{id}/reply`, which
+  sets In-Reply-To and References from the original and keeps the reply in its conversation.
+  Graph takes only `X-` headers on a new message, so `references` is not sent, and
+  `references` without `in_reply_to` is refused. A Message-ID not in the mailbox is refused
+  before anything is sent.
 
 ## Access modes
 

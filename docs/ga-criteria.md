@@ -32,8 +32,8 @@ the release that enters beta may be named differently, but it is a new minor wit
 
 ### Runtime
 
-- [ ] The Runtime has released `0.2.0b1` (its public API candidate is frozen).
-- [ ] The supported range covers it (today `>=0.1.0a18,<0.2` excludes it), and the
+- [x] The Runtime has released `0.2.0b1` (its public API candidate is frozen).
+- [ ] The supported range covers it (`>=0.1.0a23,<0.3` since 0.2.0a11), and the
       `runtime-range` CI job passes against both bounds.
 - [ ] Nothing here imports a Runtime interface the Runtime marks experimental or deprecated.
 

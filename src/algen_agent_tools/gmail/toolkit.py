@@ -5,6 +5,7 @@ from typing import Annotated, Any
 from algen_agent_runtime.tools.authoring import Toolkit, read
 from pydantic import Field, SecretStr
 
+from algen_agent_tools._core.schema import Identifier
 from algen_agent_tools._env import SecretResolver, env_names, resolve_optional
 from algen_agent_tools.attachments import ArtifactSink, AttachmentPolicy
 from algen_agent_tools.documents.toolkit import DocumentReader
@@ -82,7 +83,7 @@ def gmail_toolkit(
     async def list_messages(
         query: Annotated[str, Field(max_length=500)] = "is:unread",
         max_results: Annotated[int, Field(ge=1, le=100)] = 25,
-        page_token: Annotated[str | None, Field(max_length=2_000)] = None,
+        page_token: Annotated[Identifier | None, Field(max_length=2_000)] = None,
     ) -> GmailMailboxPage:
         """List messages in the mailbox that match a Gmail search query (for example
         "is:unread from:billing@example.com newer_than:7d"): sender, recipients, subject, a
@@ -107,6 +108,9 @@ def gmail_toolkit(
         provider="Gmail",
         attachments=artifact_loader is not None,
         allowed_domains=allowed_domains,
+        thread_ids=True,
+        threading_note="Set thread_id to the replied-to message's thread_id too, so Gmail "
+        "files the reply in that thread.",
     )
     return toolkit
 

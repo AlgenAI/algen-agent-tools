@@ -121,6 +121,53 @@ def test_from_alone_does_not_start_history() -> None:
     assert latest_text(text) == (text, False)
 
 
+JAPANESE = """承知しました。木曜日で大丈夫です。
+
+________________________________
+差出人: Ana Silva <ana@example.com>
+送信日時: 2026年11月4日 10:00
+宛先: Bo <bo@example.com>
+件名: 打ち合わせ
+
+木曜日に打ち合わせできますか。"""
+
+CHINESE = """好的 周四可以。
+
+发件人: Ana Silva <ana@example.com>
+发送时间: 2026年11月4日 10:00
+收件人: Bo <bo@example.com>
+主题: 会议
+
+周四可以开会吗。"""
+FULL_WIDTH_COLON = "\uff1a"
+
+
+@pytest.mark.parametrize(
+    ("text", "latest"),
+    [
+        (JAPANESE, "承知しました。木曜日で大丈夫です。"),
+        # Only the subject line follows the sent line: To may be left out.
+        (JAPANESE.replace("宛先: Bo <bo@example.com>\n", ""), "承知しました。木曜日で大丈夫です。"),
+        (CHINESE, "好的 周四可以。"),
+        (CHINESE.replace(": ", FULL_WIDTH_COLON), "好的 周四可以。"),
+    ],
+)
+def test_cjk_outlook_header_blocks_start_history(text: str, latest: str) -> None:
+    assert latest_text(text) == (latest, True)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "差出人: 経理部\n請求書をご確認ください。",
+        f"发件人{FULL_WIDTH_COLON}财务部\n请查看这些数字。",
+        "件名: 会議\n差出人: 経理部\n明日です。",
+    ],
+)
+def test_a_cjk_from_line_alone_does_not_start_history(text: str) -> None:
+    assert latest_text(text) == (text, False)
+
+
 # The tools
 
 

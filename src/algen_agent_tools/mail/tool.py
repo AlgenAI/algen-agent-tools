@@ -14,7 +14,7 @@ from typing import Annotated, Any, Literal
 from algen_agent_runtime.exceptions.errors import ConfigurationError, PolicyDeniedError
 from algen_agent_runtime.tools.authoring import Toolkit, external, read
 from algen_agent_runtime.tools.contracts import Tool, ToolContext
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from algen_agent_tools._core.context import current_call, tool_call
 from algen_agent_tools._env import split_list
@@ -37,6 +37,7 @@ from algen_agent_tools.mail.inbound import (
 )
 from algen_agent_tools.mail.models import (
     DOMAIN,
+    MAX_REFERENCES,
     EmailAddress,
     EmailArtifactLoader,
     EmailAttachmentReference,
@@ -44,6 +45,9 @@ from algen_agent_tools.mail.models import (
     EmailDeliveryReceipt,
     EmailMessage,
     EmailSender,
+    MessageId,
+    ThreadId,
+    check_threading,
 )
 from algen_agent_tools.mail.quotes import latest_text
 
@@ -78,10 +82,42 @@ class OutgoingEmail(BaseModel):
     subject: str = Field(min_length=1, max_length=998)
     text_body: str | None = Field(default=None, max_length=1_000_000)
     html_body: str | None = Field(default=None, max_length=2_000_000)
+    in_reply_to: MessageId | None = Field(
+        default=None,
+        description="To reply in a thread: the message_id_header of the message replied to, "
+        "such as <id@host>.",
+    )
+    references: tuple[MessageId, ...] = Field(
+        default=(),
+        max_length=MAX_REFERENCES,
+        description="With in_reply_to: the replied-to message's references, oldest first. "
+        "in_reply_to is added at the end.",
+    )
+
+    @model_validator(mode="after")
+    def _threading(self) -> OutgoingEmail:
+        check_threading(self.in_reply_to, self.references, getattr(self, "thread_id", None))
+        return self
 
 
 class OutgoingEmailWithAttachments(OutgoingEmail):
     """An :class:`OutgoingEmail` that may attach Runtime artifacts by reference."""
+
+    attachments: tuple[EmailAttachmentReference, ...] = Field(default=(), max_length=20)
+
+
+class ThreadedOutgoingEmail(OutgoingEmail):
+    """An :class:`OutgoingEmail` that may name the provider's own thread (Gmail)."""
+
+    thread_id: ThreadId | None = Field(
+        default=None,
+        description="With in_reply_to: the thread_id of the message replied to, so the reply "
+        "joins that thread.",
+    )
+
+
+class ThreadedOutgoingEmailWithAttachments(ThreadedOutgoingEmail):
+    """A :class:`ThreadedOutgoingEmail` that may attach Runtime artifacts by reference."""
 
     attachments: tuple[EmailAttachmentReference, ...] = Field(default=(), max_length=20)
 
@@ -131,15 +167,24 @@ def add_send_tool(
     attachments: bool = False,
     allowed_domains: tuple[str, ...] = (),
     timeout: float = 60,
+    thread_ids: bool = False,
+    threading_note: str = "",
 ) -> Tool:
     """Add ``<toolkit>.send_email``: an external action, keyed and tried once.
 
     The idempotency key becomes the message's deterministic Message-ID. ``allowed_domains``
     (when not empty) refuses any recipient or reply-to address outside those domains or their
-    subdomains; without it, the client's ``allowed_domains`` setting applies.
+    subdomains; without it, the client's ``allowed_domains`` setting applies. The input takes
+    ``in_reply_to`` and ``references`` to reply in a thread, and with ``thread_ids`` also the
+    provider's ``thread_id``. ``threading_note`` ends the description with how the provider
+    threads a reply.
     """
     configured = tuple(domain.casefold().strip(".") for domain in allowed_domains)
-    model = OutgoingEmailWithAttachments if attachments else OutgoingEmail
+    model: type[OutgoingEmail]
+    if thread_ids:
+        model = ThreadedOutgoingEmailWithAttachments if attachments else ThreadedOutgoingEmail
+    else:
+        model = OutgoingEmailWithAttachments if attachments else OutgoingEmail
 
     async def send_email(email: OutgoingEmail, context: ToolContext) -> EmailDeliveryReceipt:
         client: MailClient = await toolkit.client()
@@ -159,7 +204,11 @@ def add_send_tool(
 
     send_email.__doc__ = (
         f"Send one email through {provider} from the deployment's own address. Give at least "
-        "one recipient, a subject and a text or HTML body. Every call sends a real email."
+        "one recipient, a subject and a text or HTML body. To reply in a thread, set "
+        "in_reply_to to the message_id_header of the message replied to and references to its "
+        "references, and keep its subject (Re: ...)."
+        + (f" {threading_note}" if threading_note else "")
+        + " Every call sends a real email."
     )
     send_email.__annotations__ = {
         "email": model,

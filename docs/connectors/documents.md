@@ -20,8 +20,8 @@ the calling tenant, bounds the call and governs it as a tool.
 | --- | --- | --- | --- | --- | --- |
 | `documents.extract_text` | read | `documents.read` | 120 s | Runtime default | agent policy |
 
-`documents.extract_text(document, max_chars=50000)` takes an artifact reference
-(`artifact_id`, `filename`, `media_type`) and returns:
+`documents.extract_text(document, max_chars=50000, start_page=1, max_pages=50)` takes an
+artifact reference (`artifact_id`, `filename`, `media_type`) and returns:
 
 - `text`: only what a reader would see, cut to `max_chars` (at most 100,000). Hidden text is
   never returned: white, tiny, transparent or off-page text in PDFs; hidden or invisible runs in
@@ -39,6 +39,7 @@ the calling tenant, bounds the call and governs it as a tool.
 - `attachments`: for an email, the attachments that were read (file name, media type,
   disposition, coverage). A finding in an attachment names it in `part`. See [Email](#email).
 - `page_count` (pages, sheets or slides), `image_count`, and `text_withheld`.
+- `page_window`: for a PDF, the pages read (`first`, `last`); `null` for other formats.
 
 The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`,
 `.odp`, `.rtf`, `.html`,
@@ -51,8 +52,18 @@ PDF. Text formats have no signature, so they go by their name. Text, CSV, TSV, M
 are read as UTF-8 (a byte-order mark is dropped), as UTF-16 when they start with its byte-order
 mark, and otherwise as Windows-1252, the encoding Excel uses for CSV exports.
 
-A PDF longer than 50 pages is read up to page 50 and reports `document.pages_skipped` (coverage),
-so the result is `partial` and `truncated` rather than refused. XLSX cells are joined with
+A PDF is read for at most `max_pages` pages (1 to 50, default 50) from `start_page` (default 1).
+Pages outside that window report `document.pages_skipped` (coverage): one finding on page 1 for
+the pages before it, one on the first page after it. The result is then `partial` and
+`truncated` rather than refused, and `page_window` says which pages were read, so the model can
+call again with `start_page` set past `page_window.last` to read on. A `start_page` past the last
+page, or a `start_page` other than 1 for a format that is not PDF, is refused.
+
+A DOCX with tracked changes that are not yet accepted or rejected is read as if they were all
+accepted: insertions and moved text (at its new place) are in `text`, deletions and the old place
+of moved text are not. A `document.tracked_changes` finding (security, medium, so the document is
+at least `review`) gives the number of insertions, deletions and moves, because the text may not
+be the version the parties agreed. XLSX cells are joined with
 ` | `, one line per row, under a `--- Sheet: <name> ---` heading; a formula gives its last
 calculated value and date or time cells come out in ISO form. CSV and TSV are read as plain text.
 
@@ -280,7 +291,7 @@ can tell "dangerous" from "not read":
 | `document.attachment_skipped` | An email attachment past the attachment, depth or text limit was not read |
 | `document.attachment_unread` | An email attachment of an unsupported type, or one that could not be parsed, was not read |
 | `document.body_unread` | An Outlook message's body is RTF only and was not read |
-| `document.pages_skipped` | Pages past the PDF page limit were not read |
+| `document.pages_skipped` | PDF pages outside the page window (`start_page`, `max_pages`) were not read |
 
 These findings have `category="coverage"`; all others have `category="security"`. Only security
 findings set the disposition, so a scanned ID card without OCR is `pass` with `coverage="none"`

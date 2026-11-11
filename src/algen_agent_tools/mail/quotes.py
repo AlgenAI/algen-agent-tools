@@ -8,6 +8,9 @@ starts quoted history, so a reply never loses what its sender wrote.
   ``Am <date> schrieb <name>:``).
 - An Outlook header block: ``From:`` followed within four lines by ``Sent:`` or ``Date:`` and
   by ``To:`` or ``Subject:``, optionally after a ``____`` rule; or ``-----Original Message-----``.
+  Japanese (``差出人:``, ``送信日時:``, ``宛先:``/``件名:``) and simplified Chinese
+  (``发件人:``, ``发送时间:``, ``收件人:``/``主题:``) Outlook labels are recognised too, with an
+  ASCII or full-width colon.
 - A run of ``>`` lines that nothing but blank lines and a signature follows. Quoted lines with
   answers between them (inline replies) are kept.
 - A signature: the standard ``-- `` delimiter line, or a final ``Sent from my …`` line.
@@ -33,9 +36,11 @@ _FORWARD = re.compile(
 )
 _ORIGINAL = re.compile(r"^\s*-{2,}\s*Original Message\s*-{2,}\s*$", re.I)
 _RULE = re.compile(r"^\s*_{10,}\s*$")
-_FROM = re.compile(r"^\s*\*?From:\*?\s", re.I)
-_SENT = re.compile(r"^\s*\*?(?:Sent|Date):\*?\s", re.I)
-_TO = re.compile(r"^\s*\*?(?:To|Subject):\*?\s", re.I)
+# Outlook's header labels: English, then Japanese and simplified Chinese. CJK labels take an
+# ASCII or full-width (U+FF1A) colon and need no space after it.
+_FROM = re.compile(r"^\s*\*?(?:From:\*?\s|(?:差出人|发件人)\s?[:\uff1a]\*?)", re.I)
+_SENT = re.compile(r"^\s*\*?(?:(?:Sent|Date):\*?\s|(?:送信日時|发送时间)\s?[:\uff1a]\*?)", re.I)
+_TO = re.compile(r"^\s*\*?(?:(?:To|Subject):\*?\s|(?:宛先|件名|收件人|主题)\s?[:\uff1a]\*?)", re.I)
 _QUOTED = re.compile(r"^\s*>")
 _SIGNATURE = re.compile(r"^-- ?$")
 _SENT_FROM = re.compile(r"^\s*Sent from my \S.{0,60}$", re.I)

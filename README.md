@@ -54,7 +54,7 @@ pip install "algen-agent-tools[postgres]"        # one connector
 pip install "algen-agent-tools[all]"             # every connector
 ```
 
-The package supports `algen-agent-runtime>=0.1.0a23,<0.2`; see
+The package supports `algen-agent-runtime>=0.1.0a23,<0.3` (tested on 0.1.0a23 and 0.2.0b1); see
 [compatibility](docs/compatibility.md).
 
 ## Use a connector
