@@ -8,6 +8,32 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+### Upgrade notes
+
+- Mail summaries list more attachments (#66): every file part of a message except its own text,
+  including inline images (signature logos, pasted pictures) and parts without a file name.
+  Filter on the new `is_inline` instead of guessing from names such as `image001.png`; inline
+  parts can be real documents. A nameless part is named from its place and type
+  (`attachment-3.pdf`), and an IMAP forwarded email without a name is now
+  `attachment-<n>.eml` instead of `message.eml`.
+- Outlook `get_message` and `get_thread` read a message's attachments even when Graph's
+  `hasAttachments` is false (it is for a message whose only attachments are inline): one more
+  Graph request for each such message.
+
+### Added
+
+- A complete attachment manifest on Gmail, IMAP and Outlook (#66). `InboundEmailSummary` (and
+  so `InboundEmailDetail` and the messages of `EmailThread`) gains `attachment_count`, every
+  attachment part before the 20-entry cap, and `attachments_truncated`; both default from
+  `attachments` when a caller builds a summary itself. `InboundEmailAttachment` gains
+  `is_inline` (from `Content-Disposition` and `Content-ID`; Graph's `isInline`) and
+  `content_id` (without angle brackets). Gmail lists parts it returns with the message itself
+  and downloads them from it. Helpers in `algen_agent_tools.mail.inbound`: `MAX_ATTACHMENTS`,
+  `attachment_manifest`, `generated_filename`, `is_inline_part`, `normalized_content_id`.
+- Tool contract (additive): the output schemas of `list_messages`, `get_message` and
+  `get_thread` on `gmail`, `imap` and `outlook` gain these fields; `connectors.json` is
+  regenerated. Names, input schemas, side effects and permissions are unchanged.
+
 ### Changed
 
 - Allows `algen-agent-runtime` 0.2 (`>=0.1.0a23,<0.3`): the tools and their tests pass on both

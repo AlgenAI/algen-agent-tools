@@ -31,6 +31,14 @@ registration.
   attachment_id)` behave as their [Gmail](gmail.md#tools) counterparts; they are the same shared
   tools. Graph returns the body as text on request; an HTML body is converted. Only file
   attachments can be saved (not attached Outlook items or cloud links).
+- Attachments are listed as for [Gmail](gmail.md#tools): up to 20, with `attachment_count`,
+  `attachments_truncated`, `is_inline` (Graph's `isInline`) and a generated name for a nameless
+  file. `content_id` is set only if Graph includes `contentId` in the attachment listing, which
+  it does not promise (it is a file attachment's property, outside the listing's `$select`). Graph reports `hasAttachments` false for a
+  message whose only attachments are inline, so `list_messages` shows none for it while
+  `get_message` and `get_thread` always read the attachments. The connector reads at most five
+  pages of attachment descriptors; past that `attachments_truncated` is set and
+  `attachment_count` is a lower bound.
 - `outlook.get_thread(thread_id, max_messages=20, max_chars_per_message=4000)` reads a
   conversation (`conversationId`) across the mailbox's folders, as for
   [Gmail](gmail.md#tools). Graph returns at most 50 of its messages in one call; `truncated`
