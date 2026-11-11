@@ -8,6 +8,13 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a12] - 2026-11-11
+
+Id fields declare `"format": "identifier"`, so Runtime 0.2.0b2's `pii` guardrail no longer masks
+chat, message and order ids. Replies thread on SMTP, Gmail and Outlook; IMAP searches non-ASCII
+text; PDFs are read past page 50 in windows; DOCX tracked changes are reported. The supported
+Runtime range is unchanged (`>=0.1.0a23,<0.3`), tested on 0.1.0a23, 0.2.0b1 and 0.2.0b2.
+
 ### Changed
 
 - Tool contract (additive): id fields declare `"format": "identifier"`, the annotation Runtime
@@ -60,6 +67,14 @@ A tool's name, input schema, side effect and permission are part of the public c
 ### Documentation
 
 - README and the docs page header state Runtime `>=0.1.0a23,<0.3`, matching `pyproject.toml`. (D1)
+
+### Known limitations
+
+- The Outlook reply path (Graph `messages/{id}/reply` with the idempotency header and inline
+  attachments) and the UTF-8 IMAP literal search are tested against fakes; confirm them against a
+  live mailbox before relying on them.
+- Quoted-history removal does not yet recognise traditional Chinese Outlook headers or the
+  Japanese and Chinese "Date" label variants.
 
 ## [0.2.0a11] - 2026-11-11
 

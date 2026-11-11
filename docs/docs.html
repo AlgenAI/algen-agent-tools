@@ -746,11 +746,11 @@ mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); co
       <!-- ═══════════════ GET STARTED ═══════════════ -->
       <section class="doc" id="welcome" style="padding-top:0">
         <div class="hero">
-          <span class="eyebrow">Algen Agent Tools · v0.2.0a11</span>
+          <span class="eyebrow">Algen Agent Tools · v0.2.0a12</span>
           <h1>Typed tools for agents. <span class="accent">Governed by default.</span></h1>
           <p class="lead">Curated connectors for agents built on Algen Agent Runtime. Each connector is a set of narrow, typed actions with a declared side effect, permission and approval rule, registered as a Runtime plugin so Studio can list it before anything runs.</p>
           <div class="hero-meta">
-            <span class="pill brand"><span class="dot"></span>0.2.0a11 · pre-alpha</span>
+            <span class="pill brand"><span class="dot"></span>0.2.0a12 · pre-alpha</span>
             <span class="pill">Python 3.12 &amp; 3.13</span>
             <span class="pill">Runtime &gt;=0.1.0a23,&lt;0.3</span>
             <span class="pill">Apache-2.0</span>
@@ -785,7 +785,7 @@ mark.hit { padding: 0 2px; border-radius: 3px; background: var(--brand-pale); co
           <a class="card feature" href="#mcp-overlays"><span class="section-icon"><svg class="i"><use href="#i-plug"/></svg></span><h4>MCP, reviewed</h4><p>A governance overlay turns a remote MCP server into declared, schema-pinned tools; anything undeclared is never exposed.</p></a>
           <a class="card feature" href="#connector-policy"><span class="section-icon"><svg class="i"><use href="#i-user-check"/></svg></span><h4>Curated and owned</h4><p>Each connector has an owner, a security review and its own release cadence, so the Runtime core stays small.</p></a>
         </div>
-        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Pre-release.</strong> <code>0.2.0a11</code> is an alpha. A tool's name, input schema, side effect and permission are public contract; any change ships with a CHANGELOG entry and an upgrade note.</p></div>
+        <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><strong>Pre-release.</strong> <code>0.2.0a12</code> is an alpha. A tool's name, input schema, side effect and permission are public contract; any change ships with a CHANGELOG entry and an upgrade note.</p></div>
       </section>
 
       <section class="doc" id="install">
@@ -893,6 +893,16 @@ security:
       <section class="doc" id="releases">
         <div class="section-kicker"><span class="section-icon"><svg class="i"><use href="#i-history"/></svg></span>Get started</div>
         <h2>What's new<a class="anchor" href="#releases" aria-label="Link to this section">#</a></h2>
+        <h3 id="release-0-2-0a12">0.2.0a12 · 11 November 2026<a class="anchor" href="#release-0-2-0a12" aria-label="Link to this section">#</a></h3>
+        <ul>
+          <li><strong>Ids are not personal data.</strong> Chat, message, thread, attachment and page-token fields declare <code>format: identifier</code>, so Runtime 0.2.0b2&#39;s <code>pii</code> guardrail no longer masks a ten-digit Telegram chat id or a Message-ID. Earlier Runtimes ignore it; message text, subjects and bodies are still screened.</li>
+          <li><strong>Threaded replies.</strong> <code>send_email</code> on SMTP, Gmail and Outlook takes <code>in_reply_to</code> and <code>references</code>; Gmail also takes <code>thread_id</code>, and Outlook replies through Graph to the original message.</li>
+          <li><strong>Non-ASCII IMAP search.</strong> <code>from_address</code>, <code>subject</code> and <code>text_contains</code> accept any language, searched with <code>SEARCH CHARSET UTF-8</code>; <code>FakeImapServer</code> serves 8bit bodies.</li>
+          <li><strong>Long PDFs in windows.</strong> <code>documents.extract_text</code> takes <code>start_page</code> and <code>max_pages</code> and reports <code>page_window</code>.</li>
+          <li><strong>Tracked changes.</strong> A DOCX with unaccepted changes reports <code>document.tracked_changes</code> and is <code>review</code>; moved text is read once.</li>
+          <li><strong>Japanese and Chinese quoted history.</strong> <code>include="latest"</code> recognises Outlook header blocks in Japanese and simplified Chinese.</li>
+          <li><strong>Runtime.</strong> Requires <code>algen-agent-runtime&gt;=0.1.0a23,&lt;0.3</code>, tested on 0.1.0a23, 0.2.0b1 and 0.2.0b2.</li>
+        </ul>
         <h3 id="release-0-2-0a11">0.2.0a11 · 11 November 2026<a class="anchor" href="#release-0-2-0a11" aria-label="Link to this section">#</a></h3>
         <ul>
           <li><strong>Runtime 0.2.</strong> Requires <code>algen-agent-runtime&gt;=0.1.0a23,&lt;0.3</code>, tested on 0.1.0a23 and 0.2.0b1. On Runtime 0.2 a call whose arguments a policy redacted is refused when it is planned, with <code>policy.redacted</code>.</li>
@@ -1128,6 +1138,7 @@ billing.query(
           </tbody>
         </table></div>
         <p><code>smtp.send_email</code> takes <code>to</code> (1 to 50), <code>cc</code>, <code>bcc</code>, <code>reply_to</code>, <code>subject</code>, and <code>text_body</code> and/or <code>html_body</code>. It returns the delivery receipt: provider, Message-ID, accepted and rejected recipients.</p>
+        <p>A reply threads with <code>in_reply_to</code> (the Message-ID it answers) and <code>references</code> (the thread&#39;s earlier Message-IDs, at most 100), sent as the <code>In-Reply-To</code> and <code>References</code> headers; <code>in_reply_to</code> is added at the end of <code>References</code> when missing. Ids must be RFC 5322 Message-IDs (<code>&lt;local@domain&gt;</code>, at most 980 characters each); long ids are folded, never encoded. The same fields work on Gmail and Outlook.</p>
         <p>To reply in a thread, pass <code>in_reply_to</code> (the <code>message_id_header</code> of the message replied to) and <code>references</code> (its <code>references</code>, oldest first), as every mail connector's <code>get_message</code> returns them. They go out as the <code>In-Reply-To</code> and <code>References</code> headers, with <code>in_reply_to</code> added at the end of References. Each is an RFC 5322 Message-ID (<code>&lt;id@host&gt;</code>, at most 980 characters), at most 100 references; anything else is refused before sending.</p>
         <h3 id="email-sending-guarantees">Sending guarantees (SMTP and Gmail)<a class="anchor" href="#email-sending-guarantees" aria-label="Link to this section">#</a></h3>
         <ul>
@@ -1176,7 +1187,7 @@ billing.query(
         <p>From 0.2.0a10, <code>include="latest"</code> on <code>get_message</code> (default <code>"full"</code>) and <code>get_thread</code> (default <code>"latest"</code>) returns only what the sender wrote: the history the reply quotes and the signature are removed, and <code>quoted_text_removed</code> is set. The rules are deterministic and conservative, so text is removed only after a line that clearly starts quoted history:</p>
         <ul>
           <li>an attribution line, <code>On &lt;date&gt;, &lt;name&gt; wrote:</code>, also wrapped over two lines and in French, German, Spanish, Italian and Dutch;</li>
-          <li>an Outlook header block (<code>From:</code> then <code>Sent:</code>/<code>Date:</code> and <code>To:</code>/<code>Subject:</code>), or <code>-----Original Message-----</code>;</li>
+          <li>an Outlook header block (<code>From:</code> then <code>Sent:</code>/<code>Date:</code> and <code>To:</code>/<code>Subject:</code>), also in Japanese (<code>差出人</code>, <code>送信日時</code>, <code>宛先</code>/<code>件名</code>) and simplified Chinese (<code>发件人</code>, <code>发送时间</code>, <code>收件人</code>/<code>主题</code>) with an ASCII or full-width colon, or <code>-----Original Message-----</code>;</li>
           <li>a run of <code>&gt;</code> lines with nothing but blank lines after it (inline answers between quoted lines are kept);</li>
           <li>a signature after the standard <code>-- </code> line, or a final <code>Sent from my …</code> line.</li>
         </ul>
@@ -1318,8 +1329,9 @@ gmail = gmail_toolkit(documents=DocumentReader())  <span class="t-c"># adds gmai
         <ul>
           <li><strong>Formats</strong> come from the file name: <code>.pdf</code>, <code>.docx</code>, <code>.xlsx</code>, <code>.pptx</code>, <code>.odt</code>, <code>.ods</code>, <code>.odp</code>, <code>.rtf</code>, <code>.html</code>, <code>.htm</code>, <code>.csv</code>, <code>.tsv</code>, <code>.txt</code>, <code>.md</code>, <code>.eml</code> and <code>.msg</code>, and images with a recognizer (see <a href="#documents-ocr">OCR</a>). Any other suffix, or content that doesn't match its name (a renamed executable), is refused.</li>
           <li><strong>Content wins over the name.</strong> From 0.2.0a10, when the content's own signature names another supported type, it is read as that type: a <code>scan.pdf</code> that is really a JPEG as an image (with OCR), a <code>.docx</code> renamed <code>.doc</code> as Word, a PDF named <code>.txt</code> as a PDF. Text formats have no signature and go by their name; text, CSV, TSV, Markdown and HTML are read as UTF-8, as UTF-16 when they start with its byte-order mark, and otherwise as Windows-1252, the encoding Excel uses for CSV exports.</li>
-          <li><strong>Long PDFs</strong> are read up to page 50 and report <code>document.pages_skipped</code>, so the result is <code>partial</code> and <code>truncated</code>; before 0.2.0a10 they were refused.</li>
+          <li><strong>Long PDFs</strong> are read 50 pages at a time. <code>start_page</code> (default 1) and <code>max_pages</code> (1 to 50, default 50) choose the window, the result&#39;s <code>page_window</code> (<code>first</code>, <code>last</code>) says which pages were read, and pages outside it report <code>document.pages_skipped</code>, so the result is <code>partial</code> and <code>truncated</code>. Read the next window with <code>start_page=last + 1</code>. A <code>start_page</code> other than 1 is refused for other formats. Before 0.2.0a12 only the first 50 pages could be read; before 0.2.0a10 long PDFs were refused.</li>
           <li><strong>Only visible text</strong> is returned, cut to <code>max_chars</code> (at most 100,000). Hidden PDF text, hidden DOCX runs, hidden XLSX sheets, rows and columns, hidden PPTX slides and shapes, and HTML hidden by attribute or inline style are reported as findings instead.</li>
+          <li><strong>DOCX tracked changes</strong> that are not accepted yet report <code>document.tracked_changes</code> (security, medium, so the document is <code>review</code>) with the number of insertions, deletions and moves. The text reads the changes as accepted: insertions in, deletions out, moved text once at its new place.</li>
           <li><strong>A disposition</strong> (<code>pass</code>, <code>review</code> or <code>quarantine</code>) and <strong>findings</strong> cover hidden text, instructions aimed at the model and risky packaging (macros, remote templates and objects, and an embedded OLE object in RTF, <code>document.embedded_object</code>). A quarantined document's text is withheld unless the toolkit is built with <code>quarantine="return"</code>.</li>
           <li><code>truncated</code> is true when the text was cut, by <code>max_chars</code> or by the inspection (an XLSX sheet past 5,000 rows).</li>
           <li><strong>Images are not read without OCR.</strong> A PDF, DOCX or PPTX with text and embedded images reports <code>document.images_excluded</code> as a coverage finding. Pass a recognizer (<a href="#documents-ocr">OCR</a>), or attach the file to the run when a vision model should see it.</li>
@@ -1337,7 +1349,7 @@ documents = documents_toolkit(artifact_loader=runtime_attachment_loader)</span><
         <p>From 0.2.0a8, content the inspection did not read is reported apart from security findings, so a caller can tell "dangerous" from "not read":</p>
         <ul>
           <li><strong><code>coverage</code></strong> is <code>full</code> (everything was read), <code>partial</code> (some content was not) or <code>none</code> (content was found but no text could be read). <strong><code>needs_ocr</code></strong> is true when images or scanned pages hold text only OCR can read.</li>
-          <li><strong>Each finding has a <code>category</code></strong>, <code>security</code> or <code>coverage</code>. <code>document.ocr_required</code>, <code>document.images_excluded</code>, <code>document.ocr_no_text</code>, <code>document.truncated</code>, <code>document.attachment_skipped</code>, <code>document.attachment_unread</code>, <code>document.body_unread</code> (an Outlook message whose only body is RTF) and <code>document.pages_skipped</code> (PDF pages past page 50) are coverage findings; only security findings set the disposition.</li>
+          <li><strong>Each finding has a <code>category</code></strong>, <code>security</code> or <code>coverage</code>. <code>document.ocr_required</code>, <code>document.images_excluded</code>, <code>document.ocr_no_text</code>, <code>document.truncated</code>, <code>document.attachment_skipped</code>, <code>document.attachment_unread</code>, <code>document.body_unread</code> (an Outlook message whose only body is RTF) and <code>document.pages_skipped</code> (PDF pages outside the window read) are coverage findings; only security findings set the disposition.</li>
           <li><strong>A scanned ID card without OCR</strong> is <code>pass</code> with <code>coverage="none"</code> and <code>needs_ocr=true</code>; a cover note over a scan is <code>pass</code> with <code>coverage="partial"</code>. Hidden text or an instruction aimed at the model still makes it <code>review</code> or <code>quarantine</code>.</li>
         </ul>
         <div class="callout warning"><svg class="i"><use href="#i-alert"/></svg><p><code>pass</code> with <code>coverage="none"</code> means nothing dangerous was found because nothing was read. Before 0.2.0a8 such documents were <code>review</code>; code that used <code>review</code> to mean "not fully read" checks <code>coverage != "full"</code> instead.</p></div>
@@ -1683,7 +1695,7 @@ notices = smtp_toolkit(
         <h2>Runtime compatibility<a class="anchor" href="#compatibility" aria-label="Link to this section">#</a></h2>
         <div class="table-wrap"><table>
           <thead><tr><th>algen-agent-tools</th><th>Supported algen-agent-runtime</th></tr></thead>
-          <tbody><tr><td>0.2.0a11</td><td><code>&gt;=0.1.0a23,&lt;0.3</code> (tested on 0.1.0a23 and 0.2.0b1)</td></tr><tr><td>0.2.0a10</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a9</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a8</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a7</td><td><code>&gt;=0.1.0a20,&lt;0.2</code> (tested on 0.1.0a20 and 0.1.0a21)</td></tr><tr><td>0.2.0a6</td><td><code>&gt;=0.1.0a18,&lt;0.2</code></td></tr><tr><td>0.2.0a1 to 0.2.0a5</td><td><code>&gt;=0.1.0a12,&lt;0.2</code> (tested on 0.1.0a12 and 0.1.0a13)</td></tr><tr><td>0.1.0a2</td><td><code>&gt;=0.1.0a12,&lt;0.2</code></td></tr><tr><td>0.1.0a1</td><td><code>&gt;=0.1.0a11,&lt;0.2</code></td></tr></tbody>
+          <tbody><tr><td>0.2.0a12</td><td><code>&gt;=0.1.0a23,&lt;0.3</code> (tested on 0.1.0a23, 0.2.0b1 and 0.2.0b2)</td></tr><tr><td>0.2.0a11</td><td><code>&gt;=0.1.0a23,&lt;0.3</code> (tested on 0.1.0a23 and 0.2.0b1)</td></tr><tr><td>0.2.0a10</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a9</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a8</td><td><code>&gt;=0.1.0a23,&lt;0.2</code> (tested on 0.1.0a23)</td></tr><tr><td>0.2.0a7</td><td><code>&gt;=0.1.0a20,&lt;0.2</code> (tested on 0.1.0a20 and 0.1.0a21)</td></tr><tr><td>0.2.0a6</td><td><code>&gt;=0.1.0a18,&lt;0.2</code></td></tr><tr><td>0.2.0a1 to 0.2.0a5</td><td><code>&gt;=0.1.0a12,&lt;0.2</code> (tested on 0.1.0a12 and 0.1.0a13)</td></tr><tr><td>0.1.0a2</td><td><code>&gt;=0.1.0a12,&lt;0.2</code></td></tr><tr><td>0.1.0a1</td><td><code>&gt;=0.1.0a11,&lt;0.2</code></td></tr></tbody>
         </table></div>
         <p>The package is built on the Runtime's tool authoring API (<code>@tool</code>, presets, <code>Toolkit</code>), declared plugins and <code>describe</code>, all introduced in Runtime 0.1.0a11. From 0.1.0a2 it needs Runtime 0.1.0a12, whose <code>pii</code> guardrail leaves fields declared <code>format: email</code> alone. From 0.2.0a6 it needs Runtime 0.1.0a18: 0.1.0a14's document inspection reads XLSX, PPTX, HTML, CSV and TSV, and 0.1.0a18's <code>cache_context</code> keys cached SQL results on the values <code>context_params</code> binds. From 0.2.0a7 it needs Runtime 0.1.0a20, which records refusals as not attempted, keeps declared <code>format: email</code> result fields out of <code>pii</code> redaction and gives tools the run's attachments. From 0.2.0a8 it needs Runtime 0.1.0a23: 0.1.0a22 and 0.1.0a23 fix two ways an approval-required workflow tool step could run without its approval, and run synchronous tools in a worker thread within their timeout. CI runs the full suite against the lowest supported Runtime and the newest release inside the range; a Runtime release that breaks a connector lowers the upper bound until it is fixed. Every plugin targets plugin core API version <code>1</code>.</p>
       </section>
@@ -1734,7 +1746,7 @@ notices = smtp_toolkit(
 
       <div class="no-results" id="noResults">No sections match your search. Try a different term.</div>
       <footer class="page-foot">
-        <span>Algen Agent Tools · Apache-2.0 · Documentation for package version 0.2.0a11</span>
+        <span>Algen Agent Tools · Apache-2.0 · Documentation for package version 0.2.0a12</span>
         <span>© AlgenAI</span>
       </footer>
     </div>
