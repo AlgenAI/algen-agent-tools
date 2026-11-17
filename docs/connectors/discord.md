@@ -27,6 +27,9 @@ as on Telegram.
 - `discord.list_messages(conversation_id, max_results=25, page_token=None)` reads one channel
   or thread, newest first, up to 100 per page. `next_page_token` continues with older
   messages.
+- `discord.list_messages` is `volatile` (0.2.0a13): its result is never served from the Runtime's
+  tool-result cache, and the repeat guard never holds back a second identical call, since new
+  messages arrive on their own.
 - `discord.get_attachment(conversation_id, message_id, attachment_id)` reads the message, then
   downloads the attachment from Discord's CDN (without the bot token) through the deployment's
   `artifact_sink`, within `attachment_policy` (default 20 MB; `max_download_bytes` 25 MB).

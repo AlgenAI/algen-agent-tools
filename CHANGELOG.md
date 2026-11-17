@@ -8,6 +8,78 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a13] - 2026-11-17
+
+Built on Runtime 0.2.0b5. MCP overlay tools return a server-reported failure as data and mask
+credentials a server echoes back; mail and chat listings are `volatile`; tools that store or read
+artifacts key cached results on the run; a cancelled IMAP or SQLite call no longer lets a second
+call share the connection. The supported Runtime range becomes `>=0.2.0b5,<0.3`.
+
+### Upgrade notes
+
+1. **Runtime 0.2.0b5 or later.** The package (and its `mcp` and `github` extras) requires
+   `algen-agent-runtime>=0.2.0b5,<0.3`. Deployments on Runtime 0.1.0a23 to 0.2.0b4 keep
+   `algen-agent-tools==0.2.0a12`; with the Runtime pinned there, pip chooses it by itself. Why
+   0.2.0b5: the overlay masks echoed credentials with the Runtime's `redact_held` (0.2.0b5); the
+   tool-result cache honours `volatile` only from 0.2.0b2; workflow `tool:` steps calling these
+   connectors run on PostgreSQL only from 0.2.0b5 (migration 024); 0.2.0b5 records cancelled
+   calls `failed` instead of leaving them `started`; and 0.2.0b4 fixes approval decisions of
+   `pending` or `expired` that ran gated tools.
+2. **MCP overlay failures are results, not exceptions.** When the server reports that a tool
+   failed (MCP `isError`), the call returns a `ToolResult` with `failed=True` and the value
+   `{"text": <message, at most 2,000 characters>, "error": true}` instead of raising
+   `ToolExecutionError("<tool> failed: <message>")`. Through the Runtime the model still reads
+   the message; the call is recorded `failed` (a write is no longer `indeterminate` waiting for
+   reconciliation), never cached and not retried. Code that calls an overlay tool's `execute`
+   directly and catches `ToolExecutionError` for server failures checks `result.failed` instead.
+   The overlay's output schema gains the optional `error` boolean. Transport errors and timeouts
+   still raise, and no longer chain the transport's exception.
+
+### Changed
+
+- Tool contract (additive): `volatile=True` on `list_messages` of Gmail, Outlook, IMAP, Telegram
+  and Discord, and on `get_thread` of Gmail, Outlook and IMAP. A mailbox or chat changes on its
+  own, so the Runtime's tool-result cache never stores or serves these results, and its repeat
+  guard no longer answers a second identical listing with "You already made this exact call".
+- Tool contract (additive): `cache_context={"run_id"}` on `get_attachment` (every mail and
+  messaging connector), on `read_attachment` when the toolkit has an `artifact_sink`, and on
+  `documents.extract_text`. These tools store or read an artifact for the run through the
+  deployment's sink or loader, so with the Runtime's tool-result cache on, their cached results
+  are now kept per run. New: `algen_agent_tools.attachments.tool.RUN_SCOPED`.
+- MCP overlay: the token, secret headers and `env://` stdio environment the server is sent are
+  masked as `[REDACTED]` wherever the server echoes one back, in a result's text and data and in
+  a failure, with the Runtime's `algen_agent_runtime.security.redact_held`, as the Runtime's own
+  MCP tools do since 0.2.0b5. New: `algen_agent_tools.mcp.session.held_credentials` and
+  `resolve_environment`; `connect(..., environment=)`.
+- `connectors.json` is regenerated (version, Runtime requirement, the overlay output schema).
+
+### Fixed
+
+- A cancelled or timed-out IMAP or SQLite call released the connection while its worker thread
+  was still using it, so the next call could run a second thread on the same `imaplib` or
+  `sqlite3` connection. The connection now stays locked until the thread ends
+  (`algen_agent_tools._core.threads.run_exclusive`), while the cancelled call still returns at
+  once, as the Runtime's cancellation expects.
+
+### Documentation
+
+- `docs/writing-a-connector.md`, "Using what the Runtime already does": not attempted, failures
+  as data, `volatile`, `cache_context`, timeouts and cancellation, `max_concurrency`, caller
+  credentials.
+- `docs/compatibility.md`, README, `docs/ga-criteria.md` and the docs page: the new range and
+  why. `docs/mcp-overlays.md`, the IMAP, SQLite, Gmail, Outlook, Telegram, Discord and documents
+  pages, and the docs page describe the changes above.
+- `AGENTS.md` gains "Building on algen-agent-runtime and algen-agent-tools" (the rule, where to
+  look, the upgrade checklist, what is kept on purpose and the pins), and lists `.exceptions`
+  and the `.security` redaction helpers as public Runtime API a connector may use.
+
+### Known limitations
+
+- Listings do not yet report `ResultCoverage` (Runtime 0.2.0b1), so the Runtime's
+  `result_coverage` verifier cannot tell a capped listing from a complete one.
+- `run_exclusive` keeps a connection locked until a cancelled thread ends; a statement or IMAP
+  command that hangs holds it until its own socket or progress-handler deadline.
+
 ## [0.2.0a12] - 2026-11-11
 
 Id fields declare `"format": "identifier"`, so Runtime 0.2.0b2's `pii` guardrail no longer masks

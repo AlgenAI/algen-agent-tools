@@ -27,6 +27,11 @@ registration.
   characters, categories and attachments. `search` is Outlook search text; `unread_only`
   cannot be combined with it. `next_page_token` is opaque: it carries the folder and Graph's
   paging parameters, never a URL, and the connector rebuilds the request for its own mailbox.
+- `outlook.list_messages` is `volatile` (0.2.0a13): its result is never served from the Runtime's
+  tool-result cache, and the repeat guard never holds back a second identical call, since new
+  messages arrive on their own.
+- `outlook.get_thread` is `volatile` too (a thread gains replies). `outlook.get_attachment` and
+  `outlook.read_attachment` with an artifact sink key cached results on the run (`cache_context`).
 - `outlook.get_message(message_id, max_chars=20000)` and `outlook.get_attachment(message_id,
   attachment_id)` behave as their [Gmail](gmail.md#tools) counterparts; they are the same shared
   tools. Graph returns the body as text on request; an HTML body is converted. Only file

@@ -29,8 +29,16 @@ itself. The overlay is the deployment's decision.
   overlay is reviewed again (`on_drift: allow` relaxes this).
 - **Validated arguments.** Arguments are checked against the reviewed schema, with every object
   closed to unknown fields, before anything is sent.
-- **Bounded results.** Each tool has a result size limit (256 KB by default) and a timeout; errors
-  carry at most 300 characters of the server's message.
+- **Bounded results.** Each tool has a result size limit (256 KB by default) and a timeout.
+- **Server failures are data.** When the server reports that a tool failed (MCP `isError`), the
+  call returns `{"text": <the server's message, at most 2,000 characters>, "error": true}` as a
+  failed result (0.2.0a13; before, it raised `ToolExecutionError`). The model reads the message
+  and can correct the call; the Runtime records the call `failed` (a write needs no
+  reconciliation, since the server said it did not succeed), never caches it and does not retry
+  it. A transport error or timeout still raises, and names only the error's type.
+- **Echoed credentials are masked.** The token, secret headers and `env://` stdio environment the
+  server is sent are replaced by `[REDACTED]` wherever the server echoes one back, in a result or
+  a failure (0.2.0a13, with the Runtime's `redact_held`).
 - **Secrets by reference.** Tokens, headers and a stdio server's environment are `env://`
   references; a literal value in `server.env` is refused.
 - **Host pinning.** An HTTP transport may reach only the server URL's host unless

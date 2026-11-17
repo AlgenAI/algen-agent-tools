@@ -62,6 +62,40 @@ def crm_toolkit(
   `{"format": "email"}` for the same reason. Earlier Runtimes ignore both. Never mark free text
   (a message, subject, query or name): it is what the guardrail screens.
 
+### Using what the Runtime already does
+
+Since 0.2.0a13 the package needs Runtime 0.2.0b5. Use its tool semantics instead of building
+your own (the Runtime's `docs/tool-authoring.md` has the details):
+
+- **Refused before sending.** Raise `ToolNotAttemptedError` or `PolicyDeniedError` (or wrap the
+  connector's own error with `algen_agent_tools._core.errors.not_attempted`) only when nothing
+  left the process, or the provider definitely rejected the request (`rejected(status)`). The
+  ledger then records the call `failed`, so a write needs no reconciliation and can be retried.
+- **A failure the model should fix.** When the remote system ran the action and reported that
+  it failed (a validation message, MCP `isError`), return it as data:
+  `ToolResult(value={..., "error": True}, failed=True)`, or a result model with
+  `failure_field="ok"`. The call is recorded failed, never cached and not retried, and the model
+  reads why. The output schema must allow the failure payload.
+- **State that changes on its own.** A listing of an inbox, a chat or a thread is
+  `volatile=True`, so the tool-result cache never serves it and the repeat guard never holds back
+  a second identical call.
+- **Results that depend on the call.** A tool whose result depends on its `ToolContext` declares
+  `cache_context`: `{"run_id"}` (`algen_agent_tools.attachments.tool.RUN_SCOPED`) when it stores
+  or loads an artifact through an `ArtifactSink` or `ArtifactLoader`, the bound values for SQL
+  `context_params`. Otherwise a cached result skips the loader's access check.
+- **Timeouts and cancellation.** The Runtime cancels an async handler at its timeout or when the
+  run is cancelled; do not add a deadline of your own on top of the tool's `timeout_seconds`
+  except where the protocol needs one (a statement timeout on the server). Blocking client
+  libraries run through `asyncio.to_thread`; a connection only one thread may use goes through
+  `algen_agent_tools._core.threads.run_exclusive`, which keeps it locked until the worker thread
+  ends after a cancelled call.
+- **Concurrency.** `max_concurrency` on a tool caps that tool's calls in flight. A client shared
+  by several tools of a toolkit serializes itself (a lock), since the Runtime's cap is per tool.
+- **Credentials.** Connectors act with the deployment's `env://` credentials, not with
+  `context.credentials` (the signed-in caller's): a connector that acts as the user needs its own
+  review. Mask any credential a remote service could echo back with
+  `algen_agent_runtime.security.redact_held` before returning it.
+
 When a connector belongs to a family, build on the family's shared tools instead of writing
 them again, so every platform offers the same names and inputs:
 

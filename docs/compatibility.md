@@ -15,9 +15,25 @@ moved into this package in 0.2.0a7, so the `documents` extra installs PyMuPDF di
 step could run without its approval, and run synchronous tools in a worker thread within their
 timeout.
 
+From 0.2.0a13 it needs 0.2.0b5:
+
+- The MCP overlay masks the credentials it sends when a server echoes one back, with the
+  Runtime's `algen_agent_runtime.security.redact_held` (0.2.0b5), as the Runtime's own MCP tools
+  do.
+- Mail and messaging listings are `volatile`; the Runtime's tool-result cache honours that flag
+  only from 0.2.0b2 (before, it stored and served such results).
+- Workflow `tool:` steps that call these connectors work on PostgreSQL only from 0.2.0b5
+  (migration 024). A cancelled call no longer leaves its ledger record `started` (0.2.0b5), and
+  0.2.0b4 fixes approval decisions of `pending` or `expired` that ran gated tools.
+
+Deployments still on Runtime 0.1.0a23 to 0.2.0b4 keep `algen-agent-tools==0.2.0a12`: with the
+Runtime pinned there, pip chooses it by itself, and it was tested on 0.1.0a23, 0.2.0b1, 0.2.0b2
+and 0.2.0b5.
+
 | algen-agent-tools | Supported algen-agent-runtime |
 | --- | --- |
-| 0.2.0a12 | `>=0.1.0a23,<0.3` (tested on 0.1.0a23, 0.2.0b1 and 0.2.0b2) |
+| 0.2.0a13 | `>=0.2.0b5,<0.3` (tested on 0.2.0b5) |
+| 0.2.0a12 | `>=0.1.0a23,<0.3` (tested on 0.1.0a23, 0.2.0b1, 0.2.0b2 and 0.2.0b5) |
 | 0.2.0a11 | `>=0.1.0a23,<0.3` (tested on 0.1.0a23 and 0.2.0b1) |
 | 0.2.0a10 | `>=0.1.0a23,<0.2` (tested on 0.1.0a23) |
 | 0.2.0a9 | `>=0.1.0a23,<0.2` (tested on 0.1.0a23) |

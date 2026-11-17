@@ -27,7 +27,7 @@ from algen_agent_tools.attachments import (
     add_get_attachment_tool,
     id_field,
 )
-from algen_agent_tools.attachments.tool import ATTACHMENT_ID_DESCRIPTION
+from algen_agent_tools.attachments.tool import ATTACHMENT_ID_DESCRIPTION, RUN_SCOPED
 from algen_agent_tools.documents.toolkit import MAX_CHARS, DocumentReader, DocumentText
 from algen_agent_tools.mail.inbound import (
     MAX_BODY_CHARS,
@@ -308,9 +308,12 @@ def add_mailbox_read_tools(
         "include": Include,
         "return": EmailThread,
     }
-    toolkit.tool(read(timeout=120), max_result_bytes=1_048_576, audit_metadata=AUDIT_METADATA)(
-        get_thread
-    )
+    toolkit.tool(
+        read(timeout=120),
+        max_result_bytes=1_048_576,
+        audit_metadata=AUDIT_METADATA,
+        volatile=True,  # a thread gains replies on its own
+    )(get_thread)
 
     if documents is not None:
         add_read_attachment_tool(
@@ -391,4 +394,6 @@ def add_read_attachment_tool(
         read(timeout=timeout),
         max_result_bytes=1_048_576,
         audit_metadata=AUDIT_METADATA,
+        # With a sink the result names an artifact stored for this run.
+        cache_context=RUN_SCOPED if artifact_sink is not None else frozenset(),
     )(read_attachment)

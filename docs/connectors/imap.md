@@ -130,6 +130,12 @@ policy leaves alone with Runtime 0.1.0a19 or later; addresses in free text are s
 - Bodies and attachments are fetched by part with byte limits (`BODY.PEEK[<part>]<0.n>`).
 - One connection per toolkit, used by one call at a time; `imaplib` blocks, so each call runs in
   a worker thread. A connection the server dropped is reopened once; a timeout is not retried.
+- A call cancelled or timed out by the Runtime returns at once, but a worker thread cannot be
+  stopped: the connection stays locked until that thread ends, so the next call waits for it
+  instead of sharing the connection (0.2.0a13).
+- `list_messages` and `get_thread` are `volatile`: a mailbox changes on its own, so their results
+  are never served from the Runtime's tool-result cache, and the repeat guard never holds back a
+  second identical listing (0.2.0a13).
 - Errors name only the failure type.
 
 ## In code

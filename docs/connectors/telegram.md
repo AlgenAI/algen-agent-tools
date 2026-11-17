@@ -26,6 +26,9 @@ These are the shared [messaging tools](#the-messaging-family); Telegram has no
   `group` or `channel`, title), sender, time, text (or a file's caption), the message it replies
   to, and its files (the largest photo size, documents, audio, video, voice and video notes).
   `conversation_id` keeps one chat. There is no next page.
+- `telegram.list_messages` is `volatile` (0.2.0a13): its result is never served from the Runtime's
+  tool-result cache, and the repeat guard never holds back a second identical call, since new
+  messages arrive on their own.
 - `telegram.get_attachment(conversation_id, message_id, attachment_id)` saves one file through
   the deployment's `artifact_sink`, within `attachment_policy` (default 20 MB, the Bot API's own
   limit, and content that matches its type), and returns only the artifact reference. The Bot API

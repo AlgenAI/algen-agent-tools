@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import jsonschema
 import pytest
 import yaml
 from algen_agent_runtime.exceptions.errors import (
@@ -14,7 +15,15 @@ from algen_agent_runtime.exceptions.errors import (
     PolicyDeniedError,
     ToolExecutionError,
 )
-from algen_agent_runtime.tools.contracts import Idempotency, SideEffect
+from algen_agent_runtime.policies.engine import CompositePolicyEngine
+from algen_agent_runtime.tools.contracts import (
+    Idempotency,
+    SideEffect,
+    ToolExecutionStatus,
+    ToolResult,
+)
+from algen_agent_runtime.tools.executor import ToolExecutor
+from algen_agent_runtime.tools.registry import ToolRegistry
 from algen_agent_runtime.tools.testing import fake_tool_context
 from pydantic import ValidationError
 
@@ -138,17 +147,75 @@ async def test_arguments_outside_the_reviewed_schema_never_reach_the_server(
     assert server.calls == []
 
 
-async def test_a_server_error_is_reported_without_echoing_too_much(
+async def test_a_server_error_is_returned_as_a_failed_result(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # MCP isError: the server ran the tool and said it failed. The model gets the text to
+    # correct the call, as data.
     monkeypatch.setenv("ALGEN_TOOLS_TEST_DESK_TOKEN", "token")
     delete = named(
         McpOverlay.from_file(OVERLAY_FILE).toolkit(session_factory=fake_desk().session_factory),
         "desk.delete_ticket",
     )
 
-    with pytest.raises(ToolExecutionError, match=r"desk\.delete_ticket failed: division by zero"):
-        await delete.execute({"ticket_id": "T-1"}, fake_tool_context(delete))
+    result = await delete.execute({"ticket_id": "T-1"}, fake_tool_context(delete))
+
+    assert isinstance(result, ToolResult)
+    assert result.failed is True
+    assert result.value == {"text": "division by zero", "error": True}
+    jsonschema.validate(result.value, delete.definition.output_schema)
+
+
+async def test_a_failed_write_is_recorded_failed_not_indeterminate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A write the server reports as failed needs no reconciliation."""
+    monkeypatch.setenv("ALGEN_TOOLS_TEST_DESK_TOKEN", "token")
+    rules = mapping()["tools"]
+    server = fake_desk().add(
+        "create_ticket", rules["create_ticket"]["input_schema"], lambda args: 1 / 0
+    )
+    registry = ToolRegistry()
+    for tool in (
+        McpOverlay.from_file(OVERLAY_FILE).toolkit(session_factory=server.session_factory).tools
+    ):
+        registry.register(tool)
+    create = registry.get("desk.create_ticket")
+    executor = ToolExecutor(registry, CompositePolicyEngine())
+    context = fake_tool_context(create)
+
+    result = await executor.execute("desk.create_ticket", {"title": "New"}, context)
+
+    assert result.failed is True
+    assert result.value == {"text": "division by zero", "error": True}
+    record = await executor.executions.get(context.idempotency_key, context.tenant_id)
+    assert record is not None and record.status is ToolExecutionStatus.COMPLETED
+
+
+async def test_a_credential_the_server_echoes_is_masked(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ALGEN_TOOLS_TEST_DESK_TOKEN", "desk-token-0123456789")
+    rules = mapping()["tools"]
+    server = fake_desk().add(
+        "get_ticket",
+        rules["get_ticket"]["input_schema"],
+        lambda args: {"echo": "Bearer desk-token-0123456789"},
+    )
+    server.add(
+        "delete_ticket",
+        rules["delete_ticket"]["input_schema"],
+        lambda args: (_ for _ in ()).throw(RuntimeError("bad token desk-token-0123456789")),
+    )
+    toolkit = McpOverlay.from_file(OVERLAY_FILE).toolkit(session_factory=server.session_factory)
+    get = named(toolkit, "desk.get_ticket")
+    delete = named(toolkit, "desk.delete_ticket")
+
+    read = await get.execute({"ticket_id": "T-1"}, fake_tool_context(get))
+    failed = await delete.execute({"ticket_id": "T-1"}, fake_tool_context(delete))
+
+    assert "desk-token-0123456789" not in json.dumps(read)
+    assert "[REDACTED]" in json.dumps(read)
+    assert failed.value["text"] == "bad token [REDACTED]"
+    await toolkit.aclose()
 
 
 async def test_an_oversized_result_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
