@@ -18,6 +18,7 @@ from algen_agent_tools.attachments import (
     AttachmentRef,
     id_field,
 )
+from algen_agent_tools.attachments.tool import RUN_SCOPED
 from algen_agent_tools.messaging.models import (
     ConversationPage,
     DeliveryReceipt,
@@ -130,7 +131,8 @@ def messaging_toolkit(
         list_messages.__defaults__ = (
             (default_size, None) if platform.conversation_required else (None, default_size, None)
         )
-        toolkit.tool(read(timeout=60), audit_metadata=audit)(list_messages)
+        # New messages arrive on their own: never cached or held back as a repeat.
+        toolkit.tool(read(timeout=60), audit_metadata=audit, volatile=True)(list_messages)
 
     if Capability.ATTACHMENTS in capabilities and artifact_sink is not None:
         sink = artifact_sink
@@ -159,9 +161,12 @@ def messaging_toolkit(
             "context": ToolContext,
             "return": AttachmentRef,
         }
-        toolkit.tool(read(timeout=120), max_result_bytes=16_000, audit_metadata=audit)(
-            get_attachment
-        )
+        toolkit.tool(
+            read(timeout=120),
+            max_result_bytes=16_000,
+            audit_metadata=audit,
+            cache_context=RUN_SCOPED,  # the result names an artifact stored for this run
+        )(get_attachment)
 
     if Capability.SEND in capabilities:
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from algen_agent_runtime.tools.authoring import Toolkit, read
 from algen_agent_runtime.tools.contracts import Tool, ToolContext
@@ -12,6 +12,13 @@ from pydantic import Field
 from algen_agent_tools._core.schema import IDENTIFIER_SCHEMA
 from algen_agent_tools.attachments.models import ArtifactSink, AttachmentRef, AttachmentUpload
 from algen_agent_tools.attachments.policy import AttachmentPolicy
+
+RUN_SCOPED: frozenset[Literal["run_id"]] = frozenset({"run_id"})
+"""The ``cache_context`` of a tool that stores an artifact through an :data:`ArtifactSink` or
+reads one through an :data:`ArtifactLoader`. Both receive the call's context and may check or
+record the run (and tenant and user), so with the Runtime's tool-result cache on, a result
+cached in one run must not answer another: that would skip the loader's access check, or name
+an artifact stored for another run."""
 
 Fetch = Callable[[Any, str, str], Awaitable[AttachmentUpload]]
 """Downloads one attachment: ``(client, message_id, attachment_id)``. The client is the
@@ -84,4 +91,5 @@ def add_get_attachment_tool(
         read(timeout=timeout),
         max_result_bytes=16_000,
         audit_metadata=audit_metadata or {"content_capture": "disabled"},
+        cache_context=RUN_SCOPED,  # the result names an artifact stored for this run
     )(get_attachment)

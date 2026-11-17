@@ -59,7 +59,8 @@ class ServerHolder(BaseModel):
 # structured content.
 OUTPUT_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "properties": {"text": {"type": "string"}, "data": {}},
+    # ``error`` is true on a result the server reported as a failure (MCP ``isError``).
+    "properties": {"text": {"type": "string"}, "data": {}, "error": {"type": "boolean"}},
     "required": ["text"],
     "additionalProperties": False,
 }

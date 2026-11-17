@@ -54,7 +54,9 @@ toolkit.query(
   writes fails. A read that matches more than `max_rows` (default 500) is an error, not a
   silently truncated result.
 - **Timeouts:** SQLite has no statement timeout, so a progress handler interrupts any statement
-  that runs past the tool's timeout. The connection stays usable afterwards.
+  that runs past the tool's timeout. The connection stays usable afterwards. A call the Runtime
+  cancels returns at once; the connection stays locked until the statement's worker thread ends,
+  so no second statement runs beside it (0.2.0a13).
 - **Writes:** the file opens **read-only by default** (`mode=ro`), and declaring a write query
   fails unless the toolkit is built with `read_only=False`. Each write runs in its own
   `BEGIN IMMEDIATE` transaction. With `idempotency_key=True`, the call's key fills the last

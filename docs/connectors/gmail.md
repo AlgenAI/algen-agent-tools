@@ -27,6 +27,11 @@ OAuth refresh token.
   page. Message bodies and attachment bytes are not returned. The query reaches every folder:
   `in:sent` lists the mailbox's sent mail, `in:anywhere` includes archived mail, spam and
   trash.
+- `gmail.list_messages` is `volatile` (0.2.0a13): its result is never served from the Runtime's
+  tool-result cache, and the repeat guard never holds back a second identical call, since new
+  messages arrive on their own.
+- `gmail.get_thread` is `volatile` too (a thread gains replies). `gmail.get_attachment` and
+  `gmail.read_attachment` with an artifact sink key cached results on the run (`cache_context`).
 - `sender_auth` is Gmail's own verdict on the sender: `pass`, `fail` or `unknown`, read from the
   topmost `Authentication-Results` header only when Gmail (`mx.google.com`) stamped it. DMARC
   decides when present; without it only an SPF failure with no DKIM pass is `fail`. Text the

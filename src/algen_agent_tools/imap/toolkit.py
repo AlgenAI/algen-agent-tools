@@ -103,7 +103,13 @@ def imap_toolkit(
 
     toolkit = Toolkit(name, env=env_names(*references), client=client or open_client)
 
-    @toolkit.tool(read(timeout=LIST_TIMEOUT_SECONDS), audit_metadata=AUDIT_METADATA)
+    @toolkit.tool(
+        read(timeout=LIST_TIMEOUT_SECONDS),
+        audit_metadata=AUDIT_METADATA,
+        # A mailbox changes on its own: an identical listing later may differ, so it is never
+        # served from the result cache or held back as a repeat.
+        volatile=True,
+    )
     async def list_messages(
         folder: Annotated[str, Field(min_length=1, max_length=200)] = "INBOX",
         from_address: Annotated[str | None, Field(max_length=320, pattern=_SEARCH_TEXT)] = None,

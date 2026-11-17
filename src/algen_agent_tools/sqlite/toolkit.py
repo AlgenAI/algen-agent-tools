@@ -20,6 +20,7 @@ from urllib.parse import quote
 from algen_agent_runtime.exceptions.errors import ConfigurationError, ToolExecutionError
 from algen_agent_runtime.tools.authoring import read
 
+from algen_agent_tools._core.threads import run_exclusive
 from algen_agent_tools._env import SecretResolver, env_names
 from algen_agent_tools.sql.core import (
     DEFAULT_MAX_ROWS,
@@ -69,12 +70,12 @@ class SqliteDatabase:
         self._lock = asyncio.Lock()
 
     async def run[T](self, work: Callable[[sqlite3.Connection], T]) -> T:
-        async with self._lock:
-            return await asyncio.to_thread(work, self._connection)
+        # Held until the worker thread ends, even when the call is cancelled or times out
+        # first, so a second statement never runs on the connection beside the first.
+        return await run_exclusive(self._lock, lambda: work(self._connection))
 
     async def close(self) -> None:
-        async with self._lock:
-            await asyncio.to_thread(self._connection.close)
+        await run_exclusive(self._lock, self._connection.close)
 
 
 async def open_database(secrets: SecretResolver, *, path: str, read_only: bool) -> SqliteDatabase:

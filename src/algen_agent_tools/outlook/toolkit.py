@@ -95,7 +95,13 @@ def outlook_toolkit(
         client=client or open_client,
     )
 
-    @toolkit.tool(read(timeout=LIST_TIMEOUT_SECONDS), audit_metadata=AUDIT_METADATA)
+    @toolkit.tool(
+        read(timeout=LIST_TIMEOUT_SECONDS),
+        audit_metadata=AUDIT_METADATA,
+        # A mailbox changes on its own: an identical listing later may differ, so it is never
+        # served from the result cache or held back as a repeat.
+        volatile=True,
+    )
     async def list_messages(
         folder: Folder = "inbox",
         search: Annotated[str | None, Field(max_length=500)] = None,

@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from algen_agent_tools._env import missing_extra
 from algen_agent_tools.attachments import ArtifactLoader, AttachmentRef
+from algen_agent_tools.attachments.tool import RUN_SCOPED
 from algen_agent_tools.documents.inspection import ExtractedDocument, extractor_for
 from algen_agent_tools.documents.inspection.core import PDF_MAX_PAGES
 from algen_agent_tools.documents.inspection.legacy import DocumentConverter
@@ -302,6 +303,8 @@ def documents_toolkit(
         read(timeout=120),
         max_result_bytes=1_048_576,
         audit_metadata=AUDIT_METADATA,
+        # The loader checks the caller may read the artifact; a cached result must not skip it.
+        cache_context=RUN_SCOPED,
         # With a recognizer or a converter the model is told which more formats it may send;
         # without either the docstring is the description, unchanged.
         description=f"{inspect.getdoc(extract_text)}{reader.note}" if reader.note else None,

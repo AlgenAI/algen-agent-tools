@@ -27,6 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 from algen_agent_tools._core.errors import failure
 from algen_agent_tools._core.schema import Identifier
+from algen_agent_tools._core.threads import run_exclusive
 from algen_agent_tools.attachments.models import AttachmentUpload
 from algen_agent_tools.imap.protocol import (
     BodyPart,
@@ -258,13 +259,14 @@ class ImapMailboxClient:
     # Connection
 
     async def _run(self, operation: str, work: Callable[[Any], T]) -> T:
-        async with self._lock:
-            try:
-                return await asyncio.to_thread(self._attempt, work)
-            except (EmailDeliveryError, PolicyDeniedError):
-                raise
-            except (imaplib.IMAP4.error, OSError, ValueError, UnicodeError) as exc:
-                raise EmailDeliveryError(failure("IMAP", operation, exc)) from exc
+        # The connection is held until the worker thread ends, even when the call is cancelled
+        # or times out first: imaplib cannot share one connection between two threads.
+        try:
+            return await run_exclusive(self._lock, lambda: self._attempt(work))
+        except (EmailDeliveryError, PolicyDeniedError):
+            raise
+        except (imaplib.IMAP4.error, OSError, ValueError, UnicodeError) as exc:
+            raise EmailDeliveryError(failure("IMAP", operation, exc)) from exc
 
     def _attempt(self, work: Callable[[Any], T]) -> T:
         # Reads are safe to repeat, so a connection the server dropped is reopened once. A
@@ -352,8 +354,7 @@ class ImapMailboxClient:
                 connection.logout()
 
     async def aclose(self) -> None:
-        async with self._lock:
-            await asyncio.to_thread(self._drop)
+        await run_exclusive(self._lock, self._drop)
 
     # Folders and ids
 

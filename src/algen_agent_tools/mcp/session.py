@@ -19,7 +19,8 @@ from algen_agent_runtime.exceptions.errors import (
 )
 from algen_agent_runtime.mcp.client import MCPClientManager
 from algen_agent_runtime.mcp.contracts import MCPStdioServerConfig
-from algen_agent_runtime.tools.contracts import ToolContext, ToolDefinition, ToolHandler
+from algen_agent_runtime.security import redact_held
+from algen_agent_runtime.tools.contracts import ToolContext, ToolDefinition, ToolHandler, ToolResult
 
 from algen_agent_tools._env import SecretResolver
 
@@ -27,6 +28,10 @@ if TYPE_CHECKING:
     from algen_agent_tools.mcp.overlay import McpOverlay, McpToolkit
 
 logger = logging.getLogger(__name__)
+
+# The shortest credential masked when a server echoes it back, as the Runtime's own MCP tools
+# do: a short value (a flag such as "1") is no credential, and masking it would mangle results.
+_MIN_HELD_CHARS = 8
 
 
 def _field(item: Any, name: str) -> Any:
@@ -116,11 +121,14 @@ class McpSession:
         *,
         closing: asyncio.Event,
         owner: asyncio.Task[None],
+        held: tuple[str, ...] = (),
     ) -> None:
         self._manager = manager
         self.session = session
         self.refused = refused
         """Remote tool name to the reason calls to it are refused."""
+        self.held = held
+        """The credentials the server is sent, masked wherever it echoes one back."""
         self._closing = closing
         self._owner = owner
 
@@ -129,15 +137,46 @@ class McpSession:
         await asyncio.shield(self._owner)
 
 
+async def resolve_environment(overlay: McpOverlay, secrets: SecretResolver) -> dict[str, str]:
+    """Every ``env://`` variable the overlay's server configuration references, resolved
+    through the deployment's secret resolver, never ambient process state."""
+    return {name: await secrets(f"env://{name}") for name in overlay.env()}
+
+
+def held_credentials(overlay: McpOverlay, environment: dict[str, str]) -> tuple[str, ...]:
+    """The credentials the overlay's server is sent: its bearer token, secret headers and
+    ``env://`` stdio environment. A server that echoes one back (in a result or an error) does
+    not hand it to the model, the run's records or the ledger."""
+    server = overlay.server
+    references = [
+        *getattr(server, "secret_headers", {}).values(),
+        *(
+            value
+            for value in (getattr(server, "env", None) or {}).values()
+            if isinstance(value, str) and value.startswith("env://")
+        ),
+    ]
+    token = getattr(server, "auth_token_ref", None)
+    if token:
+        references.append(token)
+    held = (environment.get(str(reference).removeprefix("env://"), "") for reference in references)
+    return tuple(value for value in held if len(value) >= _MIN_HELD_CHARS)
+
+
 async def connect(
-    overlay: McpOverlay, secrets: SecretResolver, *, session_factory: Any = None
+    overlay: McpOverlay,
+    secrets: SecretResolver,
+    *,
+    session_factory: Any = None,
+    environment: dict[str, str] | None = None,
 ) -> tuple[MCPClientManager, Any, dict[str, Any]]:
     """Connect to the overlay's server and list its tools: the manager (the caller closes
     it), the session and the advertised tools by name."""
     server = overlay.server
     # Every env:// reference resolves through the deployment's secret resolver, never ambient
     # process state: stdio env values here, HTTP tokens and headers through the manager.
-    environment = {name: await secrets(f"env://{name}") for name in overlay.env()}
+    if environment is None:
+        environment = await resolve_environment(overlay, secrets)
     if isinstance(server, MCPStdioServerConfig) and server.env:
         resolved = {
             key: environment[value.removeprefix("env://")] for key, value in server.env.items()
@@ -165,11 +204,12 @@ async def open_session(
     loop = asyncio.get_running_loop()
     opened: asyncio.Future[tuple[MCPClientManager, Any, dict[str, Any]]] = loop.create_future()
     closing = asyncio.Event()
+    environment = await resolve_environment(overlay, secrets)
 
     async def own_connection() -> None:
         try:
             manager, session, advertised = await connect(
-                overlay, secrets, session_factory=session_factory
+                overlay, secrets, session_factory=session_factory, environment=environment
             )
         except BaseException as exc:
             if not opened.done():
@@ -202,14 +242,17 @@ async def open_session(
             overlay.server.name,
             len(drift.undeclared),
         )
-    return McpSession(manager, session, refused, closing=closing, owner=owner)
+    held = held_credentials(overlay, environment)
+    return McpSession(manager, session, refused, closing=closing, owner=owner, held=held)
 
 
 def call_handler(toolkit: McpToolkit, remote: str, definition: ToolDefinition) -> ToolHandler:
     """The handler for one declared tool."""
     validator = jsonschema.Draft202012Validator(definition.input_schema)
 
-    async def handler(arguments: dict[str, Any], context: ToolContext) -> dict[str, Any]:
+    async def handler(
+        arguments: dict[str, Any], context: ToolContext
+    ) -> dict[str, Any] | ToolResult:
         errors = sorted(validator.iter_errors(arguments), key=lambda error: list(error.path))
         if errors:
             first = errors[0]
@@ -232,18 +275,27 @@ def call_handler(toolkit: McpToolkit, remote: str, definition: ToolDefinition) -
                 f"{definition.name} timed out after {definition.timeout_seconds}s"
             ) from exc
         except Exception as exc:
-            raise ToolExecutionError(f"{definition.name} failed ({type(exc).__name__})") from exc
-        text = "\n".join(
-            str(_field(item, "text"))
-            for item in _field(result, "content") or ()
-            if _field(item, "text")
+            # Not chained: a traceback (a span's, a log's) would print the server's text.
+            raise ToolExecutionError(f"{definition.name} failed ({type(exc).__name__})") from None
+        text = redact_held(
+            "\n".join(
+                str(_field(item, "text"))
+                for item in _field(result, "content") or ()
+                if _field(item, "text")
+            ),
+            connection.held,
         )
         if _field(result, "isError"):
-            raise ToolExecutionError(f"{definition.name} failed: {text[:300] or 'server error'}")
+            # The server ran the tool and reported its failure: a definite outcome the model can
+            # correct, returned as data. The call is recorded failed (not indeterminate, so a
+            # write needs no reconciliation), never cached, and not retried.
+            return ToolResult(
+                value={"text": text[:2_000] or "server error", "error": True}, failed=True
+            )
         response: dict[str, Any] = {"text": text}
         structured = _field(result, "structuredContent")
         if structured is not None:
-            response["data"] = structured
+            response["data"] = redact_held(structured, connection.held)
         size = len(json.dumps(response, ensure_ascii=False).encode())
         if size > definition.max_result_bytes:
             raise ToolExecutionError(

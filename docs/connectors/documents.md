@@ -41,6 +41,10 @@ artifact reference (`artifact_id`, `filename`, `media_type`) and returns:
 - `page_count` (pages, sheets or slides), `image_count`, and `text_withheld`.
 - `page_window`: for a PDF, the pages read (`first`, `last`); `null` for other formats.
 
+The tool declares `cache_context={"run_id"}` (0.2.0a13): with the Runtime's tool-result cache on,
+a cached result is reused only in the run that read it, so it never skips the artifact loader's
+access check.
+
 The format comes from the file name's suffix: `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`,
 `.odp`, `.rtf`, `.html`,
 `.htm`, `.csv`, `.tsv`, `.txt`, `.md`, `.eml` or `.msg`, and with a host-supplied converter
