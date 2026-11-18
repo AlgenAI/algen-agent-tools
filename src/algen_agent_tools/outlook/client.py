@@ -7,7 +7,7 @@ import binascii
 import hashlib
 import re
 from collections.abc import Mapping
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Literal, cast, get_args
 from urllib.parse import parse_qsl, quote, urlencode, urlsplit
 
@@ -42,9 +42,16 @@ from algen_agent_tools.mail.models import (
     EmailDeliveryStatus,
     EmailMessage,
 )
+from algen_agent_tools.msgraph.credentials import (
+    GraphCertificate,
+    check_one_credential,
+    client_authentication,
+)
+from algen_agent_tools.msgraph.throttling import throttled, throttled_response
 
 GRAPH_SCOPE = "https://graph.microsoft.com/.default"
 Folder = Literal["inbox", "sentitems", "drafts", "archive", "junkemail"]
+Order = Literal["newest_first", "oldest_first"]
 _TENANT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$")
 _SUMMARY_FIELDS = (
     "id,conversationId,from,toRecipients,subject,receivedDateTime,bodyPreview,hasAttachments,"
@@ -68,12 +75,17 @@ class OutlookSettings(BaseModel):
     With a ``refresh_token`` the connector acts as the signed-in user (delegated access, the
     ``/me`` mailbox); without one it uses the app's own credentials (application access) on the
     mailbox ``mailbox`` names, which the app must be allowed to reach.
+
+    The app authenticates with exactly one of ``client_secret`` and ``certificate`` (a
+    :class:`~algen_agent_tools.msgraph.GraphCertificate`, which signs a client assertion), in
+    either access mode.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
     tenant_id: str = Field(min_length=1, max_length=253)
     client_id: str = Field(min_length=1, max_length=1_000)
-    client_secret: SecretStr
+    client_secret: SecretStr | None = None
+    certificate: GraphCertificate | None = None
     refresh_token: SecretStr | None = None
     mailbox: str = Field(min_length=3, max_length=320)
     authority: str = "https://login.microsoftonline.com"
@@ -89,11 +101,16 @@ class OutlookSettings(BaseModel):
     def _check(self) -> OutlookSettings:
         if not _TENANT.fullmatch(self.tenant_id):
             raise ValueError("tenant_id must be a tenant id or domain")
+        check_one_credential(self.client_secret, self.certificate)
         return self
 
     @property
     def token_uri(self) -> str:
         return f"{self.authority.rstrip('/')}/{self.tenant_id}/oauth2/v2.0/token"
+
+    @property
+    def credential_kind(self) -> Literal["certificate", "client_secret"]:
+        return "certificate" if self.certificate is not None else "client_secret"
 
 
 class OutlookMailboxPage(BaseModel):
@@ -114,6 +131,35 @@ def _address(item: Any) -> str:
 
 def _addresses(items: Any) -> str:
     return ", ".join(_address(item) for item in items or ())
+
+
+def _odata_datetime(value: datetime, field: str) -> str:
+    """An aware datetime as an OData ``DateTimeOffset`` literal in UTC."""
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{field} must be timezone-aware")
+    return value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def received_filter(
+    received_after: datetime | None = None,
+    received_before: datetime | None = None,
+    *,
+    unread_only: bool = False,
+) -> str | None:
+    """The ``$filter`` for a received-date window (``after`` inclusive, ``before`` exclusive)
+    and unread mail. The ``receivedDateTime`` terms come first, as Graph requires when the
+    listing is also ordered by ``receivedDateTime``."""
+    terms: list[str] = []
+    if received_after is not None:
+        terms.append(f"receivedDateTime ge {_odata_datetime(received_after, 'received_after')}")
+    if received_before is not None:
+        terms.append(f"receivedDateTime lt {_odata_datetime(received_before, 'received_before')}")
+    if received_after is not None and received_before is not None:
+        if received_after >= received_before:
+            raise ValueError("received_after must be before received_before")
+    if unread_only:
+        terms.append("isRead eq false")
+    return " and ".join(terms) or None
 
 
 def _received_ms(value: Any) -> int:
@@ -157,6 +203,16 @@ def _from_page_token(token: str) -> tuple[Folder, dict[str, str]]:
     return cast(Folder, folder), parameters
 
 
+def _read_error(operation: str, cause: BaseException) -> EmailDeliveryError:
+    """A read's failure, naming only the cause's type. Throttling (429, 503) is also a
+    :class:`~algen_agent_tools.msgraph.GraphThrottled` with Graph's ``Retry-After`` wait."""
+    error = EmailDeliveryError(failure("Outlook", operation, cause))
+    response = throttled_response(cause)
+    if response is not None:
+        return not_attempted(throttled(error, response))
+    return error
+
+
 class OutlookMailboxClient:
     """Microsoft Graph sender and bounded mailbox reader for one mailbox."""
 
@@ -181,7 +237,14 @@ class OutlookMailboxClient:
         common: dict[str, Any] = {
             "token_uri": settings.token_uri,
             "client_id": settings.client_id,
-            "client_secret": settings.client_secret,
+            # A certificate's key is loaded here: a wrong key or passphrase fails on open.
+            "client_auth": client_authentication(
+                client_id=settings.client_id,
+                token_uri=settings.token_uri,
+                client_secret=settings.client_secret,
+                certificate=settings.certificate,
+                extra="outlook",
+            ),
             "on_error": lambda exc: EmailDeliveryError(
                 failure("Outlook", "OAuth token request", exc)
             ),
@@ -387,11 +450,27 @@ class OutlookMailboxClient:
         unread_only: bool = False,
         max_results: int = 25,
         page_token: str | None = None,
+        received_after: datetime | None = None,
+        received_before: datetime | None = None,
+        order: Order = "newest_first",
     ) -> OutlookMailboxPage:
+        """One page of a folder. ``received_after`` (inclusive) and ``received_before``
+        (exclusive) are timezone-aware datetimes that bound ``receivedDateTime``; ``order``
+        sorts by it. Graph cannot combine ``search`` with a filter or an order, so ``search``
+        is refused with ``unread_only``, a date window or ``oldest_first``. A ``page_token``
+        carries the original request's filter and order."""
         if not 1 <= max_results <= 50:
             raise ValueError("max_results must be between 1 and 50")
         if search and unread_only:
             raise ValueError("search and unread_only cannot be combined")
+        if search and (received_after or received_before or order != "newest_first"):
+            raise ValueError(
+                "search cannot be combined with received_after, received_before or "
+                "oldest_first: Graph does not filter or order a search"
+            )
+        if order not in get_args(Order):
+            raise ValueError("order must be newest_first or oldest_first")
+        date_filter = received_filter(received_after, received_before, unread_only=unread_only)
         try:
             if page_token:
                 folder, params = _from_page_token(page_token)
@@ -400,9 +479,10 @@ class OutlookMailboxClient:
                 if search:
                     params["$search"] = '"' + search.replace('"', "") + '"'
                 else:
-                    params["$orderby"] = "receivedDateTime desc"
-                if unread_only:
-                    params["$filter"] = "isRead eq false"
+                    direction = "asc" if order == "oldest_first" else "desc"
+                    params["$orderby"] = f"receivedDateTime {direction}"
+                if date_filter:
+                    params["$filter"] = date_filter
             response = await self._http.get(
                 self._url(f"mailFolders/{folder}/messages"),
                 headers=await self._headers(),
@@ -416,7 +496,7 @@ class OutlookMailboxClient:
                 next_page_token=continuation(folder, listing.get("@odata.nextLink")),
             )
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise EmailDeliveryError(failure("Outlook", "inbox read", exc)) from exc
+            raise _read_error("inbox read", exc) from exc
 
     async def _detail(self, item: Mapping[str, Any], max_chars: int) -> InboundEmailDetail:
         body = item.get("body") or {}
@@ -454,7 +534,7 @@ class OutlookMailboxClient:
             response.raise_for_status()
             return await self._detail(response.json(), max_chars)
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise EmailDeliveryError(failure("Outlook", "message read", exc)) from exc
+            raise _read_error("message read", exc) from exc
 
     async def get_thread(
         self, thread_id: str, *, max_messages: int = 20, max_chars: int = 4_000
@@ -487,7 +567,7 @@ class OutlookMailboxClient:
         except EmailDeliveryError:
             raise
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
-            raise EmailDeliveryError(failure("Outlook", "thread read", exc)) from exc
+            raise _read_error("thread read", exc) from exc
 
     async def get_attachment(self, provider_message_id: str, attachment: str) -> AttachmentUpload:
         """One file attachment, with the name and type the message declares for it."""
@@ -516,7 +596,7 @@ class OutlookMailboxClient:
         except EmailDeliveryError:
             raise
         except (httpx.HTTPError, KeyError, TypeError, ValueError, binascii.Error) as exc:
-            raise EmailDeliveryError(failure("Outlook", "attachment download", exc)) from exc
+            raise _read_error("attachment download", exc) from exc
 
     async def aclose(self) -> None:
         await self._http.aclose()

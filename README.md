@@ -110,6 +110,7 @@ class AcmeTools:
 | Gmail | `algen_agent_tools.gmail` | `gmail` | `gmail.list_messages`, `gmail.get_message`, `gmail.get_thread` (read), `gmail.send_email` (external) | [gmail](docs/connectors/gmail.md) |
 | IMAP | `algen_agent_tools.imap` | `imap` | `imap.list_messages`, `imap.list_folders`, `imap.get_message`, `imap.get_thread` (read), with an artifact sink `imap.get_attachment` (read) | [imap](docs/connectors/imap.md) |
 | Outlook | `algen_agent_tools.outlook` | `outlook` | `outlook.list_messages`, `outlook.get_message`, `outlook.get_thread` (read), `outlook.send_email` (external) | [outlook](docs/connectors/outlook.md) |
+| OneDrive / SharePoint | `algen_agent_tools.onedrive` | `onedrive` | `onedrive.list_folder` (read), with an artifact sink `onedrive.get_file`, with documents `onedrive.read_file` (read) | [onedrive](docs/connectors/onedrive.md) |
 | Telegram | `algen_agent_tools.telegram` | `telegram` | `telegram.list_messages` (read), `telegram.send_message` (external) | [telegram](docs/connectors/telegram.md) |
 | GitHub | `algen_agent_tools.github` | `github` | 37 reviewed tools from GitHub's MCP server: 22 read, 15 write (5 need approval) | [github](docs/connectors/github.md) |
 | Discord | `algen_agent_tools.discord` | `discord` | `discord.list_conversations`, `discord.list_messages` (read), `discord.send_message` (external) | [discord](docs/connectors/discord.md) |

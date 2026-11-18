@@ -20,6 +20,21 @@ REFRESH_MARGIN_SECONDS = 60
 RefreshTokenSink = Callable[[SecretStr], Awaitable[None]]
 """Stores a rotated refresh token in the host's secret store (for the next process start)."""
 
+ClientAuth = Callable[[], dict[str, str]]
+"""The form fields that authenticate the client in one token request (a client secret, or a
+signed client assertion), built per request so an assertion is always fresh."""
+
+
+def _client_auth(client_secret: SecretStr | None, client_auth: ClientAuth | None) -> ClientAuth:
+    if (client_secret is None) == (client_auth is None):
+        raise ValueError("pass exactly one of client_secret and client_auth")
+    if client_auth is not None:
+        return client_auth
+    assert client_secret is not None
+    secret = client_secret
+    return lambda: {"client_secret": secret.get_secret_value()}
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -91,15 +106,16 @@ class OAuthRefresh(_CachedToken):
         *,
         token_uri: str,
         client_id: str,
-        client_secret: SecretStr,
         refresh_token: SecretStr,
         on_error: Callable[[BaseException], Exception],
+        client_secret: SecretStr | None = None,
         scope: str | None = None,
         on_rotate: RefreshTokenSink | None = None,
+        client_auth: ClientAuth | None = None,
     ) -> None:
         super().__init__(http, token_uri=token_uri, on_error=on_error)
         self._client_id = client_id
-        self._client_secret = client_secret
+        self._client_auth = _client_auth(client_secret, client_auth)
         self._refresh_token = refresh_token
         self._scope = scope
         self._on_rotate = on_rotate
@@ -125,7 +141,7 @@ class OAuthRefresh(_CachedToken):
     def _grant(self) -> dict[str, str]:
         grant = {
             "client_id": self._client_id,
-            "client_secret": self._client_secret.get_secret_value(),
+            **self._client_auth(),
             "refresh_token": self._refresh_token.get_secret_value(),
             "grant_type": "refresh_token",
         }
@@ -135,7 +151,8 @@ class OAuthRefresh(_CachedToken):
 
 
 class OAuthClientCredentials(_CachedToken):
-    """An app-only access token from the client's own credentials (no user)."""
+    """An app-only access token from the client's own credentials (no user): a client secret,
+    or ``client_auth`` (a signed client assertion from a certificate)."""
 
     def __init__(
         self,
@@ -143,19 +160,20 @@ class OAuthClientCredentials(_CachedToken):
         *,
         token_uri: str,
         client_id: str,
-        client_secret: SecretStr,
         scope: str,
         on_error: Callable[[BaseException], Exception],
+        client_secret: SecretStr | None = None,
+        client_auth: ClientAuth | None = None,
     ) -> None:
         super().__init__(http, token_uri=token_uri, on_error=on_error)
         self._client_id = client_id
-        self._client_secret = client_secret
+        self._client_auth = _client_auth(client_secret, client_auth)
         self._scope = scope
 
     def _grant(self) -> dict[str, str]:
         return {
             "client_id": self._client_id,
-            "client_secret": self._client_secret.get_secret_value(),
+            **self._client_auth(),
             "scope": self._scope,
             "grant_type": "client_credentials",
         }

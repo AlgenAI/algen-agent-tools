@@ -8,6 +8,65 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+Microsoft Graph connectors authenticate with a certificate, Outlook lists a received-date window
+oldest or newest first, Graph throttling carries its `Retry-After`, and a new read-only OneDrive
+and SharePoint files connector lists and downloads the files below one folder.
+
+### Upgrade notes
+
+1. **The `outlook` extra installs `cryptography`** (`>=42,<51`), used only when the app
+   authenticates with a certificate. Nothing changes for a client secret.
+2. **`ALGEN_TOOLS_OUTLOOK_CLIENT_SECRET` is optional** in the catalog: set it, or set the
+   certificate variables instead; exactly one credential is accepted (a `ValidationError`
+   otherwise). `OutlookSettings.client_secret` is now `SecretStr | None`.
+3. **Internal (`_core.auth`):** `OAuthRefresh` and `OAuthClientCredentials` take `client_secret`
+   as a keyword argument with a default, or `client_auth` (a callable returning the client
+   authentication form fields). Positional callers are unaffected (both were keyword-only).
+
+### Added
+
+- `algen_agent_tools.msgraph`: `GraphCertificate` (PEM private key, optional passphrase, and the
+  PEM certificate or its SHA-1 thumbprint; single-line `\n`-escaped PEM accepted),
+  `CertificateSigner`, `client_authentication`, `certificate_info` (thumbprints, subject and
+  validity, never the key), `unescape_pem`, `normalize_thumbprint`, `GraphThrottled` and
+  `retry_after_seconds`. A certificate signs a fresh RS256 client assertion per token request
+  (`x5t#S256` from the certificate, or `x5t` from the thumbprint; `aud` the token endpoint,
+  `iss`=`sub` the client id, `jti`, `nbf`, `iat`, `exp` ten minutes on), sent as
+  `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`. The key is
+  loaded when the client opens; a wrong passphrase, a certificate of another key or a mismatched
+  thumbprint is a `ConfigurationError` naming no secret. `cryptography` is imported only then,
+  after the references are resolved.
+- Outlook: `OutlookSettings(certificate=GraphCertificate(...))`, in application and delegated
+  access, and the variables `ALGEN_TOOLS_OUTLOOK_PRIVATE_KEY`,
+  `ALGEN_TOOLS_OUTLOOK_PRIVATE_KEY_PASSPHRASE`, `ALGEN_TOOLS_OUTLOOK_CERTIFICATE` and
+  `ALGEN_TOOLS_OUTLOOK_CERTIFICATE_THUMBPRINT` (`outlook_toolkit(private_key=...,
+  private_key_passphrase=..., certificate=..., certificate_thumbprint=...)`).
+  `OutlookSettings.credential_kind`.
+- Tool contract (additive): `outlook.list_messages` takes `received_after` and `received_before`
+  (timezone-aware ISO 8601; `$filter=receivedDateTime ge … and receivedDateTime lt …`, combined
+  with `unread_only` by `and`) and `order` (`newest_first`, the default, or `oldest_first`).
+  `search` with a date or `oldest_first` is refused before anything is sent, since Graph cannot
+  combine `$search` with `$filter` or `$orderby` on messages. Page tokens keep the filter and
+  order. `OutlookMailboxClient.list_messages` takes the same arguments;
+  `algen_agent_tools.outlook.client.received_filter` builds the filter.
+- Outlook reads (list, message, thread, attachment) raise a throttled request (429, 503) as an
+  `EmailDeliveryError` that is also a `GraphThrottled` with `retry_after_seconds` (Graph's
+  `Retry-After`, seconds or a date, bounded to an hour, 10 s when absent), marked not attempted.
+  The connector still never retries.
+- New connector `algen_agent_tools.onedrive` (extra `onedrive`): `OneDriveFilesClient` lists
+  (`iter_files`, `list_files` with `recursive`, `max_depth`, `max_items`; `list_folder` one page)
+  and downloads (`download`, within `max_download_bytes`) the files below one folder named by
+  drive and item id, a user's OneDrive path, a SharePoint site path or a sharing link
+  (`FolderRef`, `FolderRef.parse`). Read-only: every Graph request is a `GET`. Downloads follow
+  Graph's pre-authenticated URL only to `https` hosts ending in `download_host_suffixes`
+  (`.sharepoint.com` by default), without the token, with the URL's query redacted from `httpx`
+  logs. Items outside the folder are refused. Tools: `onedrive.list_folder` (read, volatile),
+  `onedrive.get_file` (read, with an artifact sink) and `onedrive.read_file` (read, with
+  `documents`). Least privilege: `Sites.Selected` or `Files.SelectedOperations.Selected` with
+  the `read` role; see `docs/connectors/onedrive.md`.
+- `HostLockedClient.download_preauthenticated` (internal).
+- `connectors.json` is regenerated (Outlook settings and input schema, the OneDrive connector).
+
 ## [0.2.0a13] - 2026-11-17
 
 Built on Runtime 0.2.0b5. MCP overlay tools return a server-reported failure as data and mask

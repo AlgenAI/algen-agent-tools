@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-  "algen-agent-tools[discord,documents,github,gmail,imap,mcp,msg,mysql,ocr,outlook,postgres,smtp,sqlite,telegram,webhook]",
+  "algen-agent-tools[discord,documents,github,gmail,imap,mcp,msg,mysql,ocr,onedrive,outlook,postgres,smtp,sqlite,telegram,webhook]",
 ]
 # Discord uses httpx, already installed with the Runtime.
 discord = []
@@ -59,8 +59,11 @@ github = ["algen-agent-runtime[mcp]>=0.2.0b5,<0.3"]
 gmail = []
 # IMAP uses the standard library's imaplib.
 imap = []
-# Outlook uses httpx, already installed with the Runtime.
-outlook = []
+# Outlook uses httpx, already installed with the Runtime; cryptography (Apache-2.0 or BSD)
+# signs the client assertion when the app authenticates with a certificate.
+outlook = ["cryptography>=42,<51"]
+# OneDrive and SharePoint files: httpx, and cryptography for certificate authentication.
+onedrive = ["cryptography>=42,<51"]
 mcp = ["algen-agent-runtime[mcp]>=0.2.0b5,<0.3"]
 # rsa: MySQL 8 authenticates with caching_sha2_password, which needs cryptography.
 mysql = ["aiomysql[rsa]>=0.2,<1"]
@@ -86,6 +89,7 @@ dev = [
 "algen_agent_tools.gmail" = "algen_agent_tools.gmail.plugin:GmailPlugin"
 "algen_agent_tools.imap" = "algen_agent_tools.imap.plugin:ImapPlugin"
 "algen_agent_tools.mysql" = "algen_agent_tools.mysql.plugin:MysqlPlugin"
+"algen_agent_tools.onedrive" = "algen_agent_tools.onedrive.plugin:OnedrivePlugin"
 "algen_agent_tools.outlook" = "algen_agent_tools.outlook.plugin:OutlookPlugin"
 "algen_agent_tools.postgres" = "algen_agent_tools.postgres.plugin:PostgresPlugin"
 "algen_agent_tools.sample" = "algen_agent_tools.sample.plugin:SamplePlugin"

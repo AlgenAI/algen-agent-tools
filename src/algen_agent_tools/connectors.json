@@ -5964,6 +5964,282 @@
       ]
     },
     {
+      "category": "documents",
+      "code_only_options": [
+        "artifact_sink",
+        "attachment_policy",
+        "documents"
+      ],
+      "connector": "onedrive",
+      "docs_url": "https://github.com/AlgenAI/algen-agent-tools/blob/v0.2.0a13/docs/connectors/onedrive.md",
+      "egress": [
+        {
+          "host": "login.microsoftonline.com",
+          "host_setting": null,
+          "port": 443,
+          "protocol": "https"
+        },
+        {
+          "host": "graph.microsoft.com",
+          "host_setting": null,
+          "port": 443,
+          "protocol": "https"
+        },
+        {
+          "host": "*.sharepoint.com",
+          "host_setting": null,
+          "port": 443,
+          "protocol": "https"
+        }
+      ],
+      "manifest": {
+        "domain_plugins": [
+          "algen_agent_tools.onedrive"
+        ],
+        "enabled_tools": [
+          "onedrive.list_folder"
+        ],
+        "security": {
+          "trusted_plugin_prefixes": [
+            "algen_agent_tools"
+          ]
+        },
+        "tool_permissions": [
+          "onedrive.read"
+        ]
+      },
+      "maturity": "alpha",
+      "plugin": "algen_agent_tools.onedrive",
+      "requirement": "algen-agent-tools[onedrive]==0.2.0a13",
+      "settings": [
+        {
+          "default": null,
+          "description": "The Microsoft Entra tenant id or domain.",
+          "env": "ALGEN_TOOLS_ONEDRIVE_TENANT_ID",
+          "example": "contoso.onmicrosoft.com",
+          "required": true,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "The app registration's client id.",
+          "env": "ALGEN_TOOLS_ONEDRIVE_CLIENT_ID",
+          "example": null,
+          "required": true,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "The folder: a sharing link, or a Graph path such as drives/{drive-id}/items/{item-id} or users/{upn}/drive/root:/{path}.",
+          "env": "ALGEN_TOOLS_ONEDRIVE_FOLDER",
+          "example": "users/hr@contoso.com/drive/root:/Careers",
+          "required": true,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "The app registration's client secret. Unset when the app authenticates with a certificate (ALGEN_TOOLS_ONEDRIVE_PRIVATE_KEY).",
+          "env": "ALGEN_TOOLS_ONEDRIVE_CLIENT_SECRET",
+          "example": null,
+          "required": false,
+          "secret": true
+        },
+        {
+          "default": null,
+          "description": "The certificate's PEM private key (RSA), for certificate authentication. A single line with \\n escapes is accepted.",
+          "env": "ALGEN_TOOLS_ONEDRIVE_PRIVATE_KEY",
+          "example": null,
+          "required": false,
+          "secret": true
+        },
+        {
+          "default": null,
+          "description": "The passphrase of an encrypted private key.",
+          "env": "ALGEN_TOOLS_ONEDRIVE_PRIVATE_KEY_PASSPHRASE",
+          "example": null,
+          "required": false,
+          "secret": true
+        },
+        {
+          "default": null,
+          "description": "The PEM certificate uploaded to the app registration (preferred).",
+          "env": "ALGEN_TOOLS_ONEDRIVE_CERTIFICATE",
+          "example": null,
+          "required": false,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "The certificate's SHA-1 thumbprint, when the certificate is not set.",
+          "env": "ALGEN_TOOLS_ONEDRIVE_CERTIFICATE_THUMBPRINT",
+          "example": "3F2504E04F8911D39A0C0305E82C3301F2504E04",
+          "required": false,
+          "secret": false
+        }
+      ],
+      "summary": "List and read the files below one OneDrive or SharePoint folder through Microsoft Graph, read-only, with the app's own credentials (client secret or certificate).",
+      "title": "OneDrive and SharePoint files",
+      "tools": [
+        {
+          "description": "List the files and folders directly in the configured OneDrive or SharePoint\nfolder, or in a folder below it by its id: name, path relative to the configured\nfolder, size, type and when it last changed. Use next_page_token to continue, and a\nfolder entry's id to list inside it.",
+          "idempotency": "idempotent",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "folder_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 500,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9!_=+,-][A-Za-z0-9!_=+.,-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "format": "identifier"
+              },
+              "page_token": {
+                "anyOf": [
+                  {
+                    "maxLength": 4000,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              }
+            },
+            "type": "object"
+          },
+          "max_attempts": 3,
+          "name": "onedrive.list_folder",
+          "output_schema": {
+            "additionalProperties": false,
+            "description": "One page of a folder's direct children.",
+            "properties": {
+              "entries": {
+                "default": [],
+                "items": {
+                  "additionalProperties": false,
+                  "description": "One file or folder below the configured folder.",
+                  "properties": {
+                    "ctag": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "drive_id": {
+                      "type": "string"
+                    },
+                    "etag": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "is_folder": {
+                      "default": false,
+                      "type": "boolean"
+                    },
+                    "last_modified": {
+                      "anyOf": [
+                        {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "mime_type": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "default": 0,
+                      "type": "integer"
+                    },
+                    "web_url": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "drive_id",
+                    "name",
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "next_page_token": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              }
+            },
+            "type": "object"
+          },
+          "permissions": [
+            "onedrive.read"
+          ],
+          "requires_approval": false,
+          "side_effect": "read",
+          "timeout_seconds": 60.0,
+          "version": "1.0.0"
+        }
+      ]
+    },
+    {
       "category": "email",
       "code_only_options": [
         "artifact_loader",
@@ -6028,11 +6304,43 @@
         },
         {
           "default": null,
-          "description": "The app registration's client secret.",
+          "description": "The app registration's client secret. Unset when the app authenticates with a certificate (ALGEN_TOOLS_OUTLOOK_PRIVATE_KEY).",
           "env": "ALGEN_TOOLS_OUTLOOK_CLIENT_SECRET",
           "example": null,
-          "required": true,
+          "required": false,
           "secret": true
+        },
+        {
+          "default": null,
+          "description": "The certificate's PEM private key (RSA), for certificate authentication instead of a client secret. A single line with \\n escapes is accepted.",
+          "env": "ALGEN_TOOLS_OUTLOOK_PRIVATE_KEY",
+          "example": null,
+          "required": false,
+          "secret": true
+        },
+        {
+          "default": null,
+          "description": "The passphrase of an encrypted private key.",
+          "env": "ALGEN_TOOLS_OUTLOOK_PRIVATE_KEY_PASSPHRASE",
+          "example": null,
+          "required": false,
+          "secret": true
+        },
+        {
+          "default": null,
+          "description": "The PEM certificate uploaded to the app registration (preferred: the client assertion then carries its SHA-256 thumbprint).",
+          "env": "ALGEN_TOOLS_OUTLOOK_CERTIFICATE",
+          "example": null,
+          "required": false,
+          "secret": false
+        },
+        {
+          "default": null,
+          "description": "The certificate's SHA-1 thumbprint as Entra shows it, when the certificate itself is not set.",
+          "env": "ALGEN_TOOLS_OUTLOOK_CERTIFICATE_THUMBPRINT",
+          "example": "3F2504E04F8911D39A0C0305E82C3301F2504E04",
+          "required": false,
+          "secret": false
         },
         {
           "default": null,
@@ -6660,7 +6968,7 @@
           "version": "1.0.0"
         },
         {
-          "description": "List messages in one mailbox folder, newest first: sender, recipients, subject, a\nshort preview, categories and attachments. search is Outlook search text (for example\n\"from:billing@example.com invoice\"); unread_only keeps unread messages and cannot be\ncombined with search. Use next_page_token to continue.",
+          "description": "List messages in one mailbox folder, newest first by default: sender, recipients,\nsubject, a short preview, categories and attachments. search is Outlook search text\n(for example \"from:billing@example.com invoice\"); unread_only keeps unread messages.\nreceived_after (inclusive) and received_before (exclusive) are ISO 8601 date-times with\na time zone that bound when a message was received; order is newest_first or\noldest_first. search cannot be combined with unread_only, the dates or oldest_first.\nUse next_page_token to continue.",
           "idempotency": "idempotent",
           "input_schema": {
             "additionalProperties": false,
@@ -6682,11 +6990,43 @@
                 "minimum": 1,
                 "type": "integer"
               },
+              "order": {
+                "default": "newest_first",
+                "enum": [
+                  "newest_first",
+                  "oldest_first"
+                ],
+                "type": "string"
+              },
               "page_token": {
                 "anyOf": [
                   {
                     "format": "identifier",
                     "maxLength": 4000,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "received_after": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "received_before": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
                     "type": "string"
                   },
                   {

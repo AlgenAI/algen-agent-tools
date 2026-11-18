@@ -99,6 +99,53 @@ class HostLockedClient:
     async def post(self, url: str, **options: Any) -> httpx.Response:
         return await self.request("POST", url, **options)
 
+    async def download_preauthenticated(
+        self,
+        url: str,
+        *,
+        host_suffixes: Iterable[str],
+        max_bytes: int,
+    ) -> httpx.Response:
+        """GET a pre-authenticated download URL a configured API returned (a Microsoft Graph
+        ``@microsoft.graph.downloadUrl``), reading at most ``max_bytes``.
+
+        The URL must be ``https`` on the default port, and its host must end with one of
+        ``host_suffixes`` (each starting with a dot, such as ``.sharepoint.com``). No
+        ``Authorization`` header is sent, redirects are not followed, and the URL's query
+        (which carries a short-lived access grant) is redacted from ``httpx``'s log lines."""
+        parts = urlsplit(url)
+        host = (parts.hostname or "").casefold()
+        suffixes = tuple(suffix.casefold() for suffix in host_suffixes)
+        if (
+            parts.scheme != "https"
+            or parts.port not in (None, 443)
+            or parts.username is not None
+            or not host
+            or not any(suffix.startswith(".") and host.endswith(suffix) for suffix in suffixes)
+        ):
+            raise EgressRefused("download URL is not on a host the connector is configured for")
+        secret = parts.query
+        if secret:
+            _REDACT.secrets[secret] += 1
+        try:
+            async with self._client.stream("GET", url, follow_redirects=False) as response:
+                body = bytearray()
+                if response.is_success:
+                    async for chunk in response.aiter_bytes():
+                        body.extend(chunk)
+                        if len(body) > max_bytes:
+                            raise ResponseTooLarge("download exceeds the configured size limit")
+        finally:
+            if secret:
+                _REDACT.secrets[secret] -= 1
+                _REDACT.secrets += Counter()
+        return httpx.Response(
+            response.status_code,
+            headers=response.headers,
+            content=bytes(body),
+            request=response.request,
+        )
+
     async def aclose(self) -> None:
         _REDACT.secrets.subtract(self._url_secrets)
         _REDACT.secrets += Counter()  # drop secrets no open client uses

@@ -3,9 +3,13 @@ from algen_agent_tools._plugin import toolkit_plugin
 from algen_agent_tools.catalog import ConnectorInfo, Egress, Setting
 from algen_agent_tools.outlook.toolkit import (
     ALLOWED_DOMAINS,
+    CERTIFICATE,
+    CERTIFICATE_THUMBPRINT,
     CLIENT_ID,
     CLIENT_SECRET,
     MAILBOX,
+    PRIVATE_KEY,
+    PRIVATE_KEY_PASSPHRASE,
     REFRESH_TOKEN,
     TENANT_ID,
     outlook_toolkit,
@@ -29,8 +33,44 @@ INFO = ConnectorInfo(
         Setting(env=env_name(CLIENT_ID), description="The app registration's client id."),
         Setting(
             env=env_name(CLIENT_SECRET),
-            description="The app registration's client secret.",
+            description=(
+                "The app registration's client secret. Unset when the app authenticates with a "
+                "certificate (ALGEN_TOOLS_OUTLOOK_PRIVATE_KEY)."
+            ),
             secret=True,
+            required=False,
+        ),
+        Setting(
+            env=env_name(PRIVATE_KEY),
+            description=(
+                "The certificate's PEM private key (RSA), for certificate authentication instead "
+                "of a client secret. A single line with \\n escapes is accepted."
+            ),
+            secret=True,
+            required=False,
+        ),
+        Setting(
+            env=env_name(PRIVATE_KEY_PASSPHRASE),
+            description="The passphrase of an encrypted private key.",
+            secret=True,
+            required=False,
+        ),
+        Setting(
+            env=env_name(CERTIFICATE),
+            description=(
+                "The PEM certificate uploaded to the app registration (preferred: the client "
+                "assertion then carries its SHA-256 thumbprint)."
+            ),
+            required=False,
+        ),
+        Setting(
+            env=env_name(CERTIFICATE_THUMBPRINT),
+            description=(
+                "The certificate's SHA-1 thumbprint as Entra shows it, when the certificate "
+                "itself is not set."
+            ),
+            required=False,
+            example="3F2504E04F8911D39A0C0305E82C3301F2504E04",
         ),
         Setting(
             env=env_name(MAILBOX),
