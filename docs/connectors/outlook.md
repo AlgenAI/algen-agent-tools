@@ -6,8 +6,8 @@ registration.
 | | |
 | --- | --- |
 | Plugin | `algen_agent_tools.outlook` |
-| Extra | `pip install "algen-agent-tools[outlook]"` (no extra packages) |
-| Environment | `ALGEN_TOOLS_OUTLOOK_TENANT_ID`, `ALGEN_TOOLS_OUTLOOK_CLIENT_ID`, `ALGEN_TOOLS_OUTLOOK_CLIENT_SECRET`, `ALGEN_TOOLS_OUTLOOK_MAILBOX`; optional `ALGEN_TOOLS_OUTLOOK_REFRESH_TOKEN`, `ALGEN_TOOLS_OUTLOOK_ALLOWED_DOMAINS` |
+| Extra | `pip install "algen-agent-tools[outlook]"` (`cryptography`, for certificate authentication, from 0.2.0a14; nothing before) |
+| Environment | `ALGEN_TOOLS_OUTLOOK_TENANT_ID`, `ALGEN_TOOLS_OUTLOOK_CLIENT_ID`, `ALGEN_TOOLS_OUTLOOK_MAILBOX`; a client secret (`ALGEN_TOOLS_OUTLOOK_CLIENT_SECRET`) or a certificate (`ALGEN_TOOLS_OUTLOOK_PRIVATE_KEY`, optional `ALGEN_TOOLS_OUTLOOK_PRIVATE_KEY_PASSPHRASE`, and `ALGEN_TOOLS_OUTLOOK_CERTIFICATE` or `ALGEN_TOOLS_OUTLOOK_CERTIFICATE_THUMBPRINT`, from 0.2.0a14); optional `ALGEN_TOOLS_OUTLOOK_REFRESH_TOKEN`, `ALGEN_TOOLS_OUTLOOK_ALLOWED_DOMAINS` |
 | Owner | @saurav-samantray |
 
 ## Tools
@@ -22,11 +22,19 @@ registration.
 | `outlook.send_email` | external | `outlook.write` | 60 s | 1 | agent policy (asks by default) |
 
 - `outlook.list_messages(folder="inbox", search=None, unread_only=False, max_results=25,
-  page_token=None)` lists one folder (`inbox`, `sentitems`, `drafts`, `archive`, `junkemail`),
-  newest first, at most 50 per page: sender, recipients, subject, a preview of up to 2,000
-  characters, categories and attachments. `search` is Outlook search text; `unread_only`
-  cannot be combined with it. `next_page_token` is opaque: it carries the folder and Graph's
-  paging parameters, never a URL, and the connector rebuilds the request for its own mailbox.
+  page_token=None, received_after=None, received_before=None, order="newest_first")` lists one
+  folder (`inbox`, `sentitems`, `drafts`, `archive`, `junkemail`), at most 50 per page: sender,
+  recipients, subject, a preview of up to 2,000 characters, categories and attachments.
+  `search` is Outlook search text; `unread_only` cannot be combined with it. `next_page_token`
+  is opaque: it carries the folder and Graph's paging parameters (filter and order included),
+  never a URL, and the connector rebuilds the request for its own mailbox.
+- **Date window** (0.2.0a14): `received_after` (inclusive) and `received_before` (exclusive) are
+  ISO 8601 date-times with a time zone (a naive date-time is refused), sent as
+  `$filter=receivedDateTime ge … and receivedDateTime lt …` in UTC, with `isRead eq false`
+  appended for `unread_only`. `order` is `newest_first` (`$orderby=receivedDateTime desc`) or
+  `oldest_first` (`asc`), so a backfill can page a range oldest to newest. Graph cannot combine
+  `$search` with `$filter` or `$orderby` on messages, so `search` with a date or
+  `oldest_first` is refused before anything is sent.
 - `outlook.list_messages` is `volatile` (0.2.0a13): its result is never served from the Runtime's
   tool-result cache, and the repeat guard never holds back a second identical call, since new
   messages arrive on their own.
@@ -69,11 +77,56 @@ registration.
   `Mail.Send`, plus `offline_access`. Microsoft rotates refresh tokens: the client uses each new
   one for the next refresh; pass `on_refresh_token=` to `OutlookMailboxClient` to store it.
 - **Application** (no refresh token): the app's own credentials on the mailbox
-  `ALGEN_TOOLS_OUTLOOK_MAILBOX` names. Grant the application permissions `Mail.Read` and
-  `Mail.Send`, and **limit the app to that mailbox** with an Exchange Online application access
-  policy (or RBAC for Applications); otherwise the app can reach every mailbox in the tenant.
-  The connector only ever builds requests for its configured mailbox, but the grant is the
-  boundary that matters.
+  `ALGEN_TOOLS_OUTLOOK_MAILBOX` names. Scope the app to that mailbox. The least-privileged way is
+  Exchange Online **RBAC for Applications**, with **no** Graph `Mail.Read` application
+  permission in Entra (an unscoped one reaches every mailbox in the tenant):
+
+  ```powershell
+  New-ServicePrincipal -AppId <client-id> -ObjectId <enterprise-app-object-id> -DisplayName "Careers-Mailbox-Reader"
+  New-ManagementScope -Name "Careers mailbox" -RecipientRestrictionFilter "PrimarySmtpAddress -eq 'careers@contoso.com'"
+  New-ManagementRoleAssignment -App <client-id> -Role "Application Mail.Read" -CustomResourceScope "Careers mailbox"
+  Test-ServicePrincipalAuthorization -Identity <client-id> -Resource careers@contoso.com
+  ```
+
+  Add `Application Mail.Send` only if the agent sends. With RBAC for Applications the access
+  token's `roles` claim does not contain `Mail.Read`: Exchange authorizes each request, and the
+  connector never inspects the token's roles. (The older alternative is the Graph `Mail.Read`
+  application permission limited by an application access policy.) The connector only ever
+  builds requests for its configured mailbox, but the grant is the boundary that matters.
+
+## Certificate authentication
+
+From 0.2.0a14 the app can authenticate with a certificate instead of a client secret, in either
+access mode (delegated refreshes send the assertion too). Set `ALGEN_TOOLS_OUTLOOK_PRIVATE_KEY`
+(the PEM private key, RSA, PKCS#8 or PKCS#1; encrypted keys take
+`ALGEN_TOOLS_OUTLOOK_PRIVATE_KEY_PASSPHRASE`) and either `ALGEN_TOOLS_OUTLOOK_CERTIFICATE` (the PEM
+certificate uploaded to the app registration, preferred) or
+`ALGEN_TOOLS_OUTLOOK_CERTIFICATE_THUMBPRINT` (its SHA-1 thumbprint, as the Entra portal shows it),
+and leave `ALGEN_TOOLS_OUTLOOK_CLIENT_SECRET` unset: exactly one of the two credentials is
+accepted. PEM values may be stored on one line with `\n` escapes (as a secret store or `.env`
+file often holds them).
+
+Each token request carries a fresh client assertion as Microsoft documents: a JWT signed RS256,
+header `x5t#S256` (the certificate's SHA-256 thumbprint) or `x5t` (from the SHA-1 thumbprint),
+claims `aud` (the token endpoint), `iss` and `sub` (the client id), `jti`, `nbf`, `iat` and
+`exp` (ten minutes), sent as `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`
+and `client_assertion`. The key is loaded when the client opens (a wrong key, passphrase, a
+certificate of another key or a thumbprint that does not match fail then, as a
+`ConfigurationError` naming no secret) and never leaves the process. The `outlook` extra installs
+`cryptography`; without it a certificate fails with a `ConfigurationError` naming the extra.
+
+In code, pass `certificate=GraphCertificate(private_key=SecretStr(pem), certificate=cert_pem)`
+to `OutlookSettings` (`algen_agent_tools.msgraph`). `certificate_info(cert_pem)` returns the
+thumbprints, subject and expiry for a status page; it never reads the key.
+
+## Throttling
+
+Graph throttles with `429` (and sometimes `503`) and a `Retry-After`. From 0.2.0a14 a throttled
+read raises an `EmailDeliveryError` that is also an `algen_agent_tools.msgraph.GraphThrottled`
+with `retry_after_seconds` (bounded to an hour; 10 s when Graph gives none) and is marked not
+attempted. The connector does not retry itself: the Runtime's retry policy applies to tool calls,
+and a host's batch job (a mailbox backfill) waits `retry_after_seconds` and continues from its
+page token.
 
 ## Agent configuration
 

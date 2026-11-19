@@ -36,6 +36,19 @@ PUBLIC_NAMES = {
     ),
     "algen_agent_tools.postgres": ("PostgresToolkit", "postgres_toolkit"),
     "algen_agent_tools.outlook": ("OutlookMailboxClient", "OutlookSettings", "outlook_toolkit"),
+    "algen_agent_tools.onedrive": (
+        "FolderRef",
+        "OneDriveError",
+        "OneDriveFilesClient",
+        "OneDriveSettings",
+        "onedrive_toolkit",
+    ),
+    "algen_agent_tools.msgraph": (
+        "GraphCertificate",
+        "GraphThrottled",
+        "certificate_info",
+        "unescape_pem",
+    ),
     "algen_agent_tools.mcp": ("McpOverlay", "overlay_plugin"),
     "algen_agent_tools.messaging": (
         "Capability",
