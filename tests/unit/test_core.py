@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import gzip
+import json
 from urllib.parse import parse_qs
 
 import httpx
@@ -54,6 +56,30 @@ async def test_responses_are_read_within_the_limit() -> None:
     assert (await locked(answer(b"x" * 1_000)).get(BASE)).content == b"x" * 1_000
     with pytest.raises(ResponseTooLarge):
         await locked(answer(b"x" * 1_001)).get(BASE)
+
+
+async def test_a_compressed_reply_is_read_once_and_limited_by_its_decoded_size() -> None:
+    # Microsoft Graph gzips its replies; the body is read decompressed, so the rebuilt response
+    # must not say it is still compressed (that was a DecodingError on every real Graph read).
+    payload = json.dumps({"value": ["x" * 400]}).encode()
+
+    def gzipped(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            headers={"content-encoding": "gzip", "content-type": "application/json"},
+            content=gzip.compress(payload),
+        )
+
+    response = await locked(httpx.MockTransport(gzipped)).get(f"{BASE}/items")
+    assert response.json() == {"value": ["x" * 400]}
+    assert "content-encoding" not in response.headers
+    # The limit counts decompressed bytes: a small gzip that inflates past it is refused.
+    with pytest.raises(ResponseTooLarge):
+        await locked(httpx.MockTransport(gzipped), limit=200).get(f"{BASE}/items")
+    download = await locked(httpx.MockTransport(gzipped)).download_preauthenticated(
+        "https://files.example.com/f?token=t", host_suffixes=(".example.com",), max_bytes=1_000
+    )
+    assert json.loads(download.content) == {"value": ["x" * 400]}
 
 
 async def test_errors_keep_their_status_for_raise_for_status() -> None:
