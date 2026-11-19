@@ -67,6 +67,14 @@ and SharePoint files connector lists and downloads the files below one folder.
 - `HostLockedClient.download_preauthenticated` (internal).
 - `connectors.json` is regenerated (Outlook settings and input schema, the OneDrive connector).
 
+### Fixed
+
+- **Compressed replies no longer fail with `DecodingError`.** The shared host-locked HTTP client
+  read each body decompressed but kept the `Content-Encoding` header, so reading the response
+  decompressed it a second time. Every gzip reply failed, which is every Microsoft Graph read
+  (Outlook, OneDrive) and any other service that compresses. Since 0.2.0a1. The response size
+  limit counts decompressed bytes.
+
 ## [0.2.0a13] - 2026-11-17
 
 Built on Runtime 0.2.0b5. MCP overlay tools return a server-reported failure as data and mask

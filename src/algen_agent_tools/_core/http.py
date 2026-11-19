@@ -42,6 +42,19 @@ def _origin(url: str) -> tuple[str, str, int | None]:
     return parts.scheme, parts.hostname.casefold(), parts.port
 
 
+def _decoded(response: httpx.Response, body: bytes) -> httpx.Response:
+    """A response holding ``body``, which ``aiter_bytes`` already decompressed: without the
+    ``Content-Encoding`` and ``Content-Length`` that described the compressed bytes, or reading
+    it would decompress it again (a ``DecodingError`` on every gzip reply, which Microsoft
+    Graph sends)."""
+    headers = httpx.Headers(response.headers)
+    for name in ("content-encoding", "content-length"):
+        headers.pop(name, None)
+    return httpx.Response(
+        response.status_code, headers=headers, content=body, request=response.request
+    )
+
+
 class HostLockedClient:
     """An ``httpx`` client limited to the origins of the URLs its configuration names.
 
@@ -86,12 +99,7 @@ class HostLockedClient:
                 body.extend(chunk)
                 if len(body) > self._max_response_bytes:
                     raise ResponseTooLarge("response exceeds the configured size limit")
-        return httpx.Response(
-            response.status_code,
-            headers=response.headers,
-            content=bytes(body),
-            request=response.request,
-        )
+        return _decoded(response, bytes(body))
 
     async def get(self, url: str, **options: Any) -> httpx.Response:
         return await self.request("GET", url, **options)
@@ -139,12 +147,7 @@ class HostLockedClient:
             if secret:
                 _REDACT.secrets[secret] -= 1
                 _REDACT.secrets += Counter()
-        return httpx.Response(
-            response.status_code,
-            headers=response.headers,
-            content=bytes(body),
-            request=response.request,
-        )
+        return _decoded(response, bytes(body))
 
     async def aclose(self) -> None:
         _REDACT.secrets.subtract(self._url_secrets)
