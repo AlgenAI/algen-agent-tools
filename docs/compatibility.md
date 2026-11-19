@@ -32,6 +32,7 @@ and 0.2.0b5.
 
 | algen-agent-tools | Supported algen-agent-runtime |
 | --- | --- |
+| 0.2.0a14 | `>=0.2.0b5,<0.3` (tested on 0.2.0b5) |
 | 0.2.0a13 | `>=0.2.0b5,<0.3` (tested on 0.2.0b5) |
 | 0.2.0a12 | `>=0.1.0a23,<0.3` (tested on 0.1.0a23, 0.2.0b1, 0.2.0b2 and 0.2.0b5) |
 | 0.2.0a11 | `>=0.1.0a23,<0.3` (tested on 0.1.0a23 and 0.2.0b1) |
