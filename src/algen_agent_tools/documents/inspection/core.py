@@ -10,6 +10,12 @@ from typing import TYPE_CHECKING, Any, Literal, Protocol
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from algen_agent_tools.documents.inspection.ocr import render_page_png, validate_ocr_options
+from algen_agent_tools.documents.inspection.pdf_contrast import (
+    PageBackdrop,
+    SampleBudget,
+    Visibility,
+    is_pale,
+)
 
 if TYPE_CHECKING:
     from algen_agent_tools.documents.inspection.legacy import DocumentConverter
@@ -384,7 +390,13 @@ class PdfDocumentExtractor:
 
     With an ``ocr`` recognizer, a page that has images and fewer than ``ocr_min_page_chars``
     characters of text is rendered (``ocr_dpi``, at most ``ocr_max_pixels`` pixels) and
-    recognized, for at most ``ocr_max_pages`` pages. Without one, nothing is rendered.
+    recognized, for at most ``ocr_max_pages`` pages. Without one, no page is OCR'd.
+
+    Text is judged against what it is drawn on (see ``pdf_contrast``): near-white text on a
+    dark shape is visible, and text under an opaque shape drawn after it is hidden. Near-white
+    text over an image is judged from a small rendered clip, for at most
+    ``max_background_samples`` spans per document; past that it is left out and reported as a
+    LOW ``hidden_text.on_image`` finding.
     """
 
     def __init__(
@@ -401,6 +413,7 @@ class PdfDocumentExtractor:
         ocr_min_page_chars: int = 32,
         ocr_dpi: int = 200,
         ocr_max_pixels: int = 12_000_000,
+        max_background_samples: int = 100,
     ) -> None:
         validate_ocr_options(
             max_pages=ocr_max_pages,
@@ -412,6 +425,8 @@ class PdfDocumentExtractor:
             raise ValueError("max_pages must be 1 or more")
         if start_page < 1:
             raise ValueError("start_page must be 1 or more")
+        if max_background_samples < 0:
+            raise ValueError("max_background_samples must be 0 or more")
         self._max_bytes = max_bytes
         self._max_pages = max_pages
         self._start_page = start_page
@@ -423,6 +438,7 @@ class PdfDocumentExtractor:
         self._ocr_min_page_chars = ocr_min_page_chars
         self._ocr_dpi = ocr_dpi
         self._ocr_max_pixels = ocr_max_pixels
+        self._max_background_samples = max_background_samples
 
     def extract(self, data: bytes, *, filename: str) -> ExtractedDocument:
         del filename
@@ -454,6 +470,7 @@ class PdfDocumentExtractor:
         image_count = 0
         ocr_pages: list[int] = []
         unread_image_pages: list[int] = []
+        samples = SampleBudget(self._max_background_samples)
         if first > 1:
             findings.append(
                 DocumentSecurityFinding(
@@ -477,6 +494,7 @@ class PdfDocumentExtractor:
             image_count += page_images
             first_span = len(spans)
             width, height = float(page.rect.width), float(page.rect.height)
+            backdrop = PageBackdrop(fitz, page, samples)
             payload = page.get_text("dict")
             for block in payload.get("blocks", ()):
                 for line in block.get("lines", ()):
@@ -494,16 +512,20 @@ class PdfDocumentExtractor:
                         color = int(raw.get("color", 0))
                         opacity = normalize_pdf_opacity(raw.get("alpha"))
                         tiny = size < self._tiny_font_points
-                        pale = all(
-                            channel >= 245
-                            for channel in ((color >> 16) & 255, (color >> 8) & 255, color & 255)
-                        )
                         invisible = opacity <= 0.05
+                        visibility = None if invisible else backdrop.judge(bbox, color)
+                        if visibility is None:  # not analysable: judge the colour alone
+                            visibility = Visibility.HIDDEN if is_pale(color) else None
+                        faint = invisible or visibility is Visibility.HIDDEN
+                        covered = visibility is Visibility.COVERED
+                        unjudged = visibility is Visibility.UNJUDGED
                         off_page = (
                             bbox[2] <= 0 or bbox[3] <= 0 or bbox[0] >= width or bbox[1] >= height
                         )
                         injection = prompt_injection_findings(text, page=page_index)
-                        suspicious = tiny or pale or invisible or off_page or bool(injection)
+                        suspicious = (
+                            tiny or faint or covered or unjudged or off_page or bool(injection)
+                        )
                         spans.append(
                             DocumentSpan(
                                 text=text,
@@ -525,12 +547,35 @@ class PdfDocumentExtractor:
                                     evidence=text[:300],
                                 )
                             )
-                        if pale or invisible:
+                        if faint:
                             findings.append(
                                 DocumentSecurityFinding(
                                     kind="hidden_text.low_visibility",
                                     severity=FindingSeverity.HIGH,
                                     message="Text has very low visual contrast or opacity.",
+                                    page=page_index,
+                                    evidence=text[:300],
+                                )
+                            )
+                        if covered:
+                            findings.append(
+                                DocumentSecurityFinding(
+                                    kind="hidden_text.covered",
+                                    severity=FindingSeverity.HIGH,
+                                    message="Text is drawn under a shape that hides it.",
+                                    page=page_index,
+                                    evidence=text[:300],
+                                )
+                            )
+                        if unjudged:
+                            findings.append(
+                                DocumentSecurityFinding(
+                                    kind="hidden_text.on_image",
+                                    severity=FindingSeverity.LOW,
+                                    message=(
+                                        "Near-white text over an image was not checked against "
+                                        "the image, and was left out."
+                                    ),
                                     page=page_index,
                                     evidence=text[:300],
                                 )

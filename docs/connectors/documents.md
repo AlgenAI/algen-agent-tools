@@ -24,7 +24,9 @@ the calling tenant, bounds the call and governs it as a tool.
 artifact reference (`artifact_id`, `filename`, `media_type`) and returns:
 
 - `text`: only what a reader would see, cut to `max_chars` (at most 100,000). Hidden text is
-  never returned: white, tiny, transparent or off-page text in PDFs; hidden or invisible runs in
+  never returned: text in PDFs that matches what it is drawn on (white on white, dark on dark),
+  covered by a shape drawn over it, tiny, transparent or off the page (see
+  [PDF hidden text](#pdf-hidden-text)); hidden or invisible runs in
   DOCX; hidden sheets, rows and columns in XLSX; hidden slides and shapes in PPTX; and HTML hidden
   by the `hidden` attribute or an inline style (`display: none`, `visibility: hidden`, zero font
   size or opacity). HTML scripts, styles and the head, PPTX speaker notes and Office comments are
@@ -252,6 +254,39 @@ in `algen_agent_tools.documents.inspection`.
 
 PDF, DOCX and PPTX documents with text and embedded images report `document.images_excluded`:
 the images were not read. A document with images and no text reports `document.ocr_required`.
+
+### PDF hidden text
+
+A PDF span is judged by its contrast with what it is drawn on, as DOCX runs are, not by its
+colour alone (since 0.2.0a14; before, any near-white text was `hidden_text.low_visibility` and
+quarantined the document, so designed résumés with white text on dark sidebars were
+quarantined). The page's drawing order decides what is behind the text:
+
+| Text | Finding | In `text` |
+| --- | --- | --- |
+| Near-white on a filled shape drawn before it, contrast 3 or more (WCAG scale) | none | yes |
+| Near-white on a white page, or on a fill with contrast under 3 | `hidden_text.low_visibility` (high) | no |
+| Any colour on a fill with contrast under 1.25 (dark on dark), the DOCX threshold | `hidden_text.low_visibility` (high) | no |
+| Under an opaque filled rectangle drawn after it and covering 60% or more of the span | `hidden_text.covered` (high) | no |
+| Near-white over an image, shading or rounded shape | judged from a small rendered clip of the page (its darkest quarter of pixels), as above | if visible |
+| The same, past `max_background_samples` clips per document (default 100) | `hidden_text.on_image` (low: `review`, not `quarantine`) | no |
+| Opacity 5% or less | `hidden_text.low_visibility` (high) | no |
+
+Fills are stacked with their opacity, inside their clip paths and transparency groups. Trade-offs:
+
+- Only filled rectangles are judged from the vectors. A rounded or irregular shape is judged from
+  the rendered clip, like an image; stroked lines and borders are not backgrounds.
+- An image or shape drawn *after* the text is not treated as covering it (an image may be
+  transparent); only an opaque filled rectangle is. Underlines and strike-throughs cover too
+  little of a span to count.
+- Text over an image that was not sampled is left out and reported low, so the document is
+  `review`, not `quarantine`. Raise `PdfDocumentExtractor(max_background_samples=...)` for long
+  designed documents; each clip is a few milliseconds.
+- A page with more than 2,000 filled shapes and images, or an extractor whose PyMuPDF lacks
+  `get_bboxlog` and `get_texttrace`, falls back to the colour alone: near-white text is hidden,
+  and nothing is checked for being covered or dark on dark.
+- Text in a colour that is merely pale against its background (contrast between 1.25 and 3, not
+  near-white) is returned, as before.
 
 ### Links before redaction
 
