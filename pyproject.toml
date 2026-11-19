@@ -146,5 +146,5 @@ strict = true
 packages = ["algen_agent_tools"]
 
 [[tool.mypy.overrides]]
-module = ["aiomysql", "aiomysql.*", "asyncpg", "asyncpg.*", "fitz", "jsonschema", "mcp", "mcp.*", "olefile", "PIL", "PIL.*", "pytesseract", "yaml"]
+module = ["aiomysql", "aiomysql.*", "asyncpg", "asyncpg.*", "cryptography", "cryptography.*", "fitz", "jsonschema", "mcp", "mcp.*", "olefile", "PIL", "PIL.*", "pytesseract", "yaml"]
 ignore_missing_imports = true
