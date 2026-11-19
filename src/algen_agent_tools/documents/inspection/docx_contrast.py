@@ -11,12 +11,12 @@ import re
 from collections.abc import Iterator
 from xml.etree import ElementTree
 
+from algen_agent_tools.documents.inspection.contrast import INVISIBLE_RATIO, contrast_ratio
+
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 _A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 UNKNOWN = -1
 WHITE = 0xFFFFFF
-# Contrast ratio below which text is indistinguishable from its background (WCAG scale).
-_INVISIBLE_RATIO = 1.25
 _HIGHLIGHTS = {
     "black": 0x000000,
     "blue": 0x0000FF,
@@ -102,17 +102,7 @@ def paragraphs_with_background(
         yield from paragraphs_with_background(child, fill)
 
 
-def _luminance(rgb: int) -> float:
-    def channel(value: int) -> float:
-        scaled = value / 255
-        return scaled / 12.92 if scaled <= 0.03928 else ((scaled + 0.055) / 1.055) ** 2.4
-
-    red, green, blue = (rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255
-    return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
-
-
 def is_invisible(text_color: int | None, background: int) -> bool:
     if text_color is None or background == UNKNOWN:
         return False
-    lighter, darker = sorted((_luminance(text_color), _luminance(background)), reverse=True)
-    return (lighter + 0.05) / (darker + 0.05) < _INVISIBLE_RATIO
+    return contrast_ratio(text_color, background) < INVISIBLE_RATIO

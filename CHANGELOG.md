@@ -69,6 +69,22 @@ and SharePoint files connector lists and downloads the files below one folder.
 
 ### Fixed
 
+- **Designed PDFs with white text on dark shapes are no longer quarantined.** The PDF extractor
+  reported every near-white span as `hidden_text.low_visibility` (high) without looking at what
+  was behind it, so résumés from Canva and similar builders, with white text on dark sidebars
+  and headers, were quarantined and lost that text. A span is now judged by its contrast with
+  the filled shapes drawn before it (in drawing order, with their opacity, clip paths and
+  transparency groups): near-white text on a fill with a WCAG contrast of 3 or more is visible
+  and returned. Near-white text over an image, shading or rounded shape is judged from a small
+  rendered clip, for at most `max_background_samples` spans per document
+  (`PdfDocumentExtractor(max_background_samples=100)`); past that it is left out and reported as
+  `hidden_text.on_image` (low, so `review`). White on white, and near-white on a light fill, stay
+  high. Since 0.2.0a1. The colour contrast helpers are shared with the DOCX check
+  (`documents.inspection.contrast`).
+- **New PDF hidden-text checks:** text under an opaque filled rectangle drawn after it reports
+  `hidden_text.covered` (high), and text of any colour on a fill it nearly matches (contrast
+  under 1.25, as in DOCX, for example dark on dark) reports `hidden_text.low_visibility`. Both are
+  left out of the text. See `docs/connectors/documents.md`, "PDF hidden text".
 - **Compressed replies no longer fail with `DecodingError`.** The shared host-locked HTTP client
   read each body decompressed but kept the `Content-Encoding` header, so reading the response
   decompressed it a second time. Every gzip reply failed, which is every Microsoft Graph read
