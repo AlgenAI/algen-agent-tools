@@ -8,9 +8,13 @@ A tool's name, input schema, side effect and permission are part of the public c
 
 ## [Unreleased]
 
+## [0.2.0a14] - 2026-11-19
+
 Microsoft Graph connectors authenticate with a certificate, Outlook lists a received-date window
 oldest or newest first, Graph throttling carries its `Retry-After`, and a new read-only OneDrive
-and SharePoint files connector lists and downloads the files below one folder.
+and SharePoint files connector lists and downloads the files below one folder. Compressed replies
+(every Microsoft Graph read) no longer fail with `DecodingError`, and the PDF hidden-text check
+judges text against what it is drawn on, so white text on a dark shape is no longer quarantined.
 
 ### Upgrade notes
 
